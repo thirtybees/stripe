@@ -1,0 +1,63 @@
+/**
+ * 2016 Michael Dekker
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Academic Free License (AFL 3.0)
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/afl-3.0.php
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to license@michaeldekker.com so we can send you a copy immediately.
+ *
+ *  @author    Michael Dekker <prestashop@michaeldekker.com>
+ *  @copyright 2016 Michael Dekker
+ *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
+*/
+
+#stripe_payment_button a {
+	padding: 10px 10px 10px 10px;
+	background-color: #FBFBFB;
+}
+
+#stripe_payment_button a:hover {
+	background-color: #f6f6f6;
+}
+
+#stripe_payment_button a:after {
+	display: block;
+	content: "\f054";
+	position: absolute;
+	right: 15px;
+	margin-top: -11px;
+	top: 50%;
+	font-family: "FontAwesome";
+	font-size: 25px;
+	height: 22px;
+	width: 14px;
+	color: #777777;
+}
+
+#stripe_apple_payment_button a {
+	padding: 20px 10px 20px 10px;
+	background-color: #FBFBFB;
+}
+
+#stripe_apple_payment_button a:hover {
+	background-color: #f6f6f6;
+}
+
+#stripe_apple_payment_button a:after {
+	display: block;
+	content: "\f054";
+	position: absolute;
+	right: 15px;
+	margin-top: -11px;
+	top: 50%;
+	font-family: "FontAwesome";
+	font-size: 25px;
+	height: 22px;
+	width: 14px;
+	color: #777777;
+}

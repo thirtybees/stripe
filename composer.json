@@ -1,0 +1,10 @@
+{
+    "require": {
+        "stripe/stripe-php": "~4.3"
+    },
+    "autoload": {
+        "classmap": [
+            "classes/"
+        ]
+    }
+}
