@@ -75,13 +75,11 @@ class Stripe extends PaymentModule
     public static $stripeLanguages = array('zh', 'nl', 'en', 'fr', 'de', 'it', 'ja', 'es');
 
     /** @var array Supported zero-decimal currencies */
-    public static $zeroDecimalCurrencies =
-        array('bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf', 'krw', 'mga', 'pyg', 'rwf', 'vdn', 'vuv', 'xaf', 'xof', 'xpf');
+    public static $zeroDecimalCurrencies = array('bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf', 'krw', 'mga', 'pyg', 'rwf', 'vdn', 'vuv', 'xaf', 'xof', 'xpf');
 
     /** @var array Hooks */
     public $hooks = array(
         'displayHeader',
-        'backOfficeHeader',
         'displayPaymentTop',
         'displayPayment',
         'displayPaymentEU',
@@ -1337,16 +1335,6 @@ class Stripe extends PaymentModule
         ));
 
         return $this->display(__FILE__, 'views/templates/front/assets.tpl');
-    }
-
-    /**
-     * Hook to back office header: <head></head>
-     *
-     * @param array $params Hook parameters
-     */
-    public function hookDisplayBackOfficeHeader($params)
-    {
-        $this->makeModuleTrusted();
     }
 
     /**
