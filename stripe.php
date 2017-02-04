@@ -122,12 +122,6 @@ class Stripe extends PaymentModule
 
         // Only check from Back Office
         if (isset(Context::getContext()->employee->id) && Context::getContext()->employee->id) {
-            if ($this->active && extension_loaded('curl') == false) {
-                $this->context->controller->errors[] = $this->displayName.': '.$this->l('You have to enable the cURL extension on your server in order to use this module');
-                $this->disable();
-
-                return;
-            }
             if (PHP_VERSION_ID < self::MIN_PHP_VERSION) {
                 $this->context->controller->errors[] = $this->displayName.': '.$this->l('Your PHP version is not supported. Please upgrade to PHP 5.5.0 or higher.');
                 $this->disable();
@@ -144,11 +138,6 @@ class Stripe extends PaymentModule
      */
     public function install()
     {
-        if (extension_loaded('curl') == false) {
-            $this->addError($this->l('You have to enable the cURL extension on your server to install this module'));
-
-            return false;
-        }
         if (PHP_VERSION_ID < self::MIN_PHP_VERSION) {
             $this->addError($this->l('Your PHP version is not supported. Please upgrade to PHP 5.3.3 or higher.'));
 
