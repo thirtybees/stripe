@@ -22,7 +22,6 @@ namespace Stripe\HttpClient;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\BadResponseException;
 use Stripe\Error;
-use Stripe\Error\Base;
 
 /**
  * Class GuzzleClient
