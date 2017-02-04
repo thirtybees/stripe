@@ -176,7 +176,9 @@ class GuzzleClient implements ClientInterface
                 $absUrl = "$absUrl?$encoded";
             }
         } elseif ($method === 'POST') {
-            $options['body'] = self::encode($params);
+            if (!$hasFile) {
+                $options['body'] = self::encode($params);
+            }
         } else {
             throw new Error\Api("Unrecognized method $method");
         }
@@ -225,6 +227,7 @@ class GuzzleClient implements ClientInterface
                 $headers
             );
         } catch (\Exception $e) {
+            var_dump($e);
             throw new Error\ApiConnection('Could not connect with Stripe');
         }
 
