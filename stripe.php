@@ -203,19 +203,15 @@ class Stripe extends PaymentModule
 
         $this->initNavigation();
 
-        $this->moduleUrl = Context::getContext()->link->getAdminLink('AdminModules', false).'&token='.Tools::getAdminTokenLite('AdminModules').'&'.http_build_query(
-                [
+        $this->moduleUrl = Context::getContext()->link->getAdminLink('AdminModules', false).'&token='.Tools::getAdminTokenLite('AdminModules').'&'.http_build_query([
             'configure' => $this->name,
-                ]
-            );
+        ]);
 
-        $this->baseUrl = $this->context->link->getAdminLink('AdminModules', true).'&'.http_build_query(
-                [
-                'configure' => $this->name,
-                'tab_module' => $this->tab,
-                'module_name' => $this->name,
-                ]
-            );
+        $this->baseUrl = $this->context->link->getAdminLink('AdminModules', true).'&'.http_build_query([
+            'configure' => $this->name,
+            'tab_module' => $this->tab,
+            'module_name' => $this->name,
+        ]);
 
         $output .= $this->postProcess();
 
@@ -323,7 +319,6 @@ class Stripe extends PaymentModule
             $this->getGeneralOptions(),
             $this->getStripeCheckoutOptions(),
             $this->getStripeCreditCardOptions(),
-            $this->getEuropeanPaymentMethodsOptions(),
             $this->getApplePayOptions(),
             $this->getOrderOptions()
         ));
