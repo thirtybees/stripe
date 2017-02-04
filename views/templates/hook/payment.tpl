@@ -22,9 +22,9 @@
 		</form>
 		<div class="col-xs-12 col-md-12">
 			<p class="payment_module" id="stripe_payment_button">
-				<a id="stripe_payment_link" href="#" title="{l s='Pay with Stripe' mod='stripe'}">
-					<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/stripebtnlogo.png" alt="{l s='Pay with Stripe' mod='stripe'}" width="64" height="64" />
-					{l s='Pay with Stripe' mod='stripe'}
+				<a id="stripe_payment_link" href="#" title="{l s='Pay by Credit Card' mod='stripe'}">
+					<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/stripebtnlogo.png" alt="{l s='Pay by Credit Card' mod='stripe'}" width="64" height="64" />
+					{l s='Pay by Credit Card' mod='stripe'}
 					{if $showPaymentLogos}
 						<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/creditcards.png" alt="{l s='Credit cards' mod='stripe'}" />
 						{if $stripe_alipay}<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/alipay.png" alt="{l s='Alipay' mod='stripe'}" />{/if}

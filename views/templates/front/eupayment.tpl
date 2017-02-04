@@ -19,8 +19,8 @@
 	<form id="stripe-form" action="{$stripe_confirmation_page|escape:'htmlall':'UTF-8'}" method="POST">
 		<input type="hidden" name="stripe-id_cart" value="{$id_cart|escape:'htmlall':'UTF-8'}">
 	</form>
-	<a id="stripe_payment_link" href="#" title="{l s='Pay with Stripe' mod='stripe'}" class="btn btn-default">
-		{l s='Pay with Stripe' mod='stripe'}
+	<a id="stripe_payment_link" href="#" title="{l s='Pay with ThirtybeesStripe' mod='stripe'}" class="btn btn-default">
+		{l s='Pay with ThirtybeesStripe' mod='stripe'}
 	</a>
 	<script type="text/javascript">
 		(function() {

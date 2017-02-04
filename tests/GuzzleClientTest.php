@@ -1,8 +1,8 @@
 <?php
 
-namespace Stripe;
+namespace ThirtybeesStripe;
 
-use Stripe\HttpClient\GuzzleClient;
+use ThirtybeesStripe\HttpClient\GuzzleClient;
 
 class GuzzleClientTest extends TestCase
 {

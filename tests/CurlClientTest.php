@@ -1,8 +1,8 @@
 <?php
 
-namespace Stripe;
+namespace ThirtybeesStripe;
 
-use Stripe\HttpClient\CurlClient;
+use ThirtybeesStripe\HttpClient\CurlClient;
 
 class CurlClientTest extends TestCase
 {
@@ -44,7 +44,7 @@ class CurlClientTest extends TestCase
         $withBadClosure = new CurlClient(function () {
             return 'thisShouldNotWork';
         });
-        $this->setExpectedException('Stripe\Error\Api', "Non-array value returned by defaultOptions CurlClient callback");
+        $this->setExpectedException('ThirtybeesStripe\Error\Api', "Non-array value returned by defaultOptions CurlClient callback");
         $withBadClosure->request('get', 'https://httpbin.org/status/200', [], [], false);
     }
 

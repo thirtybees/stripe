@@ -24,7 +24,7 @@ if (!defined('_TB_VERSION_')) {
 require_once dirname(__FILE__).'/vendor/autoload.php';
 
 /**
- * Class Stripe
+ * Class ThirtybeesStripe
  */
 class Stripe extends PaymentModule
 {
@@ -97,7 +97,7 @@ class Stripe extends PaymentModule
     public $menu;
 
     /**
-     * Stripe constructor.
+     * ThirtybeesStripe constructor.
      */
     public function __construct()
     {
@@ -1167,11 +1167,11 @@ class Stripe extends PaymentModule
 
         $amountRefunded = StripeTransaction::getRefundedAmountByOrderId($idOrder);
 
-        $guzzle = new \Stripe\HttpClient\GuzzleClient();
-        \Stripe\ApiRequestor::setHttpClient($guzzle);
+        $guzzle = new \ThirtybeesStripe\HttpClient\GuzzleClient();
+        \ThirtybeesStripe\ApiRequestor::setHttpClient($guzzle);
         try {
-            \Stripe\Stripe::setApiKey(Configuration::get(Stripe::SECRET_KEY));
-            \Stripe\Refund::create(
+            \ThirtybeesStripe\Stripe::setApiKey(Configuration::get(Stripe::SECRET_KEY));
+            \ThirtybeesStripe\Refund::create(
                 [
                     'charge' => $idCharge,
                     'amount' => $amount,
@@ -1180,7 +1180,7 @@ class Stripe extends PaymentModule
                     ],
                 ]
             );
-        } catch (\Stripe\Error\InvalidRequest $e) {
+        } catch (\ThirtybeesStripe\Error\InvalidRequest $e) {
             $this->context->controller->errors[] = sprintf('Invalid Stripe request: %s', $e->getMessage());
 
             return;
@@ -1418,7 +1418,7 @@ class Stripe extends PaymentModule
         $this->checkShopThumb();
 
         $paymentOptions = [
-            'cta_text' => $this->l('Pay with Stripe'),
+            'cta_text' => $this->l('Pay by Credit Card'),
             'logo' => Media::getMediaPath($this->local_path.'views/img/stripebtnlogo.png'),
             'action' => $this->context->link->getModuleLink($this->name, 'eupayment', [], Tools::usingSecureMode()),
             'stripeShopThumb' => $this->context->link->getMediaLink('/modules/stripe/views/img/shop'.$this->getShopId().'.jpg'),
@@ -1785,14 +1785,14 @@ class Stripe extends PaymentModule
      */
     protected function tlsCheck()
     {
-        $guzzle = new \Stripe\HttpClient\GuzzleClient();
-        \Stripe\ApiRequestor::setHttpClient($guzzle);
-        \Stripe\Stripe::setApiKey('sk_test_BQokikJOvBiI2HlWgH4olfQ2');
-        \Stripe\Stripe::$apiBase = 'https://api-tls12.stripe.com';
+        $guzzle = new \ThirtybeesStripe\HttpClient\GuzzleClient();
+        \ThirtybeesStripe\ApiRequestor::setHttpClient($guzzle);
+        \ThirtybeesStripe\Stripe::setApiKey('sk_test_BQokikJOvBiI2HlWgH4olfQ2');
+        \ThirtybeesStripe\Stripe::$apiBase = 'https://api-tls12.stripe.com';
         try {
-            \Stripe\Charge::all();
+            \ThirtybeesStripe\Charge::all();
             $this->updateAllValue(self::TLS_OK, self::ENUM_TLS_OK);
-        } catch (\Stripe\Error\ApiConnection $e) {
+        } catch (\ThirtybeesStripe\Error\ApiConnection $e) {
             $this->updateAllValue(self::TLS_OK, self::ENUM_TLS_ERROR);
         }
     }

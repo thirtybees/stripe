@@ -1,6 +1,6 @@
 <?php
 
-namespace Stripe;
+namespace ThirtybeesStripe;
 
 class RequestOptionsTest extends TestCase
 {

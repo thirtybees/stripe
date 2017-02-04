@@ -1,11 +1,11 @@
 {
-    "require": {
-        "stripe/stripe-php": "~4.4"
-    },
     "autoload": {
         "classmap": [
             "classes/"
-        ]
+        ],
+        "psr-4": {
+            "ThirtybeesStripe\\": "classes/stripe-php"
+        }
     },
     "require-dev": {
         "phpunit/phpunit": "~4.0",

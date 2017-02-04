@@ -87,12 +87,12 @@ class StripeValidationModuleFrontController extends ModuleFrontController
             'publishable_key' => Configuration::get(Stripe::PUBLISHABLE_KEY),
         ];
 
-        $guzzle = new \Stripe\HttpClient\GuzzleClient();
-        \Stripe\ApiRequestor::setHttpClient($guzzle);
-        \Stripe\Stripe::setApiKey($stripe['secret_key']);
+        $guzzle = new \ThirtybeesStripe\HttpClient\GuzzleClient();
+        \ThirtybeesStripe\ApiRequestor::setHttpClient($guzzle);
+        \ThirtybeesStripe\Stripe::setApiKey($stripe['secret_key']);
 
         try {
-            $stripeCustomer = \Stripe\Customer::create(
+            $stripeCustomer = \ThirtybeesStripe\Customer::create(
                 [
                 'email' => $customer->email,
                 'source' => $token,
@@ -112,7 +112,7 @@ class StripeValidationModuleFrontController extends ModuleFrontController
         }
 
         try {
-            $stripeCharge = \Stripe\Charge::create(
+            $stripeCharge = \ThirtybeesStripe\Charge::create(
                 [
                     'customer' => $stripeCustomer->id,
                     'amount' => $stripeAmount,
@@ -136,7 +136,7 @@ class StripeValidationModuleFrontController extends ModuleFrontController
              */
             $currencyId = (int) Context::getContext()->currency->id;
 
-            $this->module->validateOrder($idCart, $paymentStatus, $cart->getOrderTotal(), 'Stripe', $message, [], $currencyId, false, $cart->secure_key);
+            $this->module->validateOrder($idCart, $paymentStatus, $cart->getOrderTotal(), 'ThirtybeesStripe', $message, [], $currencyId, false, $cart->secure_key);
 
             /**
              * If the order has been validated we try to retrieve it

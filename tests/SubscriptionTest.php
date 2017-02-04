@@ -1,6 +1,6 @@
 <?php
 
-namespace Stripe;
+namespace ThirtybeesStripe;
 
 class SubscriptionTest extends TestCase
 {
@@ -26,7 +26,7 @@ class SubscriptionTest extends TestCase
         $this->assertSame($sub->quantity, 2);
 
         $subs = $customer->subscriptions->all(['limit' =>3]);
-        $this->assertSame(get_class($subs->data[0]), 'Stripe\Subscription');
+        $this->assertSame(get_class($subs->data[0]), 'ThirtybeesStripe\Subscription');
 
         $sub->cancel(['at_period_end' => true]);
 
@@ -64,7 +64,7 @@ class SubscriptionTest extends TestCase
         $this->assertSame($sub->quantity, 3);
 
         $subs = Subscription::all(['customer' =>$customer->id, 'plan' =>$planID, 'limit' =>3]);
-        $this->assertSame(get_class($subs->data[0]), 'Stripe\Subscription');
+        $this->assertSame(get_class($subs->data[0]), 'ThirtybeesStripe\Subscription');
 
         $sub->cancel(['at_period_end' => true]);
 

@@ -16,8 +16,8 @@
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
 <div class="panel">
-	<h3><i class="icon icon-puzzle-piece"></i> {l s='Stripe' mod='stripe'}</h3>
-	<strong>{l s='Accept payments with Stripe' mod='stripe'}</strong>
+	<h3><i class="icon icon-puzzle-piece"></i> {l s='ThirtybeesStripe' mod='stripe'}</h3>
+	<strong>{l s='Accept payments with ThirtybeesStripe' mod='stripe'}</strong>
 	<p>
 		{l s='Thank you for using this module!' mod='stripe'}
 	</p>

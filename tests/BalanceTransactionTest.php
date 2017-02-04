@@ -1,6 +1,6 @@
 <?php
 
-namespace Stripe;
+namespace ThirtybeesStripe;
 
 class BalanceTransactionTest extends TestCase
 {

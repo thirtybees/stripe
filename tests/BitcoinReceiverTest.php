@@ -1,6 +1,6 @@
 <?php
 
-namespace Stripe;
+namespace ThirtybeesStripe;
 
 class BitcoinReceiverTest extends TestCase
 {
@@ -32,7 +32,7 @@ class BitcoinReceiverTest extends TestCase
         $r = BitcoinReceiver::retrieve($receiver->id);
         $this->assertSame($receiver->id, $r->id);
 
-        $this->assertInstanceOf('Stripe\\BitcoinTransaction', $r->transactions->data[0]);
+        $this->assertInstanceOf('ThirtybeesStripe\\BitcoinTransaction', $r->transactions->data[0]);
     }
 
     public function testList()

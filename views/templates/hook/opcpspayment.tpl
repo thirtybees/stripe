@@ -23,13 +23,13 @@
 		<p class="payment_module" id="stripe_payment_button">
 			{if $cart->getOrderTotal() < 2}
 				<a href="">
-					<img src="{$domain|cat:$payment_button|escape:'html':'UTF-8'}" alt="{l s='Pay with Stripe' mod='stripe'}" />
+					<img src="{$domain|cat:$payment_button|escape:'html':'UTF-8'}" alt="{l s='Pay with ThirtybeesStripe' mod='stripe'}" />
 					{l s='Minimum amount required in order to pay with this payment module:' mod='stripe'} {convertPrice price=2}
 				</a>
 			{else}
-				<a id="stripe_payment_link" href="#" title="{l s='Pay with Stripe' mod='stripe'}">
-					<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/stripebtnlogo.png" alt="{l s='Pay with Stripe' mod='stripe'}" width="64" height="64" />
-					{l s='Pay with Stripe' mod='stripe'}
+				<a id="stripe_payment_link" href="#" title="{l s='Pay with ThirtybeesStripe' mod='stripe'}">
+					<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/stripebtnlogo.png" alt="{l s='Pay with ThirtybeesStripe' mod='stripe'}" width="64" height="64" />
+					{l s='Pay with ThirtybeesStripe' mod='stripe'}
 				</a>
 			{/if}
 		</p>

@@ -17,16 +17,16 @@
  * @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
 
-namespace Stripe\HttpClient;
+namespace ThirtybeesStripe\HttpClient;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\BadResponseException;
-use Stripe\Error;
+use ThirtybeesStripe\Error;
 
 /**
  * Class GuzzleClient
  *
- * @package Stripe\HttpClient
+ * @package ThirtybeesStripe\HttpClient
  *
  * @since   1.0.0
  */
@@ -44,7 +44,7 @@ class GuzzleClient implements ClientInterface
     private $connectTimeout = self::DEFAULT_CONNECT_TIMEOUT;
 
     /**
-     * CurlClient constructor.
+     * GuzzleClient constructor.
      *
      * Pass in a callable to $defaultOptions that returns an array of CURLOPT_* values to start
      * off a request with, or an flat array with the same format used by curl_setopt_array() to
@@ -220,7 +220,7 @@ class GuzzleClient implements ClientInterface
                 }
             }
             throw new Error\ApiConnection(
-                'Could not connect with Stripe',
+                'Could not connect with ThirtybeesStripe',
                 $e->getResponse()->getStatusCode(),
                 (string) $e->getResponse()->getBody(),
                 json_encode((string) $e->getResponse()->getBody()),
@@ -228,7 +228,7 @@ class GuzzleClient implements ClientInterface
             );
         } catch (\Exception $e) {
             var_dump($e);
-            throw new Error\ApiConnection('Could not connect with Stripe');
+            throw new Error\ApiConnection('Could not connect with ThirtybeesStripe');
         }
 
         return array($rbody, $rcode, $rheaders);

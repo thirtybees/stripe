@@ -1,6 +1,6 @@
 <?php
 
-namespace Stripe;
+namespace ThirtybeesStripe;
 
 class ChargeTest extends TestCase
 {
@@ -175,7 +175,7 @@ class ChargeTest extends TestCase
         $this->assertSame($receiver->id, $charge->source->id);
         $this->assertSame("bitcoin_receiver", $charge->source->object);
         $this->assertSame("succeeded", $charge->status);
-        $this->assertInstanceOf('Stripe\\BitcoinReceiver', $charge->source);
+        $this->assertInstanceOf('ThirtybeesStripe\\BitcoinReceiver', $charge->source);
     }
 
     public function markAsSafe()

@@ -49,9 +49,9 @@ class StripeHookModuleFrontController extends ModuleFrontController
         $body = file_get_contents('php://input');
 
         if (!empty($body) && $data = Tools::jsonDecode($body, true)) {
-            // Verify with Stripe
-            \Stripe\Stripe::setApiKey(Configuration::get(Stripe::SECRET_KEY));
-            $event = \Stripe\Event::retrieve($data['id']);
+            // Verify with ThirtybeesStripe
+            \ThirtybeesStripe\Stripe::setApiKey(Configuration::get(Stripe::SECRET_KEY));
+            $event = \ThirtybeesStripe\Event::retrieve($data['id']);
             switch ($data['type']) {
                 case 'charge.refunded':
                     $this->processRefund($event);
@@ -70,11 +70,11 @@ class StripeHookModuleFrontController extends ModuleFrontController
     /**
      * Process refund event
      *
-     * @param \Stripe\Event $event
+     * @param \ThirtybeesStripe\Event $event
      */
     protected function processRefund($event)
     {
-        /** @var \Stripe\Charge $charge */
+        /** @var \ThirtybeesStripe\Charge $charge */
         $charge = $event->data['object'];
 
         $refunds = [];

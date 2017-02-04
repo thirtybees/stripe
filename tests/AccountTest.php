@@ -1,6 +1,6 @@
 <?php
 
-namespace Stripe;
+namespace ThirtybeesStripe;
 
 class AccountTest extends TestCase
 {
@@ -10,7 +10,7 @@ class AccountTest extends TestCase
             'id' => $id,
             'currencies_supported' => ['usd', 'aed', 'afn', '...'],
             'object' => 'account',
-            'business_name' => 'Stripe.com',
+            'business_name' => 'ThirtybeesStripe.com',
             'bank_accounts' => [
                 'object' => 'list',
                 'total_count' => 0,

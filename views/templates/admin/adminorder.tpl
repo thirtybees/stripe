@@ -49,7 +49,7 @@
 
 <div class="panel">
 	<div class="panel-heading">
-		<i class="icon icon-credit-card"></i> <span>{l s='Stripe' mod='stripe'}</span>
+		<i class="icon icon-credit-card"></i> <span>{l s='ThirtybeesStripe' mod='stripe'}</span>
 	</div>
 	{$stripe_transaction_list}
 	<br />

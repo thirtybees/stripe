@@ -1,9 +1,9 @@
 <?php
 
-namespace Stripe;
+namespace ThirtybeesStripe;
 
 /**
- * Base class for Stripe test cases, provides some utility methods for creating
+ * Base class for ThirtybeesStripe test cases, provides some utility methods for creating
  * objects.
  */
 class TestCase extends \PHPUnit_Framework_TestCase
@@ -190,7 +190,7 @@ class TestCase extends \PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
-        \Stripe\ApiRequestor::setHttpClient(\Stripe\HttpClient\GuzzleClient::instance());
+        \ThirtybeesStripe\ApiRequestor::setHttpClient(\ThirtybeesStripe\HttpClient\GuzzleClient::instance());
         $this->mock = null;
         $this->call = 0;
     }

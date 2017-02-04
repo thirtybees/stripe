@@ -1,6 +1,6 @@
 <?php
 
-namespace Stripe;
+namespace ThirtybeesStripe;
 
 class SubscriptionItemTest extends TestCase
 {
@@ -29,7 +29,7 @@ class SubscriptionItemTest extends TestCase
         $this->assertSame($subItem->quantity, 3);
 
         $subItems = SubscriptionItem::all(['subscription' =>$sub->id, 'limit' =>3]);
-        $this->assertSame(get_class($subItems->data[0]), 'Stripe\SubscriptionItem');
+        $this->assertSame(get_class($subItems->data[0]), 'ThirtybeesStripe\SubscriptionItem');
         $this->assertSame(2, count($subItems->data));
 
         $subItem->delete();

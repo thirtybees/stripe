@@ -1,14 +1,14 @@
 <?php
 
-namespace Stripe;
+namespace ThirtybeesStripe;
 
-use Stripe\HttpClient\CurlClient;
+use ThirtybeesStripe\HttpClient\CurlClient;
 
 class ApiRequestorTest extends TestCase
 {
     public function testEncodeObjects()
     {
-        $reflector = new \ReflectionClass('Stripe\\ApiRequestor');
+        $reflector = new \ReflectionClass('ThirtybeesStripe\\ApiRequestor');
         $method = $reflector->getMethod('_encodeObjects');
         $method->setAccessible(true);
 
@@ -29,7 +29,7 @@ class ApiRequestorTest extends TestCase
 
     public function testHttpClientInjection()
     {
-        $reflector = new \ReflectionClass('Stripe\\ApiRequestor');
+        $reflector = new \ReflectionClass('ThirtybeesStripe\\ApiRequestor');
         $method = $reflector->getMethod('httpClient');
         $method->setAccessible(true);
 
@@ -43,7 +43,7 @@ class ApiRequestorTest extends TestCase
 
     public function testDefaultHeaders()
     {
-        $reflector = new \ReflectionClass('Stripe\\ApiRequestor');
+        $reflector = new \ReflectionClass('ThirtybeesStripe\\ApiRequestor');
         $method = $reflector->getMethod('_defaultHeaders');
         $method->setAccessible(true);
 
@@ -53,14 +53,14 @@ class ApiRequestorTest extends TestCase
 
         $headers = $method->invoke(null, $apiKey);
 
-        $ua = json_decode($headers['X-Stripe-Client-User-Agent']);
+        $ua = json_decode($headers['X-ThirtybeesStripe-Client-User-Agent']);
         $this->assertSame($ua->application->name, 'MyTestApp');
         $this->assertSame($ua->application->version, '1.2.34');
         $this->assertSame($ua->application->url, 'https://mytestapp.example');
 
         $this->assertSame(
             $headers['User-Agent'],
-            'Stripe/v1 PhpBindings/' . Stripe::VERSION . ' MyTestApp/1.2.34 (https://mytestapp.example)'
+            'ThirtybeesStripe/v1 PhpBindings/' . Stripe::VERSION . ' MyTestApp/1.2.34 (https://mytestapp.example)'
         );
 
         $this->assertSame($headers['Authorization'], 'Bearer ' . $apiKey);
