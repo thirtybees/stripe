@@ -12,7 +12,7 @@ class PermissionErrorTest extends TestCase
     }
 
     /**
-     * @expectedException Stripe\Error\Permission
+     * @expectedException ThirtybeesStripe\Error\Permission
      */
     public function testPermission()
     {

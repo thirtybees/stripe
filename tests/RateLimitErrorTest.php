@@ -12,7 +12,7 @@ class RateLimitErrorTest extends TestCase
     }
 
     /**
-     * @expectedException Stripe\Error\RateLimit
+     * @expectedException ThirtybeesStripe\Error\RateLimit
      */
     public function testRateLimit()
     {

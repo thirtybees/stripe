@@ -36,7 +36,7 @@ class TransferTest extends TestCase
     }
 
     /**
-     * @expectedException Stripe\Error\InvalidRequest
+     * @expectedException ThirtybeesStripe\Error\InvalidRequest
      */
     public function testCancel()
     {
