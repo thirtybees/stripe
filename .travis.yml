@@ -20,4 +20,4 @@ before_install:
   - composer install --prefer-dist --no-interaction --no-progress
 
 script:
-  - vendor/bin/phpunit -c .
+  - vendor/bin/phpunit -c ./phpunit.no_autoload.xml
