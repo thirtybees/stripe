@@ -16,16 +16,16 @@
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 */
 
-#stripe_payment_button a {
+a.stripe_payment_button {
 	padding: 10px 10px 10px 10px;
 	background-color: #FBFBFB;
 }
 
-#stripe_payment_button a:hover {
+a.stripe_payment_button:hover {
 	background-color: #f6f6f6;
 }
 
-#stripe_payment_button a:after {
+a.stripe_payment_button:after {
 	display: block;
 	content: "\f054";
 	position: absolute;
@@ -39,16 +39,16 @@
 	color: #777777;
 }
 
-#stripe_apple_payment_button a {
+a.stripe_apple_payment_button {
 	padding: 20px 10px 20px 10px;
 	background-color: #FBFBFB;
 }
 
-#stripe_apple_payment_button a:hover {
+a.stripe_apple_payment_button:hover {
 	background-color: #f6f6f6;
 }
 
-#stripe_apple_payment_button a:after {
+a.stripe_apple_payment_button:after {
 	display: block;
 	content: "\f054";
 	position: absolute;

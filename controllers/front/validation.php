@@ -1,21 +1,25 @@
 <?php
 /**
- * 2016 Michael Dekker
+ * Copyright (C) 2017 thirty bees
  *
  * NOTICE OF LICENSE
  *
  * This source file is subject to the Academic Free License (AFL 3.0)
- * that is bundled with this package in the file LICENSE.txt.
+ * that is bundled with this package in the file LICENSE.md
  * It is also available through the world-wide-web at this URL:
  * http://opensource.org/licenses/afl-3.0.php
  * If you did not receive a copy of the license and are unable to
  * obtain it through the world-wide-web, please send an email
- * to license@michaeldekker.com so we can send you a copy immediately.
+ * to license@thirtybees.com so we can send you a copy immediately.
  *
- *  @author    Michael Dekker <prestashop@michaeldekker.com>
- *  @copyright 2016 Michael Dekker
+ *  @author    thirty bees <modules@thirtybees.com>
+ *  @copyright 2017 thirty bees
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
+
+if (!defined('_TB_VERSION_')) {
+    exit;
+}
 
 require_once dirname(__FILE__).'/../../vendor/autoload.php';
 
@@ -56,9 +60,11 @@ class StripeValidationModuleFrontController extends ModuleFrontController
         }
 
         $orderProcess = Configuration::get('PS_ORDER_PROCESS_TYPE') ? 'order-opc' : 'order';
-        $this->context->smarty->assign(array(
+        $this->context->smarty->assign(
+            [
             'orderLink' => $this->context->link->getPageLink($orderProcess, true),
-        ));
+            ]
+        );
 
         if ((Tools::isSubmit('stripe-id_cart') == false) || (Tools::isSubmit('stripe-token') == false) || (int) Tools::getValue('stripe-id_cart') != $cart->id) {
             $error = $this->module->l('An error occurred. Please contact us for more information.', 'validation');
@@ -76,18 +82,22 @@ class StripeValidationModuleFrontController extends ModuleFrontController
         $customer = new Customer((int) $cart->id_customer);
         $currency = new Currency((int) $cart->id_currency);
 
-        $stripe = array(
+        $stripe = [
             'secret_key' => Configuration::get(Stripe::SECRET_KEY),
             'publishable_key' => Configuration::get(Stripe::PUBLISHABLE_KEY),
-        );
+        ];
 
+        $guzzle = new \Stripe\HttpClient\GuzzleClient();
+        \Stripe\ApiRequestor::setHttpClient($guzzle);
         \Stripe\Stripe::setApiKey($stripe['secret_key']);
 
         try {
-            $stripeCustomer = \Stripe\Customer::create(array(
+            $stripeCustomer = \Stripe\Customer::create(
+                [
                 'email' => $customer->email,
                 'source' => $token,
-            ));
+                ]
+            );
         } catch (Exception $e) {
             $error = $e->getMessage();
             $this->errors[] = $error;
@@ -103,11 +113,11 @@ class StripeValidationModuleFrontController extends ModuleFrontController
 
         try {
             $stripeCharge = \Stripe\Charge::create(
-                array(
+                [
                     'customer' => $stripeCustomer->id,
                     'amount' => $stripeAmount,
                     'currency' => Tools::strtolower($currency->iso_code),
-                )
+                ]
             );
         } catch (Exception $e) {
             $error = $e->getMessage();
@@ -126,7 +136,7 @@ class StripeValidationModuleFrontController extends ModuleFrontController
              */
             $currencyId = (int) Context::getContext()->currency->id;
 
-            $this->module->validateOrder($idCart, $paymentStatus, $cart->getOrderTotal(), 'Stripe', $message, array(), $currencyId, false, $cart->secure_key);
+            $this->module->validateOrder($idCart, $paymentStatus, $cart->getOrderTotal(), 'Stripe', $message, [], $currencyId, false, $cart->secure_key);
 
             /**
              * If the order has been validated we try to retrieve it

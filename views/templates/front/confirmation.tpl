@@ -1,21 +1,20 @@
 {*
- * 2016 Michael Dekker
+ * Copyright (C) 2017 thirty bees
  *
  * NOTICE OF LICENSE
  *
  * This source file is subject to the Academic Free License (AFL 3.0)
- * that is bundled with this package in the file LICENSE.txt.
+ * that is bundled with this package in the file LICENSE.md
  * It is also available through the world-wide-web at this URL:
  * http://opensource.org/licenses/afl-3.0.php
  * If you did not receive a copy of the license and are unable to
  * obtain it through the world-wide-web, please send an email
- * to license@michaeldekker.com so we can send you a copy immediately.
+ * to license@thirtybees.com so we can send you a copy immediately.
  *
- *  @author    Michael Dekker <prestashop@michaeldekker.com>
- *  @copyright 2016 Michael Dekker
+ *  @author    thirty bees <modules@thirtybees.com>
+ *  @copyright 2017 thirty bees
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
-<!-- stripe views/templates/front/confirmation.tpl -->
 {if (isset($status) == true) && ($status == 'ok')}
 	<h3>{l s='Your order on %s is complete.' sprintf=[$shop_name] mod='stripe'}</h3>
 	<p>
@@ -34,4 +33,3 @@
 	</p>
 {/if}
 <hr />
-<!-- /stripe views/templates/front/confirmation.tpl -->

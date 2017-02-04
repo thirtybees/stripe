@@ -1,7 +1,7 @@
 <?php
 
 global $_MODULE;
-$_MODULE = array();
+$_MODULE = [];
 $_MODULE['<{stripe}prestashop>stripe_ce7566d1d08cc094b74cf283cf9c56a5'] = 'Stripe';
 $_MODULE['<{stripe}prestashop>stripe_5b8aea560ed15f6e7b3051397061d7c6'] = 'Accepteer betalingen met Stripe';
 $_MODULE['<{stripe}prestashop>stripe_9c635406092f28a84ee320aa7d72303f'] = 'U moet cURL inschakelen om deze module te kunnen gebruiken.';

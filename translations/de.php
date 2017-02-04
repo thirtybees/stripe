@@ -1,7 +1,7 @@
 <?php
 
 global $_MODULE;
-$_MODULE = array();
+$_MODULE = [];
 $_MODULE['<{stripe}default-bootstrap>stripe_ce7566d1d08cc094b74cf283cf9c56a5'] = 'Stripe';
 $_MODULE['<{stripe}default-bootstrap>stripe_5b8aea560ed15f6e7b3051397061d7c6'] = 'Zahlungen mit Stripe akzeptieren';
 $_MODULE['<{stripe}default-bootstrap>stripe_92d4773a9f32fc3333cb8238471cf763'] = 'cURL muss verfügbar sein um dieses Modul zu installieren';

@@ -1,6 +1,6 @@
 <?php
 /**
- * 2016 Michael Dekker
+ * Copyright (C) 2017 thirty bees
  *
  * NOTICE OF LICENSE
  *
@@ -10,12 +10,13 @@
  * http://opensource.org/licenses/afl-3.0.php
  * If you did not receive a copy of the license and are unable to
  * obtain it through the world-wide-web, please send an email
- * to license@michaeldekker.com so we can send you a copy immediately.
+ * to license@thirtybees.com so we can send you a copy immediately.
  *
- *  @author    Michael Dekker <prestashop@michaeldekker.com>
- *  @copyright 2016 Michael Dekker
+ *  @author    thirty bees <modules@thirtybees.com>
+ *  @copyright 2017 thirty bees
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
-*/
+ *  PrestaShop is an internationally registered trademark & property of PrestaShop SA
+ */
 
 header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
 header('Last-Modified: '.gmdate('D, d M Y H:i:s').' GMT');

@@ -1,23 +1,23 @@
 <?php
 /**
- * 2016 Michael Dekker
+ * Copyright (C) 2017 thirty bees
  *
  * NOTICE OF LICENSE
  *
  * This source file is subject to the Academic Free License (AFL 3.0)
- * that is bundled with this package in the file LICENSE.txt.
+ * that is bundled with this package in the file LICENSE.md
  * It is also available through the world-wide-web at this URL:
  * http://opensource.org/licenses/afl-3.0.php
  * If you did not receive a copy of the license and are unable to
  * obtain it through the world-wide-web, please send an email
- * to license@michaeldekker.com so we can send you a copy immediately.
+ * to license@thirtybees.com so we can send you a copy immediately.
  *
- *  @author    Michael Dekker <prestashop@michaeldekker.com>
- *  @copyright 2016 Michael Dekker
+ *  @author    thirty bees <modules@thirtybees.com>
+ *  @copyright 2017 thirty bees
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
 
-if (!defined('_PS_VERSION_')) {
+if (!defined('_TB_VERSION_')) {
     exit;
 }
 
@@ -26,7 +26,7 @@ require_once dirname(__FILE__).'/../vendor/autoload.php';
 /**
  * Class StripeTransaction
  */
-class StripeTransaction extends StripeObjectModel
+class StripeTransaction extends ObjectModel
 {
     const TYPE_CHARGE = 1;
     const TYPE_PARTIAL_REFUND = 2;
@@ -37,6 +37,7 @@ class StripeTransaction extends StripeObjectModel
     const SOURCE_BACK_OFFICE = 2;
     const SOURCE_WEBHOOK = 3;
 
+    // @codingStandardsIgnoreStart
     /** @var int $id_order */
     public $id_order;
 
@@ -57,24 +58,25 @@ class StripeTransaction extends StripeObjectModel
 
     public $date_add;
     public $date_upd;
+    // @codingStandardsIgnoreEnd
 
     /**
      * @see ObjectModel::$definition
      */
-    public static $definition = array(
+    public static $definition = [
         'table' => 'stripe_transaction',
         'primary' => 'id_stripe_transaction',
-        'fields' => array(
-            'id_order' => array('type' => self::TYPE_INT, 'validate' => 'isUnsignedId', 'required' => true, 'default' => '0', 'db_type' => 'INT(11) UNSIGNED'),
-            'type' => array('type' => self::TYPE_INT, 'validate' => 'isUnsignedInt', 'required' => true, 'default' => '0', 'db_type' => 'INT(11) UNSIGNED'),
-            'source' => array('type' => self::TYPE_INT, 'validate' => 'isUnsignedInt', 'required' => true, 'default' => '0', 'db_type' => 'INT(11) UNSIGNED'),
-            'card_last_digits' => array('type' => self::TYPE_INT, 'validate' => 'isUnsignedInt', 'size' => 4, 'required' => true, 'default' => '0', 'db_type' => 'INT(4) UNSIGNED'),
-            'id_charge' => array('type' => self::TYPE_STRING, 'validate' => 'isString', 'required' => true, 'db_type' => 'VARCHAR(128)'),
-            'amount' => array('type' => self::TYPE_INT, 'validate' => 'isInt', 'required' => true, 'default' => 0, 'db_type' => 'INT(11) UNSIGNED'),
-            'date_add' => array('type' => self::TYPE_DATE, 'validate' => 'isDate', 'db_type' => 'DATETIME'),
-            'date_upd' => array('type' => self::TYPE_DATE, 'validate' => 'isDate', 'db_type' => 'DATETIME'),
-        ),
-    );
+        'fields' => [
+            'id_order'         => ['type' => self::TYPE_INT,    'validate' => 'isUnsignedId',               'required' => true, 'default' => '0', 'db_type' => 'INT(11) UNSIGNED'],
+            'type'             => ['type' => self::TYPE_INT,    'validate' => 'isUnsignedInt',              'required' => true, 'default' => '0', 'db_type' => 'INT(11) UNSIGNED'],
+            'source'           => ['type' => self::TYPE_INT,    'validate' => 'isUnsignedInt',              'required' => true, 'default' => '0', 'db_type' => 'INT(11) UNSIGNED'],
+            'card_last_digits' => ['type' => self::TYPE_INT,    'validate' => 'isUnsignedInt', 'size' => 4, 'required' => true, 'default' => '0', 'db_type' => 'INT(4) UNSIGNED' ],
+            'id_charge'        => ['type' => self::TYPE_STRING, 'validate' => 'isString',                   'required' => true,                   'db_type' => 'VARCHAR(128)'    ],
+            'amount'           => ['type' => self::TYPE_INT,    'validate' => 'isInt',                      'required' => true, 'default' => '0', 'db_type' => 'INT(11) UNSIGNED'],
+            'date_add'         => ['type' => self::TYPE_DATE,   'validate' => 'isDate',                                                           'db_type' => 'DATETIME'        ],
+            'date_upd'         => ['type' => self::TYPE_DATE,   'validate' => 'isDate',                                                           'db_type' => 'DATETIME'        ],
+        ],
+    ];
 
     /**
      * Get Customer ID by Charge ID
