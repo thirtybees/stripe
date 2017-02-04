@@ -23,31 +23,6 @@ class GuzzleClientTest extends TestCase
         $this->assertSame(0, $curl->getConnectTimeout());
     }
 
-    public function testDefaultOptions()
-    {
-        // make sure options array loads/saves properly
-        $optionsArray = [CURLOPT_PROXY => 'localhost:80'];
-        $withOptionsArray = new GuzzleClient($optionsArray);
-        $this->assertSame($withOptionsArray->getDefaultOptions(), $optionsArray);
-
-        // make sure closure-based options work properly, including argument passing
-        $ref = null;
-        $withClosure = new GuzzleClient(function ($method, $absUrl, $headers, $params, $hasFile) use (&$ref) {
-            $ref = func_get_args();
-            return [];
-        });
-
-        $withClosure->request('get', 'https://httpbin.org/status/200', [], [], false);
-        $this->assertSame($ref, ['get', 'https://httpbin.org/status/200', [], [], false]);
-
-        // this is the last test case that will run, since it'll throw an exception at the end
-        $withBadClosure = new GuzzleClient(function () {
-            return 'thisShouldNotWork';
-        });
-        $this->setExpectedException('Stripe\Error\Api', "Non-array value returned by defaultOptions GuzzleClient callback");
-        $withBadClosure->request('get', 'https://httpbin.org/status/200', [], [], false);
-    }
-
     public function testEncode()
     {
         $a = [
