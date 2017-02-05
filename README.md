@@ -39,7 +39,7 @@ The wiki can be found here: https://github.com/thirtybees/stripe/wiki
 ## Minimum requirements
 - Thirty Bees `>= 1.0.0`
 - PHP `>= 5.3.3`
-- `TLSv1.2` enabled cURL extension for PHP.
+- `TLSv1.2` connectivity (`cURL` or `fsockopen`)
 
 ### Compatibility
 - Thirty Bees `1.0.0` - `1.0.0`
