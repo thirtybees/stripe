@@ -17,11 +17,13 @@
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
 
+use StripeModule\StripeTransaction;
+
 if (!defined('_TB_VERSION_')) {
     exit;
 }
 
-require_once dirname(__FILE__).'/vendor/autoload.php';
+require_once dirname(__FILE__).'/classes/autoload.php';
 
 /**
  * Class ThirtybeesStripe

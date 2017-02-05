@@ -17,16 +17,18 @@
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
 
+namespace StripeModule;
+
 if (!defined('_TB_VERSION_')) {
     exit;
 }
 
-require_once dirname(__FILE__).'/../vendor/autoload.php';
+require_once __DIR__.'/autoload.php';
 
 /**
  * Class StripeTransaction
  */
-class StripeTransaction extends ObjectModel
+class StripeTransaction extends \ObjectModel
 {
     const TYPE_CHARGE = 1;
     const TYPE_PARTIAL_REFUND = 2;
@@ -87,14 +89,14 @@ class StripeTransaction extends ObjectModel
      */
     public static function getIdCustomerByCharge($idCharge)
     {
-        $sql = new DbQuery();
+        $sql = new \DbQuery();
         $sql->select('c.`id_customer`');
         $sql->from(bqSQL(self::$definition['table']), 'st');
         $sql->innerJoin('orders', 'o', 'st.`id_order` = o.`id_order`');
         $sql->innerJoin('customer', 'c', 'o.`id_customer` = c.`id_customer`');
         $sql->where('st.`id_charge` = \''.pSQL($idCharge).'\'');
 
-        return (int) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
+        return (int) \Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
     }
 
     /**
@@ -106,14 +108,14 @@ class StripeTransaction extends ObjectModel
      */
     public static function getIdCartByCharge($idCharge)
     {
-        $sql = new DbQuery();
+        $sql = new \DbQuery();
         $sql->select('c.`id_cart`');
         $sql->from(bqSQL(self::$definition['table']), 'st');
         $sql->innerJoin('orders', 'o', 'st.`id_order` = o.`id_order`');
         $sql->innerJoin('cart', 'c', 'o.`id_cart` = c.`id_cart`');
         $sql->where('st.`id_charge` = \''.pSQL($idCharge).'\'');
 
-        return (int) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
+        return (int) \Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
     }
 
     /**
@@ -125,12 +127,12 @@ class StripeTransaction extends ObjectModel
      */
     public static function getIdOrderByCharge($idCharge)
     {
-        $sql = new DbQuery();
+        $sql = new \DbQuery();
         $sql->select('st.`id_order`');
         $sql->from(bqSQL(self::$definition['table']), 'st');
         $sql->where('st.`id_charge` = \''.pSQL($idCharge).'\'');
 
-        return (int) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
+        return (int) \Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
     }
 
     /**
@@ -144,13 +146,13 @@ class StripeTransaction extends ObjectModel
     {
         $amount = 0;
 
-        $sql = new DbQuery();
+        $sql = new \DbQuery();
         $sql->select('st.`amount`');
         $sql->from(bqSQL(self::$definition['table']), 'st');
         $sql->where('st.`id_charge` = \''.pSQL($idCharge).'\'');
         $sql->where('st.`type` = '.self::TYPE_PARTIAL_REFUND.' OR st.`type` = '.self::TYPE_FULL_REFUND);
 
-        $dbAmounts = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
+        $dbAmounts = \Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
 
         if (!is_array($dbAmounts) || empty($dbAmounts)) {
             return $amount;
@@ -169,27 +171,27 @@ class StripeTransaction extends ObjectModel
      * @param int  $idOrder Order ID
      * @param bool $count   Return amount of transactions
      *
-     * @return array|false|mysqli_result|null|PDOStatement|resource
-     * @throws PrestaShopDatabaseException
+     * @return array|false|\mysqli_result|null|\PDOStatement|resource
+     * @throws \PrestaShopDatabaseException
      */
     public static function getTransactionsByOrderId($idOrder, $count = false)
     {
-        $sql = new DbQuery();
+        $sql = new \DbQuery();
         if ($count) {
             $sql->select('count(*)');
         } else {
             $sql->select('*');
         }
         $sql->from(bqSQL(self::$definition['table']), 'st');
-        $sql->innerJoin(bqSQL(Order::$definition['table']), 'o', 'o.`id_order` = st.`id_order`');
-        $sql->innerJoin(bqSQL(Currency::$definition['table']), 'c', 'c.`id_currency` = o.`id_currency`');
+        $sql->innerJoin(bqSQL(\Order::$definition['table']), 'o', 'o.`id_order` = st.`id_order`');
+        $sql->innerJoin(bqSQL(\Currency::$definition['table']), 'c', 'c.`id_currency` = o.`id_currency`');
         $sql->where('st.`id_order` = '.(int) $idOrder);
 
         if ($count) {
-            return Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
+            return \Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
         }
 
-        return Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
+        return \Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
     }
 
     /**
@@ -203,13 +205,13 @@ class StripeTransaction extends ObjectModel
     {
         $amount = 0;
 
-        $sql = new DbQuery();
+        $sql = new \DbQuery();
         $sql->select('st.`amount`');
         $sql->from(bqSQL(self::$definition['table']), 'st');
         $sql->where('st.`id_order` = \''.pSQL($idOrder).'\'');
         $sql->where('st.`type` = '.self::TYPE_PARTIAL_REFUND.' OR st.`type` = '.self::TYPE_FULL_REFUND);
 
-        $dbAmounts = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
+        $dbAmounts = \Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
 
         if (!is_array($dbAmounts) || empty($dbAmounts)) {
             return $amount;
@@ -231,12 +233,12 @@ class StripeTransaction extends ObjectModel
      */
     public static function getChargeByIdOrder($idOrder)
     {
-        $sql = new DbQuery();
+        $sql = new \DbQuery();
         $sql->select('DISTINCT st.`id_charge`');
         $sql->from(bqSQL(self::$definition['table']), 'st');
         $sql->where('st.`id_order` = '.(int) $idOrder);
 
-        return Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
+        return \Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
     }
 
     /**
@@ -248,11 +250,11 @@ class StripeTransaction extends ObjectModel
      */
     public static function getLastFourDigitsByChargeId($idCharge)
     {
-        $sql = new DbQuery();
+        $sql = new \DbQuery();
         $sql->select('DISTINCT st.`card_last_digits`');
         $sql->from(bqSQL(self::$definition['table']), 'st');
         $sql->where('st.`id_charge` = \''.pSQL($idCharge).'\'');
 
-        return Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
+        return \Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
     }
 }
