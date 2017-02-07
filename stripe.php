@@ -1240,7 +1240,7 @@ class Stripe extends PaymentModule
     {
         /** @var Cart $cart */
         $cart = $params['cart'];
-        if (!$this->active) {
+        if (!$this->active || (!Configuration::get(self::SECRET_KEY) && !Configuration::get(self::PUBLISHABLE_KEY))) {
             return false;
         }
         if (!$this->checkCurrency($cart)) {
@@ -1372,7 +1372,7 @@ class Stripe extends PaymentModule
     {
         /** @var Cart $cart */
         $cart = $params['cart'];
-        if (!$this->active) {
+        if (!$this->active || (!Configuration::get(self::SECRET_KEY) && !Configuration::get(self::PUBLISHABLE_KEY))) {
             return false;
         }
         if (!$this->checkCurrency($cart)) {
