@@ -113,7 +113,7 @@ spl_autoload_register(
             $prefix = 'ThirtybeesStripe\\';
 
             // base directory for the namespace prefix
-            $baseDir = __DIR__.'/';
+            $baseDir = __DIR__.'/stripe-php/';
 
             // does the class use the namespace prefix?
             $len = strlen($prefix);
