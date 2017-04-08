@@ -122,6 +122,8 @@ class Stripe extends PaymentModule
         $this->displayName = $this->l('Stripe');
         $this->description = $this->l('Accept payments with Stripe');
 
+        $this->tb_versions_compliancy = '~1.0.0';
+
         // Only check from Back Office
         if (isset(Context::getContext()->employee->id) && Context::getContext()->employee->id) {
             if (PHP_VERSION_ID < self::MIN_PHP_VERSION) {
