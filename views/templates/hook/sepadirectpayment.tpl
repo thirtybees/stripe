@@ -29,9 +29,9 @@
 				});
 			}
 
-			function initStripeIdeal() {
+			function initStripeSepaDirect() {
 				if (typeof Stripe === 'undefined') {
-					setTimeout(initStripeIdeal, 100);
+					setTimeout(initStripeSepaDirect, 100);
 					return;
 				}
 
@@ -45,20 +45,20 @@
 						name: '{$stripe_name|escape:'javascript':'UTF-8'}'
 					},
 					redirect: {
-						return_url: '{$link->getModuleLink('stripe', 'validation', [], true)|escape:'javascript':'UTF-8'}'
+						return_url: '{$link->getModuleLink('stripe', 'sourcevalidation', [], true)|escape:'javascript':'UTF-8'}'
 					}
 				}, stripeResponseHandler);
 			}
 
-			initStripeIdeal();
+			initStripeSepaDirect();
 		}
 
 		initEverything();
 	})();
 </script>
 <p class="payment_module stripe_payment_button">
-	<a id="stripe_ideal_payment_link" style="cursor:pointer" title="{l s='Pay with iDEAL' mod='stripe'}">
-		<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/ideal.png" alt="{l s='Pay with iDEAL' mod='stripe'}" width="64" height="64" />
+	<a id="stripe_ideal_payment_link" style="cursor:pointer" title="{l s='Pay with SEPA Direct' mod='stripe'}">
+		<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/sepadirect.png" alt="{l s='Pay with iDEAL' mod='stripe'}" width="64" height="64" />
 		{l s='Pay with iDEAL' mod='stripe'}
 	</a>
 </p>

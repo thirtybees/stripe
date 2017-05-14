@@ -45,7 +45,7 @@
 						name: '{$stripe_name|escape:'javascript':'UTF-8'}'
 					},
 					redirect: {
-						return_url: '{$link->getModuleLink('stripe', 'validation', [], true)|escape:'javascript':'UTF-8'}'
+						return_url: '{$link->getModuleLink('stripe', 'sourcevalidation', [], true)|escape:'javascript':'UTF-8'}'
 					}
 				}, stripeResponseHandler);
 			}
