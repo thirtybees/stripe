@@ -57,6 +57,14 @@ class StripeHookModuleFrontController extends ModuleFrontController
                     $this->processRefund($event);
                     die('ok');
                     break;
+                case 'charge.succeeded':
+                    $this->processSucceeded($event);
+                    die('ok');
+                    break;
+                case 'charge.failed':
+                    $this->processFailed($event);
+                    die('ok');
+                    break;
                 default:
                     die('ok');
                     break;
@@ -68,7 +76,79 @@ class StripeHookModuleFrontController extends ModuleFrontController
     }
 
     /**
-     * Process refund event
+     * Process `charge.succeeded` event
+     *
+     * @param \ThirtybeesStripe\Event $event
+     */
+    protected function processSucceeded($event)
+    {
+        /** @var \ThirtybeesStripe\Charge $charge */
+        $charge = $event->data['object'];
+
+        // This is only supported for Sofort Banking at the moment
+        if (!isset($charge->metadata->type) || !$charge->metadata->type === 'sofort') {
+            die('ok');
+        }
+
+        if (!$idOrder = StripeTransaction::getIdOrderByCharge($charge->id)) {
+            die('ok');
+        }
+
+        $order = new Order($idOrder);
+        $totalAmount = $order->getTotalPaid();
+
+        $transaction = new StripeTransaction();
+        $transaction->card_last_digits = 0;
+        $transaction->id_charge = $charge->id;
+        $transaction->amount = $totalAmount;
+        $transaction->id_order = $order->id;
+        $transaction->type = StripeTransaction::TYPE_CHARGE;
+        $transaction->source = StripeTransaction::SOURCE_WEBHOOK;
+        $transaction->source_type = 'sofort';
+        $transaction->add();
+
+        $orderHistory = new OrderHistory();
+        $orderHistory->id_order = $order->id;
+        $orderHistory->changeIdOrderState((int) Configuration::get(Stripe::STATUS_VALIDATED), $idOrder);
+        $orderHistory->addWithemail(true);
+    }
+
+    /**
+     * Process `charge.failed` event
+     *
+     * @param \ThirtybeesStripe\Event $event
+     */
+    protected function processFailed($event)
+    {
+        /** @var \ThirtybeesStripe\Charge $charge */
+        $charge = $event->data['object'];
+
+        if (!$idOrder = StripeTransaction::getIdOrderByCharge($charge->id)) {
+            die('ok');
+        }
+
+        StripeTransaction::getChargeByIdOrder($idOrder);
+
+        $order = new Order($idOrder);
+
+        $transaction = new StripeTransaction();
+        $transaction->card_last_digits = 0;
+        $transaction->id_charge = $charge->id;
+        $transaction->amount = 0;
+        $transaction->id_order = $order->id;
+        $transaction->type = StripeTransaction::TYPE_CHARGE_FAIL;
+        $transaction->source = StripeTransaction::SOURCE_WEBHOOK;
+        $transaction->source_type = 'sofort';
+        $transaction->add();
+
+        $orderHistory = new OrderHistory();
+        $orderHistory->id_order = $order->id;
+        $orderHistory->changeIdOrderState((int) Configuration::get('PS_OS_CANCELED'), $idOrder);
+        $orderHistory->addWithemail(true);
+    }
+
+    /**
+     * Process `charge.refund` event
      *
      * @param \ThirtybeesStripe\Event $event
      */

@@ -152,6 +152,7 @@ class StripeValidationModuleFrontController extends ModuleFrontController
                 $stripeTransaction->id_order = $idOrder;
                 $stripeTransaction->type = StripeTransaction::TYPE_CHARGE;
                 $stripeTransaction->source = StripeTransaction::SOURCE_FRONT_OFFICE;
+                $stripeTransaction->source_type = 'cc';
                 $stripeTransaction->add();
 
                 /**
@@ -176,6 +177,7 @@ class StripeValidationModuleFrontController extends ModuleFrontController
             $stripeTransaction->id_order = 0;
             $stripeTransaction->type = StripeTransaction::TYPE_CHARGE_FAIL;
             $stripeTransaction->source = StripeTransaction::SOURCE_FRONT_OFFICE;
+            $stripeTransaction->source_type = 'cc';
             $stripeTransaction->add();
         }
 

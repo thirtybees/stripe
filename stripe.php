@@ -51,6 +51,7 @@ class Stripe extends PaymentModule
     const STATUS_PARTIAL_REFUND = 'STRIPE_STAT_PART_REFUND';
     const USE_STATUS_PARTIAL_REFUND = 'STRIPE_USE_STAT_PART_REFUND';
     const STATUS_REFUND = 'STRIPE_STAT_REFUND';
+    const STATUS_SOFORT = 'STRIPE_STAT_SOFORT';
     const USE_STATUS_REFUND = 'STRIPE_USE_STAT_REFUND';
     const GENERATE_CREDIT_SLIP = 'STRIPE_CREDIT_SLIP';
 
@@ -64,7 +65,6 @@ class Stripe extends PaymentModule
     const BANCONTACT = 'STRIPE_BANCONTACT';
     const GIROPAY = 'STRIPE_GIROPAY';
     const SOFORT = 'STRIPE_SOFORT';
-    const SEPADIRECT = 'STRIPE_SEPADIRECT';
     const THREEDSECURE = 'STRIPE_THREEDSECURE';
 
     const OPTIONS_MODULE_SETTINGS = 1;
@@ -103,7 +103,7 @@ class Stripe extends PaymentModule
     {
         $this->name = 'stripe';
         $this->tab = 'payments_gateways';
-        $this->version = '1.0.1';
+        $this->version = '1.1.0';
         $this->author = 'Thirty Bees';
         $this->need_instance = 1;
 
@@ -402,7 +402,6 @@ class Stripe extends PaymentModule
         $bancontact = (bool) Tools::getValue(self::BANCONTACT);
         $giropay = (bool) Tools::getValue(self::GIROPAY);
         $sofort = (bool) Tools::getValue(self::SOFORT);
-        $sepa = (bool) Tools::getValue(self::SEPADIRECT);
         $threedsecure = (bool) Tools::getValue(self::THREEDSECURE);
         $showPaymentLogos = (bool) Tools::getValue(self::SHOW_PAYMENT_LOGOS);
         $collectBilling = (bool) Tools::getValue(self::COLLECT_BILLING);
@@ -423,7 +422,6 @@ class Stripe extends PaymentModule
                 $this->updateAllValue(self::BANCONTACT, $bancontact);
                 $this->updateAllValue(self::GIROPAY, $giropay);
                 $this->updateAllValue(self::SOFORT, $sofort);
-                $this->updateAllValue(self::SEPADIRECT, $sepa);
                 $this->updateAllValue(self::THREEDSECURE, $threedsecure);
                 $this->updateAllValue(self::SHOW_PAYMENT_LOGOS, $showPaymentLogos);
                 $this->updateAllValue(self::COLLECT_BILLING, $collectBilling);
@@ -463,9 +461,6 @@ class Stripe extends PaymentModule
                         }
                         if (isset($multishopOverride[self::SOFORT]) && $multishopOverride[self::SOFORT]) {
                             Configuration::updateValue(self::SOFORT, $sofort, false, $idShopGroup, $idShop);
-                        }
-                        if (isset($multishopOverride[self::SEPADIRECT]) && $multishopOverride[self::SEPADIRECT]) {
-                            Configuration::updateValue(self::SEPADIRECT, $sepa, false, $idShopGroup, $idShop);
                         }
                         if (isset($multishopOverride[self::THREEDSECURE]) && $multishopOverride[self::THREEDSECURE]) {
                             Configuration::updateValue(self::THREEDSECURE, $threedsecure, false, $idShopGroup, $idShop);
@@ -521,9 +516,6 @@ class Stripe extends PaymentModule
                     if (isset($multishopOverride[self::SOFORT]) && $multishopOverride[self::SOFORT]) {
                         Configuration::updateValue(self::SOFORT, $sofort, false, $idShopGroup, $idShop);
                     }
-                    if (isset($multishopOverride[self::SEPADIRECT]) && $multishopOverride[self::SEPADIRECT]) {
-                        Configuration::updateValue(self::SEPADIRECT, $sepa, false, $idShopGroup, $idShop);
-                    }
                     if (isset($multishopOverride[self::THREEDSECURE]) && $multishopOverride[self::THREEDSECURE]) {
                         Configuration::updateValue(self::THREEDSECURE, $threedsecure, false, $idShopGroup, $idShop);
                     }
@@ -561,7 +553,6 @@ class Stripe extends PaymentModule
         Configuration::updateValue(self::BANCONTACT, $bancontact);
         Configuration::updateValue(self::GIROPAY, $giropay);
         Configuration::updateValue(self::SOFORT, $sofort);
-        Configuration::updateValue(self::SEPADIRECT, $sepa);
         Configuration::updateValue(self::THREEDSECURE, $threedsecure);
         Configuration::updateValue(self::SHOW_PAYMENT_LOGOS, $showPaymentLogos);
         Configuration::updateValue(self::COLLECT_BILLING, $collectBilling);
@@ -614,6 +605,7 @@ class Stripe extends PaymentModule
         $statusValidated = Tools::getValue(self::STATUS_VALIDATED);
         $useStatusRefund = Tools::getValue(self::USE_STATUS_REFUND);
         $statusRefund = Tools::getValue(self::STATUS_REFUND);
+        $statusSofort = Tools::getValue(self::STATUS_SOFORT);
         $useStatusPartialRefund = Tools::getValue(self::USE_STATUS_PARTIAL_REFUND);
         $statusPartialRefund = Tools::getValue(self::STATUS_PARTIAL_REFUND);
         $generateCreditSlip = (bool) Tools::getValue(self::GENERATE_CREDIT_SLIP);
@@ -623,6 +615,7 @@ class Stripe extends PaymentModule
                 $this->updateAllValue(self::STATUS_VALIDATED, $statusValidated);
                 $this->updateAllValue(self::USE_STATUS_REFUND, $useStatusRefund);
                 $this->updateAllValue(self::STATUS_REFUND, $statusRefund);
+                $this->updateAllValue(self::STATUS_SOFORT, $statusSofort);
                 $this->updateAllValue(self::STATUS_PARTIAL_REFUND, $statusPartialRefund);
                 $this->updateAllValue(self::USE_STATUS_PARTIAL_REFUND, $useStatusPartialRefund);
                 $this->updateAllValue(self::GENERATE_CREDIT_SLIP, $generateCreditSlip);
@@ -639,6 +632,9 @@ class Stripe extends PaymentModule
                         }
                         if (isset($multishopOverride[self::STATUS_REFUND]) && $multishopOverride[self::STATUS_REFUND]) {
                             Configuration::updateValue(self::STATUS_REFUND, $statusRefund, false, $idShopGroup, $idShop);
+                        }
+                        if (isset($multishopOverride[self::STATUS_SOFORT]) && $multishopOverride[self::STATUS_SOFORT]) {
+                            Configuration::updateValue(self::STATUS_SOFORT, $statusSofort, false, $idShopGroup, $idShop);
                         }
                         if (isset($multishopOverride[self::USE_STATUS_PARTIAL_REFUND]) && $multishopOverride[self::USE_STATUS_PARTIAL_REFUND]) {
                             Configuration::updateValue(self::STATUS_PARTIAL_REFUND, $useStatusPartialRefund, false, $idShopGroup, $idShop);
@@ -661,6 +657,9 @@ class Stripe extends PaymentModule
                     if (isset($multishopOverride[self::STATUS_REFUND]) && $multishopOverride[self::STATUS_REFUND]) {
                         Configuration::updateValue(self::STATUS_REFUND, $statusRefund, false, $idShopGroup, $idShop);
                     }
+                    if (isset($multishopOverride[self::STATUS_SOFORT]) && $multishopOverride[self::STATUS_SOFORT]) {
+                        Configuration::updateValue(self::STATUS_SOFORT, $statusSofort, false, $idShopGroup, $idShop);
+                    }
                     if (isset($multishopOverride[self::USE_STATUS_PARTIAL_REFUND]) && $multishopOverride[self::USE_STATUS_PARTIAL_REFUND]) {
                         Configuration::updateValue(self::STATUS_PARTIAL_REFUND, $useStatusPartialRefund, false, $idShopGroup, $idShop);
                     }
@@ -677,6 +676,7 @@ class Stripe extends PaymentModule
         Configuration::updateValue(self::STATUS_VALIDATED, $statusValidated);
         Configuration::updateValue(self::USE_STATUS_REFUND, $useStatusRefund);
         Configuration::updateValue(self::STATUS_REFUND, $statusRefund);
+        Configuration::updateValue(self::STATUS_SOFORT, $statusSofort);
         Configuration::updateValue(self::USE_STATUS_PARTIAL_REFUND, $useStatusPartialRefund);
         Configuration::updateValue(self::STATUS_PARTIAL_REFUND, $statusPartialRefund);
         Configuration::updateValue(self::GENERATE_CREDIT_SLIP, $generateCreditSlip);
@@ -739,6 +739,7 @@ class Stripe extends PaymentModule
             'amount'                => ['type' => 'price', 'title' => $this->l('Amount'), 'width' => 'auto'],
             'card_last_digits'      => ['type' => 'text', 'title' => $this->l('Credit card (last 4 digits)'), 'width' => 'auto'],
             'source_text'           => ['type' => 'stripe_source', 'title' => $this->l('Source'), 'width' => 'auto'],
+            'source_type'           => ['type' => 'text', 'title' => $this->l('Payment type'), 'width' => 'auto'],
             'date_upd'              => ['type' => 'datetime', 'title' => $this->l('Date & time'), 'width' => 'auto'],
         ];
 
@@ -854,6 +855,27 @@ class Stripe extends PaymentModule
                     break;
                 default:
                     $result['source_text'] = $this->l('Unknown');
+                    break;
+            }
+
+            switch ($result['source_type']) {
+                case 'ideal':
+                    $result['source_type'] = $this->l('iDEAL');
+                    break;
+                case 'sofort':
+                    $result['source_type'] = $this->l('Sofort Banking');
+                    break;
+                case 'bancontact':
+                    $result['source_type'] = $this->l('Bancontact');
+                    break;
+                case 'giropay':
+                    $result['source_type'] = $this->l('Giropay');
+                    break;
+                case 'three_d_secure':
+                    $result['source_type'] = $this->l('3D Secure');
+                    break;
+                default:
+                    $result['source_type'] = $this->l('Credit Card');
                     break;
             }
         }
@@ -1343,14 +1365,6 @@ class Stripe extends PaymentModule
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                     ],
-                    self::SEPADIRECT => [
-                        'title'      => $this->l('Accept SEPA Direct Debit'),
-                        'type'       => 'bool',
-                        'name'       => self::SEPADIRECT,
-                        'value'      => Configuration::get(self::SEPADIRECT),
-                        'validation' => 'isBool',
-                        'cast'       => 'intval',
-                    ],
                 ],
                 'submit' => [
                     'title' => $this->l('Save'),
@@ -1476,6 +1490,17 @@ class Stripe extends PaymentModule
                         'validation' => 'isString',
                         'cast'       => 'strval',
                     ],
+                    self::STATUS_SOFORT             => [
+                        'title'      => $this->l('Sofort status'),
+                        'desc'       => $this->l('Order status to use when a Sofort Banking payment is pending'),
+                        'type'       => 'select',
+                        'list'       => $orderStatuses,
+                        'identifier' => 'id_order_state',
+                        'name'       => self::STATUS_SOFORT,
+                        'value'      => $statusValidated,
+                        'validation' => 'isString',
+                        'cast'       => 'strval',
+                    ],
                     self::GENERATE_CREDIT_SLIP      => [
                         'title'      => $this->l('Generate credit slip'),
                         'desc'       => $this->l('Automatically generate a credit slip when the order is fully refunded'),
@@ -1579,11 +1604,8 @@ class Stripe extends PaymentModule
         if (Configuration::get(self::GIROPAY)) {
             $output .= $this->display(__FILE__, 'views/templates/hook/giropaypayment.tpl');
         }
-        if (Configuration::get(self::SOFORT)) {
+        if (Configuration::get(self::SOFORT) && in_array(Tools::strtoupper($country->iso_code), ['AT', 'DE', 'NL', 'BE', 'ES'])) {
             $output .= $this->display(__FILE__, 'views/templates/hook/sofortpayment.tpl');
-        }
-        if (Configuration::get(self::SEPADIRECT)) {
-            $output .= $this->display(__FILE__, 'views/templates/hook/sepadirectpayment.tpl');
         }
         if (Configuration::get(self::THREEDSECURE)) {
             $output .= $this->display(__FILE__, 'views/templates/hook/threedsecurepayment.tpl');
@@ -1591,7 +1613,6 @@ class Stripe extends PaymentModule
         if (Configuration::get(self::STRIPE_CC_FORM)) {
             $output .= $this->display(__FILE__, 'views/templates/hook/ccpayment.tpl');
         }
-
         if (Configuration::get(self::STRIPE_APPLE_PAY)) {
             $output .= $this->display(__FILE__, 'views/templates/hook/applepayment.tpl');
         }

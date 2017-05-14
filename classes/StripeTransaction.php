@@ -34,6 +34,7 @@ class StripeTransaction extends \ObjectModel
     const TYPE_PARTIAL_REFUND = 2;
     const TYPE_FULL_REFUND = 3;
     const TYPE_CHARGE_FAIL = 4;
+    const TYPE_CHARGE_PENDING = 5;
 
     const SOURCE_FRONT_OFFICE = 1;
     const SOURCE_BACK_OFFICE = 2;
@@ -42,23 +43,21 @@ class StripeTransaction extends \ObjectModel
     // @codingStandardsIgnoreStart
     /** @var int $id_order */
     public $id_order;
-
     /** @var int $type */
     public $type;
-
     /** @var int $source */
     public $source;
-
     /** @var string $card_last_digits */
     public $card_last_digits;
-
     /** @var int $id_charge */
     public $id_charge;
-
     /** @var int $amount */
     public $amount;
-
+    /** @var string $source_type */
+    public $source_type;
+    /** @var string $date_add */
     public $date_add;
+    /** @var string $date_upd */
     public $date_upd;
     // @codingStandardsIgnoreEnd
 
@@ -77,6 +76,7 @@ class StripeTransaction extends \ObjectModel
             'amount'           => ['type' => self::TYPE_INT,    'validate' => 'isInt',                      'required' => true, 'default' => '0', 'db_type' => 'INT(11) UNSIGNED'],
             'date_add'         => ['type' => self::TYPE_DATE,   'validate' => 'isDate',                                                           'db_type' => 'DATETIME'        ],
             'date_upd'         => ['type' => self::TYPE_DATE,   'validate' => 'isDate',                                                           'db_type' => 'DATETIME'        ],
+            'source_type'      => ['type' => self::TYPE_STRING, 'validate' => 'isString',                                                         'db_type' => 'VARCHAR(255)'    ],
         ],
     ];
 
@@ -86,12 +86,14 @@ class StripeTransaction extends \ObjectModel
      * @param int $idCharge Charge ID
      *
      * @return int Cart ID
+     *
+     * @since 1.0.0
      */
     public static function getIdCustomerByCharge($idCharge)
     {
         $sql = new \DbQuery();
         $sql->select('c.`id_customer`');
-        $sql->from(bqSQL(self::$definition['table']), 'st');
+        $sql->from(bqSQL(static::$definition['table']), 'st');
         $sql->innerJoin('orders', 'o', 'st.`id_order` = o.`id_order`');
         $sql->innerJoin('customer', 'c', 'o.`id_customer` = c.`id_customer`');
         $sql->where('st.`id_charge` = \''.pSQL($idCharge).'\'');
@@ -105,12 +107,14 @@ class StripeTransaction extends \ObjectModel
      * @param int $idCharge Charge ID
      *
      * @return int Cart ID
+     *
+     * @since 1.0.0
      */
     public static function getIdCartByCharge($idCharge)
     {
         $sql = new \DbQuery();
         $sql->select('c.`id_cart`');
-        $sql->from(bqSQL(self::$definition['table']), 'st');
+        $sql->from(bqSQL(static::$definition['table']), 'st');
         $sql->innerJoin('orders', 'o', 'st.`id_order` = o.`id_order`');
         $sql->innerJoin('cart', 'c', 'o.`id_cart` = c.`id_cart`');
         $sql->where('st.`id_charge` = \''.pSQL($idCharge).'\'');
@@ -124,12 +128,14 @@ class StripeTransaction extends \ObjectModel
      * @param int $idCharge Charge ID
      *
      * @return int Order ID
+     *
+     * @since 1.0.0
      */
     public static function getIdOrderByCharge($idCharge)
     {
         $sql = new \DbQuery();
         $sql->select('st.`id_order`');
-        $sql->from(bqSQL(self::$definition['table']), 'st');
+        $sql->from(bqSQL(static::$definition['table']), 'st');
         $sql->where('st.`id_charge` = \''.pSQL($idCharge).'\'');
 
         return (int) \Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
@@ -141,6 +147,8 @@ class StripeTransaction extends \ObjectModel
      * @param int $idCharge Charge ID
      *
      * @return int $amount
+     *
+     * @since 1.0.0
      */
     public static function getRefundedAmount($idCharge)
     {
@@ -148,9 +156,9 @@ class StripeTransaction extends \ObjectModel
 
         $sql = new \DbQuery();
         $sql->select('st.`amount`');
-        $sql->from(bqSQL(self::$definition['table']), 'st');
+        $sql->from(bqSQL(static::$definition['table']), 'st');
         $sql->where('st.`id_charge` = \''.pSQL($idCharge).'\'');
-        $sql->where('st.`type` = '.self::TYPE_PARTIAL_REFUND.' OR st.`type` = '.self::TYPE_FULL_REFUND);
+        $sql->where('st.`type` = '.static::TYPE_PARTIAL_REFUND.' OR st.`type` = '.static::TYPE_FULL_REFUND);
 
         $dbAmounts = \Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
 
@@ -173,6 +181,8 @@ class StripeTransaction extends \ObjectModel
      *
      * @return array|false|\mysqli_result|null|\PDOStatement|resource
      * @throws \PrestaShopDatabaseException
+     *
+     * @since 1.0.0
      */
     public static function getTransactionsByOrderId($idOrder, $count = false)
     {
@@ -182,7 +192,7 @@ class StripeTransaction extends \ObjectModel
         } else {
             $sql->select('*');
         }
-        $sql->from(bqSQL(self::$definition['table']), 'st');
+        $sql->from(bqSQL(static::$definition['table']), 'st');
         $sql->innerJoin(bqSQL(\Order::$definition['table']), 'o', 'o.`id_order` = st.`id_order`');
         $sql->innerJoin(bqSQL(\Currency::$definition['table']), 'c', 'c.`id_currency` = o.`id_currency`');
         $sql->where('st.`id_order` = '.(int) $idOrder);
@@ -200,6 +210,8 @@ class StripeTransaction extends \ObjectModel
      * @param int $idOrder Order ID
      *
      * @return int $amount
+     *
+     * @since 1.0.0
      */
     public static function getRefundedAmountByOrderId($idOrder)
     {
@@ -207,9 +219,9 @@ class StripeTransaction extends \ObjectModel
 
         $sql = new \DbQuery();
         $sql->select('st.`amount`');
-        $sql->from(bqSQL(self::$definition['table']), 'st');
+        $sql->from(bqSQL(static::$definition['table']), 'st');
         $sql->where('st.`id_order` = \''.pSQL($idOrder).'\'');
-        $sql->where('st.`type` = '.self::TYPE_PARTIAL_REFUND.' OR st.`type` = '.self::TYPE_FULL_REFUND);
+        $sql->where('st.`type` = '.static::TYPE_PARTIAL_REFUND.' OR st.`type` = '.static::TYPE_FULL_REFUND);
 
         $dbAmounts = \Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
 
@@ -225,17 +237,46 @@ class StripeTransaction extends \ObjectModel
     }
 
     /**
+     * Get Transaction Object by ChargeId
+     *
+     * @param string $id
+     *
+     * @return StripeTransaction|false
+     *
+     * @since 1.1.0
+     */
+    public static function getByChargeId($id)
+    {
+        $sql = new \DbQuery();
+        $sql->select('st.*');
+        $sql->from(bqSQL(static::$definition['table']), 'st');
+        $sql->where('st.`id_charge` = \''.pSQL($id).'\'');
+
+        $result = \Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow($sql);
+        if (!$result) {
+            return false;
+        }
+
+        $transaction = new static();
+        $transaction->hydrate($result);
+
+        return $transaction;
+    }
+
+    /**
      * Get Charge ID by Order ID
      *
      * @param int $idOrder Order ID
      *
      * @return bool|string Charge ID or false if not found
+     *
+     * @since 1.0.0
      */
     public static function getChargeByIdOrder($idOrder)
     {
         $sql = new \DbQuery();
         $sql->select('DISTINCT st.`id_charge`');
-        $sql->from(bqSQL(self::$definition['table']), 'st');
+        $sql->from(bqSQL(static::$definition['table']), 'st');
         $sql->where('st.`id_order` = '.(int) $idOrder);
 
         return \Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
@@ -247,12 +288,14 @@ class StripeTransaction extends \ObjectModel
      * @param string $idCharge Charge ID
      *
      * @return false|string Last 4 digits of CC
+     *
+     * @since 1.0.0
      */
     public static function getLastFourDigitsByChargeId($idCharge)
     {
         $sql = new \DbQuery();
         $sql->select('DISTINCT st.`card_last_digits`');
-        $sql->from(bqSQL(self::$definition['table']), 'st');
+        $sql->from(bqSQL(static::$definition['table']), 'st');
         $sql->where('st.`id_charge` = \''.pSQL($idCharge).'\'');
 
         return \Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);

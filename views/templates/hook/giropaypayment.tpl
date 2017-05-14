@@ -16,50 +16,50 @@
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
 <script type="text/javascript">
-	(function() {
-		function initEverything() {
-			if (typeof $ === 'undefined') {
-				setTimeout(initEverything, '100');
-				return;
-			}
+  (function () {
+    function initEverything() {
+      if (typeof $ === 'undefined') {
+        setTimeout(initEverything, '100');
+        return;
+      }
 
-			function stripeResponseHandler(status, response) {
-				$('#stripe_giropay_payment_link').click(function() {
-					window.location = response.redirect.url;
-				});
-			}
+      function stripeResponseHandler(status, response) {
+        $('#stripe_giropay_payment_link').click(function () {
+          window.location = response.redirect.url;
+        });
+      }
 
-			function initStripeGiropay() {
-				if (typeof Stripe === 'undefined') {
-					setTimeout(initStripeGiropay, 100);
-					return;
-				}
+      function initStripeGiropay() {
+        if (typeof Stripe === 'undefined') {
+          setTimeout(initStripeGiropay, 100);
+          return;
+        }
 
-				Stripe.setPublishableKey('{$stripe_publishable_key|escape:'javascript':'UTF-8'}');
+        Stripe.setPublishableKey('{$stripe_publishable_key|escape:'javascript':'UTF-8'}');
 
-				Stripe.source.create({
-					type: 'giropay',
-					amount: {$stripe_amount|intval},
-					currency: '{$stripe_currency|escape:'javascript':'UTF-8'}',
-					owner: {
-						name: '{$stripe_name|escape:'javascript':'UTF-8'}'
-					},
-					redirect: {
-						return_url: '{$link->getModuleLink('stripe', 'sourcevalidation', [], true)|escape:'javascript':'UTF-8'}'
-					}
-				}, stripeResponseHandler);
-			}
+        Stripe.source.create({
+          type: 'giropay',
+          amount: {$stripe_amount|intval},
+          currency: '{$stripe_currency|escape:'javascript':'UTF-8'}',
+          owner: {
+            name: '{$stripe_name|escape:'javascript':'UTF-8'}'
+          },
+          redirect: {
+            return_url: '{$link->getModuleLink('stripe', 'sourcevalidation', ['stripe-id_cart' => $id_cart, 'type' => 'giropay'], true)|escape:'javascript':'UTF-8'}'
+          }
+        }, stripeResponseHandler);
+      }
 
-			initStripeGiropay();
-		}
+      initStripeGiropay();
+    }
 
-		initEverything();
-	})();
+    initEverything();
+  })();
 </script>
 <p class="payment_module stripe_payment_button">
-	<a id="stripe_giropay_payment_link" style="cursor:pointer" title="{l s='Pay with Giropay' mod='stripe'}">
-		<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/giropay.png" alt="{l s='Pay with Giropay' mod='stripe'}" width="64" height="64" />
-		{l s='Pay with Giropay' mod='stripe'}
-	</a>
+    <a id="stripe_giropay_payment_link" style="cursor:pointer" title="{l s='Pay with Giropay' mod='stripe'}">
+        <img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/giropay.png" alt="{l s='Pay with Giropay' mod='stripe'}" width="64" height="64"/>
+        {l s='Pay with Giropay' mod='stripe'}
+    </a>
 </p>
 
