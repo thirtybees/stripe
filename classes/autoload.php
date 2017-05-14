@@ -56,10 +56,13 @@ spl_autoload_register(
             'ThirtybeesStripe\\Error\\InvalidRequest',
             'ThirtybeesStripe\\Error\\Permission',
             'ThirtybeesStripe\\Error\\RateLimit',
+            'ThirtybeesStripe\\Error\\SignatureVerification',
             'ThirtybeesStripe\\HttpClient\\ClientInterface',
             'ThirtybeesStripe\\HttpClient\\CurlClient',
             'ThirtybeesStripe\\HttpClient\\GuzzleClient',
             'ThirtybeesStripe\\Util\\AutoPagingIterator',
+            'ThirtybeesStripe\\Util\\DefaultLogger',
+            'ThirtybeesStripe\\Util\\LoggerInterface',
             'ThirtybeesStripe\\Util\\RequestOptions',
             'ThirtybeesStripe\\Util\\Set',
             'ThirtybeesStripe\\Util\\Util',
@@ -108,7 +111,8 @@ spl_autoload_register(
             'ThirtybeesStripe\\Token',
             'ThirtybeesStripe\\Transfer',
             'ThirtybeesStripe\\TransferReversal',
-            'ThirtybeesStripe\\TransferReversal',
+            'ThirtybeesStripe\\Webhook',
+            'ThirtybeesStripe\\WebhookSignature',
         ])) {
             // project-specific namespace prefix
             $prefix = 'ThirtybeesStripe\\';

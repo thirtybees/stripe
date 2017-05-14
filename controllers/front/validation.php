@@ -112,6 +112,45 @@ class StripeValidationModuleFrontController extends ModuleFrontController
         }
 
         try {
+            $defaultCard = \ThirtybeesStripe\Source::retrieve($stripeCustomer->default_source);
+        } catch (Exception $e) {
+            $error = $e->getMessage();
+            $this->errors[] = $error;
+            $this->setTemplate('error.tpl');
+
+            return false;
+        }
+
+        /** @var \ThirtybeesStripe\Card $defaultCard */
+        $defaultCard = $defaultCard->card;
+
+        if (Configuration::get(Stripe::THREEDSECURE) && $defaultCard->three_d_secure !== 'not_supported' || $defaultCard->three_d_secure === 'required') {
+            try {
+                $source = \ThirtybeesStripe\Source::create(
+                    [
+                        'amount'         => $stripeAmount,
+                        'currency'       => Tools::strtolower($currency->iso_code),
+                        'type'           => 'three_d_secure',
+                        'three_d_secure' => [
+                            'card' => $stripeCustomer->default_source,
+                        ],
+                        'redirect'       => [
+                            'return_url' => $this->context->link->getModuleLink('stripe', 'sourcevalidation', ['stripe-id_cart' => (string) $cart->id, 'type' => 'three_d_secure'], true),
+                        ],
+                    ]
+                );
+            } catch (Exception $e) {
+                $error = $e->getMessage();
+                $this->errors[] = $error;
+                $this->setTemplate('error.tpl');
+
+                return false;
+            }
+
+            Tools::redirectLink($source->redirect->url);
+        }
+
+        try {
             $stripeCharge = \ThirtybeesStripe\Charge::create(
                 [
                     'customer' => $stripeCustomer->id,

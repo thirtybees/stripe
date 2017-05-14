@@ -43,7 +43,7 @@
             {* Submit the form: *}
           $form.get(0).submit();
         }
-      };
+      }
 
       function initStripeCC() {
         if (typeof Stripe === 'undefined' || typeof Card === 'undefined') {
@@ -73,13 +73,20 @@
 
             {* Request a token from ThirtybeesStripe: *}
           var expiry = $('#stripeCardExpiry').val().split('/', 2);
-          Stripe.card.createToken({
-            number: $('#stripeCardNumber').val(),
-            cvc: $('#stripeCardCVC').val(),
-            exp_month: parseInt(expiry[0]),
-            exp_year: parseInt(expiry[1]),
-            address_zip: $('#stripeCardZip').val(),
-          }, stripeResponseHandler);
+          Stripe.source.create({
+              type: 'card',
+              card: {
+                number: $('#stripeCardNumber').val(),
+                cvc: $('#stripeCardCVC').val(),
+                exp_month: parseInt(expiry[0]),
+                exp_year: parseInt(expiry[1]),
+              },
+              owner: {
+                address: {
+                  postal_code: $('#stripeCardZip').val(),
+                }
+              }
+            }, stripeResponseHandler);
             {* Prevent the form from being submitted: *}
           return false;
         });
