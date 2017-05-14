@@ -100,6 +100,8 @@ class Stripe extends PaymentModule
 
     /**
      * ThirtybeesStripe constructor.
+     *
+     * @since 1.0.0
      */
     public function __construct()
     {
@@ -139,6 +141,8 @@ class Stripe extends PaymentModule
      * Install the module
      *
      * @return bool Whether the module has been successfully installed
+     *
+     * @since 1.0.0
      */
     public function install()
     {
@@ -174,6 +178,8 @@ class Stripe extends PaymentModule
      * Uninstall the module
      *
      * @return bool Whether the module has been successfully installed
+     *
+     * @since 1.0.0
      */
     public function uninstall()
     {
@@ -200,6 +206,8 @@ class Stripe extends PaymentModule
      * Load the configuration form
      *
      * @return string HTML
+     *
+     * @since 1.0.0
      */
     public function getContent()
     {
@@ -242,6 +250,8 @@ class Stripe extends PaymentModule
      * Initialize navigation
      *
      * @return array Menu items
+     *
+     * @since 1.0.0
      */
     protected function initNavigation()
     {
@@ -282,6 +292,8 @@ class Stripe extends PaymentModule
      * @return string HTML
      * @throws Exception
      * @throws SmartyException
+     *
+     * @since 1.0.0
      */
     protected function renderSettingsPage()
     {
@@ -307,6 +319,8 @@ class Stripe extends PaymentModule
      * Render the General options form
      *
      * @return string HTML
+     *
+     * @since 1.0.0
      */
     protected function renderGeneralOptions()
     {
@@ -332,6 +346,8 @@ class Stripe extends PaymentModule
      * Get available general options
      *
      * @return array General options
+     *
+     * @since 1.0.0
      */
     protected function getGeneralOptions()
     {
@@ -371,6 +387,8 @@ class Stripe extends PaymentModule
      * Get available general options
      *
      * @return array General options
+     *
+     * @since 1.0.0
      */
     protected function getStripeCheckoutOptions()
     {
@@ -452,6 +470,11 @@ class Stripe extends PaymentModule
         ];
     }
 
+    /**
+     * @return array
+     *
+     * @since 1.2.0
+     */
     protected function getEuropeanPaymentMethodsOptions()
     {
         return [
@@ -512,6 +535,8 @@ class Stripe extends PaymentModule
      * Get available general options
      *
      * @return array General options
+     *
+     * @since 1.0.0
      */
     protected function getStripeCreditCardOptions()
     {
@@ -549,6 +574,8 @@ class Stripe extends PaymentModule
      * Get available Apple Pay options
      *
      * @return array General options
+     *
+     * @since 1.0.0
      */
     protected function getApplePayOptions()
     {
@@ -583,6 +610,8 @@ class Stripe extends PaymentModule
      * Get available options for orders
      *
      * @return array Order options
+     *
+     * @since 1.0.0
      */
     protected function getOrderOptions()
     {
@@ -681,6 +710,8 @@ class Stripe extends PaymentModule
      * @return string HTML
      * @throws Exception
      * @throws SmartyException
+     *
+     * @since 1.0.0
      */
     protected function renderTransactionsPage()
     {
@@ -702,27 +733,29 @@ class Stripe extends PaymentModule
      *
      * @return string HTML
      * @throws PrestaShopDatabaseException
+     *
+     * @since 1.0.0
      */
     protected function renderTransactionsList()
     {
         $fieldsList = [
-            'id_stripe_transaction' => ['title' => $this->l('ID'), 'width' => 'auto'],
-            'type_icon' => ['type' => 'type_icon', 'title' => $this->l('Type'), 'width' => 'auto', 'color' => 'color', 'text' => 'type_text'],
-            'amount' => ['type' => 'price', 'title' => $this->l('Amount'), 'width' => 'auto'],
-            'card_last_digits' => ['type' => 'text', 'title' => $this->l('Credit card (last 4 digits)'), 'width' => 'auto'],
-            'source_text' => ['type' => 'stripe_source', 'title' => $this->l('Source'), 'width' => 'auto'],
-            'date_upd' => ['type' => 'datetime', 'title' => $this->l('Date & time'), 'width' => 'auto'],
+            'id_stripe_transaction' => [                           'title' => $this->l('ID'),                          'width' => 'auto'],
+            'type_icon'             => ['type' => 'type_icon',     'title' => $this->l('Type'),                        'width' => 'auto', 'color' => 'color', 'text' => 'type_text'],
+            'amount'                => ['type' => 'price',         'title' => $this->l('Amount'),                      'width' => 'auto'],
+            'card_last_digits'      => ['type' => 'text',          'title' => $this->l('Credit card (last 4 digits)'), 'width' => 'auto'],
+            'source_text'           => ['type' => 'stripe_source', 'title' => $this->l('Source'),                      'width' => 'auto'],
+            'date_upd'              => ['type' => 'datetime',      'title' => $this->l('Date & time'),                 'width' => 'auto'],
         ];
 
         if (Tools::isSubmit('submitResetstripe_transaction')) {
             $cookie = $this->context->cookie;
             foreach ($fieldsList as $fieldName => $field) {
-                unset($cookie->{'stripe_transactionFilter_'.$fieldName});
-                unset($_POST['stripe_transactionFilter_'.$fieldName]);
-                unset($_GET['stripe_transactionFilter_'.$fieldName]);
+                unset($cookie->{StripeTransaction::$definition['table'].'Filter_'.$fieldName});
+                unset($_POST[StripeTransaction::$definition['table'].'Filter_'.$fieldName]);
+                unset($_GET[StripeTransaction::$definition['table'].'Filter_'.$fieldName]);
             }
-            unset($this->context->cookie->{'stripe_transactionOrderby'});
-            unset($this->context->cookie->{'stripe_transactionOrderWay'});
+            unset($this->context->cookie->{StripeTransaction::$definition['table'].'Orderby'});
+            unset($this->context->cookie->{StripeTransaction::$definition['table'].'OrderWay'});
 
 
             $cookie->write();
@@ -730,18 +763,18 @@ class Stripe extends PaymentModule
 
         $sql = new DbQuery();
         $sql->select('COUNT(*)');
-        $sql->from('stripe_transaction');
+        $sql->from(bqSQL(StripeTransaction::$definition['table']));
 
         $listTotal = (int) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
 
-        $pagination = (int) $this->getSelectedPagination('stripe_transaction');
-        $currentPage = (int) $this->getSelectedPage('stripe_transaction', $listTotal);
+        $pagination = (int) $this->getSelectedPagination(StripeTransaction::$definition['table']);
+        $currentPage = (int) $this->getSelectedPage(StripeTransaction::$definition['table'], $listTotal);
 
         $helperList = new HelperList();
         $helperList->id = 1;
         $helperList->shopLinkType = false;
 
-        $helperList->list_id = 'stripe_transaction';
+        $helperList->list_id = StripeTransaction::$definition['table'];
 
         $helperList->module = $this;
 
@@ -756,22 +789,22 @@ class Stripe extends PaymentModule
 
         $helperList->page = $currentPage;
 
-        $helperList->_defaultOrderBy = 'id_stripe_transaction';
+        $helperList->_defaultOrderBy = StripeTransaction::$definition['primary'];
 
-        if (Tools::isSubmit('stripe_transactionOrderby')) {
-            $helperList->orderBy = Tools::getValue('stripe_transactionOrderby');
-            $this->context->cookie->{'stripe_transactionOrderby'} = $helperList->orderBy;
-        } elseif (!empty($this->context->cookie->{'stripe_transactionOrderby'})) {
-            $helperList->orderBy = $this->context->cookie->{'stripe_transactionOrderby'};
+        if (Tools::isSubmit(StripeTransaction::$definition['table'].'Orderby')) {
+            $helperList->orderBy = Tools::getValue(StripeTransaction::$definition['table'].'Orderby');
+            $this->context->cookie->{StripeTransaction::$definition['table'].'Orderby'} = $helperList->orderBy;
+        } elseif (!empty($this->context->cookie->{StripeTransaction::$definition['table'].'Orderby'})) {
+            $helperList->orderBy = $this->context->cookie->{StripeTransaction::$definition['table'].'Orderby'};
         } else {
-            $helperList->orderBy = 'id_stripe_transaction';
+            $helperList->orderBy = StripeTransaction::$definition['primary'];
         }
 
-        if (Tools::isSubmit('stripe_transactionOrderway')) {
-            $helperList->orderWay = Tools::strtoupper(Tools::getValue('stripe_transactionOrderway'));
-            $this->context->cookie->{'stripe_transactionOrderway'} = Tools::getValue('stripe_transactionOrderway');
-        } elseif (!empty($this->context->cookie->{'stripe_transactionOrderway'})) {
-            $helperList->orderWay = Tools::strtoupper($this->context->cookie->{'stripe_transactionOrderway'});
+        if (Tools::isSubmit(StripeTransaction::$definition['table'].'Orderway')) {
+            $helperList->orderWay = Tools::strtoupper(Tools::getValue(StripeTransaction::$definition['table'].'Orderway'));
+            $this->context->cookie->{StripeTransaction::$definition['table'].'Orderway'} = Tools::getValue(StripeTransaction::$definition['table'].'Orderway');
+        } elseif (!empty($this->context->cookie->{StripeTransaction::$definition['table'].'Orderway'})) {
+            $helperList->orderWay = Tools::strtoupper($this->context->cookie->{StripeTransaction::$definition['table'].'Orderway'});
         } else {
             $helperList->orderWay = 'DESC';
         }
@@ -833,7 +866,7 @@ class Stripe extends PaymentModule
 
         $helperList->listTotal = count($results);
 
-        $helperList->identifier = 'id_stripe_transaction';
+        $helperList->identifier = StripeTransaction::$definition['primary'];
         $helperList->title = $this->l('Transactions');
         $helperList->token = Tools::getAdminTokenLite('AdminModules');
         $helperList->currentIndex = AdminController::$currentIndex.'&'.http_build_query(
@@ -843,7 +876,7 @@ class Stripe extends PaymentModule
                 ]
             );
 
-        $helperList->table = 'stripe_transaction';
+        $helperList->table = StripeTransaction::$definition['table'];
 
         $helperList->bulk_actions = false;
 
