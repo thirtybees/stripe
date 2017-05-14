@@ -21,8 +21,6 @@ if (!defined('_TB_VERSION_')) {
     exit;
 }
 
-require_once __DIR__.'/../../classes/autoload.php';
-
 /**
  * Class StripeEupaymentModuleFrontController
  */
