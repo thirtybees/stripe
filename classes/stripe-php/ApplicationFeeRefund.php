@@ -5,12 +5,12 @@ namespace ThirtybeesStripe;
 /**
  * Class ApplicationFeeRefund
  *
- * @package ThirtybeesStripe
+ * @package Stripe
  */
 class ApplicationFeeRefund extends ApiResource
 {
     /**
-     * @return string The API URL for this ThirtybeesStripe refund.
+     * @return string The API URL for this Stripe refund.
      */
     public function instanceUrl()
     {

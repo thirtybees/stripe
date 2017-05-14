@@ -5,12 +5,13 @@ namespace ThirtybeesStripe;
 /**
  * Class Coupon
  *
- * @package ThirtybeesStripe
+ * @package Stripe
  */
 class Coupon extends ApiResource
 {
     /**
-     * @param string $id The ID of the coupon to retrieve.
+     * @param array|string $id The ID of the coupon to retrieve, or an options
+     *     array containing an `id` key.
      * @param array|string|null $opts
      *
      * @return Coupon

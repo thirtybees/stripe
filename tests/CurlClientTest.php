@@ -26,7 +26,7 @@ class CurlClientTest extends TestCase
     public function testDefaultOptions()
     {
         // make sure options array loads/saves properly
-        $optionsArray = [CURLOPT_PROXY => 'localhost:80'];
+        $optionsArray = array(CURLOPT_PROXY => 'localhost:80');
         $withOptionsArray = new CurlClient($optionsArray);
         $this->assertSame($withOptionsArray->getDefaultOptions(), $optionsArray);
 
@@ -34,46 +34,46 @@ class CurlClientTest extends TestCase
         $ref = null;
         $withClosure = new CurlClient(function ($method, $absUrl, $headers, $params, $hasFile) use (&$ref) {
             $ref = func_get_args();
-            return [];
+            return array();
         });
 
-        $withClosure->request('get', 'https://httpbin.org/status/200', [], [], false);
-        $this->assertSame($ref, ['get', 'https://httpbin.org/status/200', [], [], false]);
+        $withClosure->request('get', 'https://httpbin.org/status/200', array(), array(), false);
+        $this->assertSame($ref, array('get', 'https://httpbin.org/status/200', array(), array(), false));
 
         // this is the last test case that will run, since it'll throw an exception at the end
         $withBadClosure = new CurlClient(function () {
             return 'thisShouldNotWork';
         });
         $this->setExpectedException('ThirtybeesStripe\Error\Api', "Non-array value returned by defaultOptions CurlClient callback");
-        $withBadClosure->request('get', 'https://httpbin.org/status/200', [], [], false);
+        $withBadClosure->request('get', 'https://httpbin.org/status/200', array(), array(), false);
     }
 
     public function testEncode()
     {
-        $a = [
+        $a = array(
             'my' => 'value',
-            'that' => ['your' => 'example'],
+            'that' => array('your' => 'example'),
             'bar' => 1,
             'baz' => null
-        ];
+        );
 
         $enc = CurlClient::encode($a);
         $this->assertSame('my=value&that%5Byour%5D=example&bar=1', $enc);
 
-        $a = ['that' => ['your' => 'example', 'foo' => null]];
+        $a = array('that' => array('your' => 'example', 'foo' => null));
         $enc = CurlClient::encode($a);
         $this->assertSame('that%5Byour%5D=example', $enc);
 
-        $a = ['that' => 'example', 'foo' => ['bar', 'baz']];
+        $a = array('that' => 'example', 'foo' => array('bar', 'baz'));
         $enc = CurlClient::encode($a);
         $this->assertSame('that=example&foo%5B%5D=bar&foo%5B%5D=baz', $enc);
 
-        $a = [
+        $a = array(
             'my' => 'value',
-            'that' => ['your' => ['cheese', 'whiz', null]],
+            'that' => array('your' => array('cheese', 'whiz', null)),
             'bar' => 1,
             'baz' => null
-        ];
+        );
 
         $enc = CurlClient::encode($a);
         $expected = 'my=value&that%5Byour%5D%5B%5D=cheese'
@@ -81,11 +81,11 @@ class CurlClientTest extends TestCase
         $this->assertSame($expected, $enc);
 
         // Ignores an empty array
-        $enc = CurlClient::encode(['foo' => [], 'bar' => 'baz']);
+        $enc = CurlClient::encode(array('foo' => array(), 'bar' => 'baz'));
         $expected = 'bar=baz';
         $this->assertSame($expected, $enc);
 
-        $a = ['foo' => [['bar' => 'baz'], ['bar' => 'bin']]];
+        $a = array('foo' => array(array('bar' => 'baz'), array('bar' => 'bin')));
         $enc = CurlClient::encode($a);
         $this->assertSame('foo%5B0%5D%5Bbar%5D=baz&foo%5B1%5D%5Bbar%5D=bin', $enc);
     }
@@ -93,7 +93,7 @@ class CurlClientTest extends TestCase
     public function testSslOption()
     {
         // make sure options array loads/saves properly
-        $optionsArray = [CURLOPT_SSLVERSION => CURL_SSLVERSION_TLSv1];
+        $optionsArray = array(CURLOPT_SSLVERSION => CURL_SSLVERSION_TLSv1);
         $withOptionsArray = new CurlClient($optionsArray);
         $this->assertSame($withOptionsArray->getDefaultOptions(), $optionsArray);
     }

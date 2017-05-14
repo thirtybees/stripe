@@ -5,7 +5,7 @@ namespace ThirtybeesStripe;
 /**
  * Class ApiRequestor
  *
- * @package ThirtybeesStripe
+ * @package Stripe
  */
 class ApiRequestor
 {
@@ -33,7 +33,7 @@ class ApiRequestor
         } elseif ($d === false) {
             return 'false';
         } elseif (is_array($d)) {
-            $res = [];
+            $res = array();
             foreach ($d as $k => $v) {
                 $res[$k] = self::_encodeObjects($v);
             }
@@ -55,16 +55,16 @@ class ApiRequestor
     public function request($method, $url, $params = null, $headers = null)
     {
         if (!$params) {
-            $params = [];
+            $params = array();
         }
         if (!$headers) {
-            $headers = [];
+            $headers = array();
         }
         list($rbody, $rcode, $rheaders, $myApiKey) =
         $this->_requestRaw($method, $url, $params, $headers);
         $json = $this->_interpretResponse($rbody, $rcode, $rheaders);
         $resp = new ApiResponse($rbody, $rcode, $rheaders, $json);
-        return [$resp, $myApiKey];
+        return array($resp, $myApiKey);
     }
 
     /**
@@ -141,38 +141,40 @@ class ApiRequestor
     {
         $appInfo = Stripe::getAppInfo();
 
-        $uaString = 'ThirtybeesStripe/v1 PhpBindings/' . Stripe::VERSION;
+        $uaString = 'Stripe/v1 PhpBindings/' . Stripe::VERSION;
 
         $langVersion = phpversion();
         $uname = php_uname();
+
+        $httplib = 'unknown';
+        $ssllib = 'unknown';
+
         if (function_exists('curl_version')) {
             $curlVersion = curl_version();
-        } else {
-            $curlVersion = [
-                'version' => '0',
-                'ssl_version' => '0',
-            ];
+            $httplib = 'curl ' . $curlVersion['version'];
+            $ssllib = $curlVersion['ssl_version'];
         }
+
         $appInfo = Stripe::getAppInfo();
-        $ua = [
+        $ua = array(
             'bindings_version' => Stripe::VERSION,
             'lang' => 'php',
             'lang_version' => $langVersion,
             'publisher' => 'stripe',
             'uname' => $uname,
-            'httplib' => 'curl ' . $curlVersion['version'],
-            'ssllib' => $curlVersion['ssl_version'],
-        ];
+            'httplib' => $httplib,
+            'ssllib' => $ssllib,
+        );
         if ($appInfo !== null) {
             $uaString .= ' ' . self::_formatAppInfo($appInfo);
             $ua['application'] = $appInfo;
         }
 
-        $defaultHeaders = [
-            'X-ThirtybeesStripe-Client-User-Agent' => json_encode($ua),
+        $defaultHeaders = array(
+            'X-Stripe-Client-User-Agent' => json_encode($ua),
             'User-Agent' => $uaString,
             'Authorization' => 'Bearer ' . $apiKey,
-        ];
+        );
         return $defaultHeaders;
     }
 
@@ -185,8 +187,8 @@ class ApiRequestor
 
         if (!$myApiKey) {
             $msg = 'No API key provided.  (HINT: set your API key using '
-              . '"ThirtybeesStripe::setApiKey(<API-KEY>)".  You can generate API keys from '
-              . 'the ThirtybeesStripe web interface.  See https://stripe.com/api for '
+              . '"Stripe::setApiKey(<API-KEY>)".  You can generate API keys from '
+              . 'the Stripe web interface.  See https://stripe.com/api for '
               . 'details, or email support@stripe.com if you have any questions.';
             throw new Error\Authentication($msg);
         }
@@ -195,11 +197,11 @@ class ApiRequestor
         $params = self::_encodeObjects($params);
         $defaultHeaders = $this->_defaultHeaders($myApiKey);
         if (Stripe::$apiVersion) {
-            $defaultHeaders['ThirtybeesStripe-Version'] = Stripe::$apiVersion;
+            $defaultHeaders['Stripe-Version'] = Stripe::$apiVersion;
         }
 
         if (Stripe::$accountId) {
-            $defaultHeaders['ThirtybeesStripe-Account'] = Stripe::$accountId;
+            $defaultHeaders['Stripe-Account'] = Stripe::$accountId;
         }
 
         $hasFile = false;
@@ -220,7 +222,7 @@ class ApiRequestor
         }
 
         $combinedHeaders = array_merge($defaultHeaders, $headers);
-        $rawHeaders = [];
+        $rawHeaders = array();
 
         foreach ($combinedHeaders as $header => $value) {
             $rawHeaders[] = $header . ': ' . $value;
@@ -233,7 +235,7 @@ class ApiRequestor
             $params,
             $hasFile
         );
-        return [$rbody, $rcode, $rheaders, $myApiKey];
+        return array($rbody, $rcode, $rheaders, $myApiKey);
     }
 
     private function _processResourceParam($resource, $hasCurlFile)
@@ -261,11 +263,11 @@ class ApiRequestor
 
     private function _interpretResponse($rbody, $rcode, $rheaders)
     {
-        try {
-            $resp = json_decode($rbody, true);
-        } catch (Exception $e) {
+        $resp = json_decode($rbody, true);
+        $jsonError = json_last_error();
+        if ($resp === null && $jsonError !== JSON_ERROR_NONE) {
             $msg = "Invalid response body from API: $rbody "
-              . "(HTTP response code was $rcode)";
+              . "(HTTP response code was $rcode, json_last_error() was $jsonError)";
             throw new Error\Api($msg, $rcode, $rbody);
         }
 

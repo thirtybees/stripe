@@ -20,7 +20,7 @@ namespace ThirtybeesStripe;
  * @property string $status
  * @property string $type
  *
- * @package ThirtybeesStripe
+ * @package Stripe
  */
 class BalanceTransaction extends ApiResource
 {
@@ -34,7 +34,8 @@ class BalanceTransaction extends ApiResource
     }
 
     /**
-     * @param string $id The ID of the balance transaction to retrieve.
+     * @param array|string $id The ID of the balance transaction to retrieve,
+     *     or an options array containing an `id` key.
      * @param array|string|null $opts
      *
      * @return BalanceTransaction

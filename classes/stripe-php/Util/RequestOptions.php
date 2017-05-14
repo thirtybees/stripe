@@ -9,7 +9,7 @@ class RequestOptions
     public $headers;
     public $apiKey;
 
-    public function __construct($key = null, $headers = [])
+    public function __construct($key = null, $headers = array())
     {
         $this->apiKey = $key;
         $this->headers = $headers;
@@ -45,15 +45,15 @@ class RequestOptions
         }
 
         if (is_null($options)) {
-            return new RequestOptions(null, []);
+            return new RequestOptions(null, array());
         }
 
         if (is_string($options)) {
-            return new RequestOptions($options, []);
+            return new RequestOptions($options, array());
         }
 
         if (is_array($options)) {
-            $headers = [];
+            $headers = array();
             $key = null;
             if (array_key_exists('api_key', $options)) {
                 $key = $options['api_key'];
@@ -62,18 +62,18 @@ class RequestOptions
                 $headers['Idempotency-Key'] = $options['idempotency_key'];
             }
             if (array_key_exists('stripe_account', $options)) {
-                $headers['ThirtybeesStripe-Account'] = $options['stripe_account'];
+                $headers['Stripe-Account'] = $options['stripe_account'];
             }
             if (array_key_exists('stripe_version', $options)) {
-                $headers['ThirtybeesStripe-Version'] = $options['stripe_version'];
+                $headers['Stripe-Version'] = $options['stripe_version'];
             }
             return new RequestOptions($key, $headers);
         }
 
-        $message = 'The second argument to ThirtybeesStripe API method calls is an '
+        $message = 'The second argument to Stripe API method calls is an '
            . 'optional per-request apiKey, which must be a string, or '
            . 'per-request options, which must be an array. (HINT: you can set '
-           . 'a global apiKey by "ThirtybeesStripe::setApiKey(<apiKey>)")';
+           . 'a global apiKey by "Stripe::setApiKey(<apiKey>)")';
         throw new Error\Api($message);
     }
 }

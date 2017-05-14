@@ -5,12 +5,13 @@ namespace ThirtybeesStripe;
 /**
  * Class OrderReturn
  *
- * @package ThirtybeesStripe
+ * @package Stripe
  */
 class OrderReturn extends ApiResource
 {
     /**
-     * @param string $id The ID of the OrderReturn to retrieve.
+     * @param array|string $id The ID of the order return to retrieve, or an
+     *     options array containing an `id` field.
      * @param array|string|null $opts
      *
      * @return Order

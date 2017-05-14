@@ -92,6 +92,7 @@ spl_autoload_register(
             'ThirtybeesStripe\\JsonSerializable',
             'ThirtybeesStripe\\Order',
             'ThirtybeesStripe\\OrderReturn',
+            'ThirtybeesStripe\\Payout',
             'ThirtybeesStripe\\Plan',
             'ThirtybeesStripe\\Product',
             'ThirtybeesStripe\\Recipient',

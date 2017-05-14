@@ -5,9 +5,9 @@ namespace ThirtybeesStripe;
 /**
  * Class AttachedObject
  *
- * e.g. metadata on ThirtybeesStripe objects.
+ * e.g. metadata on Stripe objects.
  *
- * @package ThirtybeesStripe
+ * @package Stripe
  */
 class AttachedObject extends StripeObject
 {

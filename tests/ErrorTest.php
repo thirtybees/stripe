@@ -11,14 +11,14 @@ class ErrorTest extends TestCase
                 "hello",
                 500,
                 "{'foo':'bar'}",
-                ['foo' => 'bar']
+                array('foo' => 'bar')
             );
             $this->fail("Did not raise error");
         } catch (Error\Api $e) {
             $this->assertSame("hello", $e->getMessage());
             $this->assertSame(500, $e->getHttpStatus());
             $this->assertSame("{'foo':'bar'}", $e->getHttpBody());
-            $this->assertSame(['foo' => 'bar'], $e->getJsonBody());
+            $this->assertSame(array('foo' => 'bar'), $e->getJsonBody());
             $this->assertSame(null, $e->getHttpHeaders());
             $this->assertSame(null, $e->getRequestId());
         }
@@ -31,12 +31,12 @@ class ErrorTest extends TestCase
                 "hello",
                 500,
                 "{'foo':'bar'}",
-                ['foo' => 'bar'],
-                ['Request-Id' => 'req_bar']
+                array('foo' => 'bar'),
+                array('Request-Id' => 'req_bar')
             );
             $this->fail("Did not raise error");
         } catch (Error\Api $e) {
-            $this->assertSame(['Request-Id' => 'req_bar'], $e->getHttpHeaders());
+            $this->assertSame(array('Request-Id' => 'req_bar'), $e->getHttpHeaders());
             $this->assertSame('req_bar', $e->getRequestId());
         }
     }
@@ -50,7 +50,7 @@ class ErrorTest extends TestCase
                 "some_code",
                 400,
                 "{'foo':'bar'}",
-                ['foo' => 'bar']
+                array('foo' => 'bar')
             );
             $this->fail("Did not raise error");
         } catch (Error\Card $e) {

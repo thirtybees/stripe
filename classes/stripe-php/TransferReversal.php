@@ -14,12 +14,12 @@ namespace ThirtybeesStripe;
  * @property mixed $metadata
  * @property string $transfer
  *
- * @package ThirtybeesStripe
+ * @package Stripe
  */
 class TransferReversal extends ApiResource
 {
     /**
-     * @return string The API URL for this ThirtybeesStripe transfer reversal.
+     * @return string The API URL for this Stripe transfer reversal.
      */
     public function instanceUrl()
     {

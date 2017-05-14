@@ -6,101 +6,100 @@ class CollectionTest extends TestCase
 {
     private function pageableModelResponse($ids, $hasMore)
     {
-        $data = [];
+        $data = array();
         foreach ($ids as $id) {
-            array_push($data, [
+            array_push($data, array(
                 'id' => $id,
                 'object' => 'pageablemodel'
-            ]
-            );
+            ));
         }
-        return [
+        return array(
             'object' => 'list',
             'url' => '/v1/pageablemodels',
             'data' => $data,
             'has_more' => $hasMore
-        ];
+        );
     }
 
     public function testAutoPagingOnePage()
     {
         $collection = Collection::constructFrom(
-            $this->pageableModelResponse(['pm_123', 'pm_124'], false),
+            $this->pageableModelResponse(array('pm_123', 'pm_124'), false),
             new Util\RequestOptions()
         );
 
-        $seen = [];
+        $seen = array();
         foreach ($collection->autoPagingIterator() as $item) {
             array_push($seen, $item['id']);
         }
 
-        $this->assertSame($seen, ['pm_123', 'pm_124']);
+        $this->assertSame($seen, array('pm_123', 'pm_124'));
     }
 
     public function testAutoPagingThreePages()
     {
         $collection = Collection::constructFrom(
-            $this->pageableModelResponse(['pm_123', 'pm_124'], true),
+            $this->pageableModelResponse(array('pm_123', 'pm_124'), true),
             new Util\RequestOptions()
         );
-        $collection->setRequestParams(['foo' => 'bar']);
+        $collection->setRequestParams(array('foo' => 'bar'));
 
         $this->mockRequest(
             'GET',
             '/v1/pageablemodels',
-            [
+            array(
                   'foo' => 'bar',
                   'starting_after' => 'pm_124'
-            ],
-            $this->pageableModelResponse(['pm_125', 'pm_126'], true)
+            ),
+            $this->pageableModelResponse(array('pm_125', 'pm_126'), true)
         );
         $this->mockRequest(
             'GET',
             '/v1/pageablemodels',
-            [
+            array(
                   'foo' => 'bar',
                   'starting_after' => 'pm_126'
-            ],
-            $this->pageableModelResponse(['pm_127'], false)
+            ),
+            $this->pageableModelResponse(array('pm_127'), false)
         );
 
-        $seen = [];
+        $seen = array();
         foreach ($collection->autoPagingIterator() as $item) {
             array_push($seen, $item['id']);
         }
 
-        $this->assertSame($seen, ['pm_123', 'pm_124', 'pm_125', 'pm_126', 'pm_127']);
+        $this->assertSame($seen, array('pm_123', 'pm_124', 'pm_125', 'pm_126', 'pm_127'));
     }
 
     public function testIteratorToArray()
     {
         $collection = Collection::constructFrom(
-            $this->pageableModelResponse(['pm_123', 'pm_124'], true),
+            $this->pageableModelResponse(array('pm_123', 'pm_124'), true),
             new Util\RequestOptions()
         );
 
         $this->mockRequest(
             'GET',
             '/v1/pageablemodels',
-            [
+            array(
                   'starting_after' => 'pm_124'
-            ],
-            $this->pageableModelResponse(['pm_125', 'pm_126'], true)
+            ),
+            $this->pageableModelResponse(array('pm_125', 'pm_126'), true)
         );
         $this->mockRequest(
             'GET',
             '/v1/pageablemodels',
-            [
+            array(
                   'starting_after' => 'pm_126'
-            ],
-            $this->pageableModelResponse(['pm_127'], false)
+            ),
+            $this->pageableModelResponse(array('pm_127'), false)
         );
 
-        $seen = [];
+        $seen = array();
         foreach (iterator_to_array($collection->autoPagingIterator()) as $item) {
             array_push($seen, $item['id']);
         }
 
-        $this->assertSame($seen, ['pm_123', 'pm_124', 'pm_125', 'pm_126', 'pm_127']);
+        $this->assertSame($seen, array('pm_123', 'pm_124', 'pm_125', 'pm_126', 'pm_127'));
     }
 }

@@ -5,7 +5,7 @@ namespace ThirtybeesStripe;
 /**
  * Class Subscription
  *
- * @package ThirtybeesStripe
+ * @package Stripe
  */
 class Subscription extends ApiResource
 {
@@ -21,7 +21,8 @@ class Subscription extends ApiResource
     const STATUS_UNPAID = 'unpaid';
 
     /**
-     * @param string $id The ID of the subscription to retrieve.
+     * @param array|string $id The ID of the subscription to retrieve, or an
+     *     options array containing an `id` key.
      * @param array|string|null $opts
      *
      * @return Subscription
@@ -92,6 +93,6 @@ class Subscription extends ApiResource
     {
         $url = $this->instanceUrl() . '/discount';
         list($response, $opts) = $this->_request('delete', $url);
-        $this->refreshFrom(['discount' => null], $opts, true);
+        $this->refreshFrom(array('discount' => null), $opts, true);
     }
 }

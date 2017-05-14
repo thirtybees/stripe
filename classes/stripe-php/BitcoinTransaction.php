@@ -5,7 +5,7 @@ namespace ThirtybeesStripe;
 /**
  * Class BitcoinTransaction
  *
- * @package ThirtybeesStripe
+ * @package Stripe
  */
 class BitcoinTransaction extends ApiResource
 {

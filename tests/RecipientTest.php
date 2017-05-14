@@ -37,18 +37,16 @@ class RecipientTest extends TestCase
     public function testRecipientAddCard()
     {
         $token = Token::create(
-            [
-                "card" => [
+            array("card" => array(
                 "number" => "4000056655665556",
                 "exp_month" => 5,
                 "exp_year" => date('Y') + 3,
                 "cvc" => "314"
-                ]
-            ]
+            ))
         );
 
         $recipient = $this->createTestRecipient();
-        $createdCard = $recipient->cards->create(["card" => $token->id]);
+        $createdCard = $recipient->cards->create(array("card" => $token->id));
         $recipient->save();
 
         $updatedRecipient = Recipient::retrieve($recipient->id);
@@ -59,18 +57,16 @@ class RecipientTest extends TestCase
     public function testRecipientUpdateCard()
     {
         $token = Token::create(
-            [
-                "card" => [
+            array("card" => array(
                 "number" => "4000056655665556",
                 "exp_month" => 5,
                 "exp_year" => date('Y') + 3,
                 "cvc" => "314"
-                ]
-            ]
+            ))
         );
 
         $recipient = $this->createTestRecipient();
-        $createdCard = $recipient->cards->create(["card" => $token->id]);
+        $createdCard = $recipient->cards->create(array("card" => $token->id));
         $recipient->save();
 
         $createdCards = $recipient->cards->all();
@@ -88,18 +84,16 @@ class RecipientTest extends TestCase
     public function testRecipientDeleteCard()
     {
         $token = Token::create(
-            [
-                "card" => [
+            array("card" => array(
                 "number" => "4000056655665556",
                 "exp_month" => 5,
                 "exp_year" => date('Y') + 3,
                 "cvc" => "314"
-                ]
-            ]
+            ))
         );
 
         $recipient = $this->createTestRecipient();
-        $createdCard = $recipient->cards->create(["card" => $token->id]);
+        $createdCard = $recipient->cards->create(array("card" => $token->id));
         $recipient->save();
 
         $updatedRecipient = Recipient::retrieve($recipient->id);

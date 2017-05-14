@@ -5,7 +5,7 @@ namespace ThirtybeesStripe;
 /**
  * Class BankAccount
  *
- * @package ThirtybeesStripe
+ * @package Stripe
  */
 class BankAccount extends ExternalAccount
 {

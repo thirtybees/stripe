@@ -5,7 +5,7 @@ namespace ThirtybeesStripe;
 /**
  * Class AlipayAccount
  *
- * @package ThirtybeesStripe
+ * @package Stripe
  */
 class AlipayAccount extends ExternalAccount
 {

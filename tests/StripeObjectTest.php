@@ -38,7 +38,7 @@ class StripeObjectTest extends TestCase
     {
         $s = new StripeObject();
         $s->foo = 'a';
-        $this->assertSame($s->keys(), ['foo']);
+        $this->assertSame($s->keys(), array('foo'));
     }
 
     public function testToArray()
@@ -100,9 +100,9 @@ class StripeObjectTest extends TestCase
         StripeObject::init(); // Populate the $nestedUpdatableAttributes Set
         $s = new StripeObject();
 
-        $s->metadata = ['bar'];
-        $this->assertSame($s->metadata, ['bar']);
-        $s->metadata = ['baz', 'qux'];
-        $this->assertSame($s->metadata, ['baz', 'qux']);
+        $s->metadata = array('bar');
+        $this->assertSame($s->metadata, array('bar'));
+        $s->metadata = array('baz', 'qux');
+        $this->assertSame($s->metadata, array('baz', 'qux'));
     }
 }

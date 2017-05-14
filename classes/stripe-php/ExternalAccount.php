@@ -5,7 +5,7 @@ namespace ThirtybeesStripe;
 /**
  * Class ExternalAccount
  *
- * @package ThirtybeesStripe
+ * @package Stripe
  */
 abstract class ExternalAccount extends ApiResource
 {

@@ -10,11 +10,11 @@ namespace ThirtybeesStripe;
  * @property bool $has_more
  * @property mixed $data
  *
- * @package ThirtybeesStripe
+ * @package Stripe
  */
 class Collection extends ApiResource
 {
-    protected $_requestParams = [];
+    protected $_requestParams = array();
 
     public function setRequestParams($params)
     {
@@ -76,12 +76,12 @@ class Collection extends ApiResource
         if (isset($url['query'])) {
             // If the URL contains a query param, parse it out into $params so they
             // don't interact weirdly with each other.
-            $query = [];
+            $query = array();
             parse_str($url['query'], $query);
             // PHP 5.2 doesn't support the ?: operator :(
-            $params = array_merge($params ? $params : [], $query);
+            $params = array_merge($params ? $params : array(), $query);
         }
 
-        return [$url['path'], $params];
+        return array($url['path'], $params);
     }
 }

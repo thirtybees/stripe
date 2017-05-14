@@ -5,7 +5,7 @@ namespace ThirtybeesStripe;
 /**
  * Class Card
  *
- * @package ThirtybeesStripe
+ * @package Stripe
  */
 class Card extends ExternalAccount
 {

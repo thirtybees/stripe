@@ -5,7 +5,7 @@ namespace ThirtybeesStripe;
 /**
  * Class Plan
  *
- * @package ThirtybeesStripe
+ * @package Stripe
  *
  * @property $id
  * @property $object
@@ -23,7 +23,8 @@ namespace ThirtybeesStripe;
 class Plan extends ApiResource
 {
     /**
-     * @param string $id The ID of the plan to retrieve.
+     * @param array|string $id The ID of the plan to retrieve, or an options
+     *     array containing an `id` key.
      * @param array|string|null $opts
      *
      * @return Plan

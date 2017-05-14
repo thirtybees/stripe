@@ -5,7 +5,7 @@ namespace ThirtybeesStripe;
 /**
  * Class ApiResponse
  *
- * @package ThirtybeesStripe
+ * @package Stripe
  */
 class ApiResponse
 {

@@ -10,7 +10,7 @@ namespace ThirtybeesStripe;
  * @property bool $livedmode
  * @property mixed $pending
  *
- * @package ThirtybeesStripe
+ * @package Stripe
  */
 class Balance extends SingletonApiResource
 {

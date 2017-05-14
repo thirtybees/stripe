@@ -6,9 +6,9 @@ class PermissionErrorTest extends TestCase
 {
     private function permissionErrorResponse()
     {
-        return [
-            'error' => [],
-        ];
+        return array(
+            'error' => array(),
+        );
     }
 
     /**
@@ -16,7 +16,7 @@ class PermissionErrorTest extends TestCase
      */
     public function testPermission()
     {
-        $this->mockRequest('GET', '/v1/accounts/acct_DEF', [], $this->permissionErrorResponse(), 403);
+        $this->mockRequest('GET', '/v1/accounts/acct_DEF', array(), $this->permissionErrorResponse(), 403);
         Account::retrieve('acct_DEF');
     }
 }

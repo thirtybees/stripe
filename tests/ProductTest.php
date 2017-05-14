@@ -22,13 +22,11 @@ class ProductSKUOrderTest extends TestCase
 
         Stripe::setApiKey('sk_test_JieJALRz7rPz7boV17oMma7a');
         $ProductID = 'gold-' . self::generateRandomString(20);
-        $p = Product::create(
-            [
+        $p = Product::create(array(
             'name'     => 'Gold Product',
             'id'       => $ProductID,
             'url'      => 'www.stripe.com/gold'
-            ]
-        );
+        ));
         $this->assertSame($p->url, 'www.stripe.com/gold');
 
         $p->name = 'A new Product name';
@@ -45,27 +43,23 @@ class ProductSKUOrderTest extends TestCase
     {
         Stripe::setApiKey('sk_test_JieJALRz7rPz7boV17oMma7a');
         $ProductID = 'silver-' . self::generateRandomString(20);
-        $p = Product::create(
-            [
+        $p = Product::create(array(
             'name'     => 'Silver Product',
             'id'       => $ProductID,
             'url'      => 'www.stripe.com/silver'
-            ]
-        );
+        ));
 
         $SkuID = 'silver-sku-' . self::generateRandomString(20);
-        $sku = SKU::create(
-            [
-                'price'     => 500,
-                'currency'  => 'usd',
-                'id'        => $SkuID,
-                'inventory' => [
+        $sku = SKU::create(array(
+            'price'     => 500,
+            'currency'  => 'usd',
+            'id'        => $SkuID,
+            'inventory' => array(
                 'type'     => 'finite',
                 'quantity' => 40
-                ],
-                'product'   => $ProductID
-            ]
-        );
+            ),
+            'product'   => $ProductID
+        ));
 
         $sku->price = 600;
         $sku->inventory->quantity = 50;
@@ -83,27 +77,23 @@ class ProductSKUOrderTest extends TestCase
     {
         Stripe::setApiKey('sk_test_JieJALRz7rPz7boV17oMma7a');
         $ProductID = 'silver-' . self::generateRandomString(20);
-        $p = Product::create(
-            [
+        $p = Product::create(array(
             'name'     => 'Silver Product',
             'id'       => $ProductID,
             'url'      => 'stripe.com/silver'
-            ]
-        );
+        ));
 
         $SkuID = 'silver-sku-' . self::generateRandomString(20);
-        $sku = SKU::create(
-            [
-                'price'     => 500,
-                'currency'  => 'usd',
-                'id'        => $SkuID,
-                'inventory' => [
+        $sku = SKU::create(array(
+            'price'     => 500,
+            'currency'  => 'usd',
+            'id'        => $SkuID,
+            'inventory' => array(
                 'type'     => 'finite',
                 'quantity' => 40
-                ],
-                'product'   => $ProductID
-            ]
-        );
+            ),
+            'product'   => $ProductID
+        ));
 
         $deletedSku = $sku->delete();
         $this->assertTrue($deletedSku->deleted);
@@ -116,41 +106,35 @@ class ProductSKUOrderTest extends TestCase
     {
         Stripe::setApiKey('sk_test_JieJALRz7rPz7boV17oMma7a');
         $ProductID = 'silver-' . self::generateRandomString(20);
-        $p = Product::create(
-            [
+        $p = Product::create(array(
             'name'      => 'Silver Product',
             'id'        => $ProductID,
             'url'       => 'www.stripe.com/silver',
             'shippable' => false,
-            ]
-        );
+        ));
 
         $SkuID = 'silver-sku-' . self::generateRandomString(20);
-        $sku = SKU::create(
-            [
-                'price'     => 500,
-                'currency'  => 'usd',
-                'id'        => $SkuID,
-                'inventory' => [
+        $sku = SKU::create(array(
+            'price'     => 500,
+            'currency'  => 'usd',
+            'id'        => $SkuID,
+            'inventory' => array(
                 'type'     => 'finite',
                 'quantity' => 40
-                ],
-                'product'   => $ProductID
-            ]
-        );
+            ),
+            'product'   => $ProductID
+        ));
 
-        $order = Order::create(
-            [
-                'items' => [
-                    0 => [
+        $order = Order::create(array(
+            'items' => array(
+                0 => array(
                     'type' => 'sku',
                     'parent' => $SkuID,
-                    ],
-                ],
-                'currency' => 'usd',
-                'email' => 'foo@bar.com',
-            ]
-        );
+                ),
+            ),
+            'currency' => 'usd',
+            'email' => 'foo@bar.com',
+        ));
 
         $order->metadata->foo = "bar";
         $order->save();
@@ -158,16 +142,14 @@ class ProductSKUOrderTest extends TestCase
         $stripeOrder = Order::retrieve($order->id);
         $this->assertSame($order->metadata->foo, "bar");
 
-        $order->pay(
-            [
-                'source' => [
+        $order->pay(array(
+            'source' => array(
                 'object' => 'card',
                 'number' => '4242424242424242',
                 'exp_month' => '05',
                 'exp_year' => '2017'
-                ],
-            ]
-        );
+            ),
+        ));
         $this->assertSame($order->status, 'paid');
 
         $orderReturn = $order->returnOrder();

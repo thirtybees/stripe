@@ -12,19 +12,19 @@ class ApiRequestorTest extends TestCase
         $method = $reflector->getMethod('_encodeObjects');
         $method->setAccessible(true);
 
-        $a = ['customer' => new Customer('abcd')];
+        $a = array('customer' => new Customer('abcd'));
         $enc = $method->invoke(null, $a);
-        $this->assertSame($enc, ['customer' => 'abcd']);
+        $this->assertSame($enc, array('customer' => 'abcd'));
 
         // Preserves UTF-8
-        $v = ['customer' => "☃"];
+        $v = array('customer' => "☃");
         $enc = $method->invoke(null, $v);
         $this->assertSame($enc, $v);
 
         // Encodes latin-1 -> UTF-8
-        $v = ['customer' => "\xe9"];
+        $v = array('customer' => "\xe9");
         $enc = $method->invoke(null, $v);
-        $this->assertSame($enc, ['customer' => "\xc3\xa9"]);
+        $this->assertSame($enc, array('customer' => "\xc3\xa9"));
     }
 
     public function testHttpClientInjection()
@@ -53,14 +53,14 @@ class ApiRequestorTest extends TestCase
 
         $headers = $method->invoke(null, $apiKey);
 
-        $ua = json_decode($headers['X-ThirtybeesStripe-Client-User-Agent']);
+        $ua = json_decode($headers['X-Stripe-Client-User-Agent']);
         $this->assertSame($ua->application->name, 'MyTestApp');
         $this->assertSame($ua->application->version, '1.2.34');
         $this->assertSame($ua->application->url, 'https://mytestapp.example');
 
         $this->assertSame(
             $headers['User-Agent'],
-            'ThirtybeesStripe/v1 PhpBindings/' . Stripe::VERSION . ' MyTestApp/1.2.34 (https://mytestapp.example)'
+            'Stripe/v1 PhpBindings/' . Stripe::VERSION . ' MyTestApp/1.2.34 (https://mytestapp.example)'
         );
 
         $this->assertSame($headers['Authorization'], 'Bearer ' . $apiKey);

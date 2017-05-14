@@ -7,6 +7,7 @@ use ThirtybeesStripe\StripeObject;
 abstract class Util
 {
     private static $isMbstringAvailable = null;
+    private static $isHashEqualsAvailable = null;
 
     /**
      * Whether the provided array (or other) is a list rather than a dictionary.
@@ -20,7 +21,7 @@ abstract class Util
             return false;
         }
 
-      // TODO: generally incorrect, but it's correct given ThirtybeesStripe's response
+      // TODO: generally incorrect, but it's correct given Stripe's response
         foreach (array_keys($array) as $k) {
             if (!is_numeric($k)) {
                 return false;
@@ -30,14 +31,14 @@ abstract class Util
     }
 
     /**
-     * Recursively converts the PHP ThirtybeesStripe object to an array.
+     * Recursively converts the PHP Stripe object to an array.
      *
-     * @param array $values The PHP ThirtybeesStripe object to convert.
+     * @param array $values The PHP Stripe object to convert.
      * @return array
      */
     public static function convertStripeObjectToArray($values)
     {
-        $results = [];
+        $results = array();
         foreach ($values as $k => $v) {
             // FIXME: this is an encapsulation violation
             if ($k[0] == '_') {
@@ -55,51 +56,53 @@ abstract class Util
     }
 
     /**
-     * Converts a response from the ThirtybeesStripe API to the corresponding PHP object.
+     * Converts a response from the Stripe API to the corresponding PHP object.
      *
-     * @param array $resp The response from the ThirtybeesStripe API.
+     * @param array $resp The response from the Stripe API.
      * @param array $opts
      * @return StripeObject|array
      */
     public static function convertToStripeObject($resp, $opts)
     {
-        $types = [
-            'account' => 'ThirtybeesStripe\\Account',
-            'alipay_account' => 'ThirtybeesStripe\\AlipayAccount',
-            'apple_pay_domain' => 'ThirtybeesStripe\\ApplePayDomain',
-            'bank_account' => 'ThirtybeesStripe\\BankAccount',
+        $types = array(
+            'account'             => 'ThirtybeesStripe\\Account',
+            'alipay_account'      => 'ThirtybeesStripe\\AlipayAccount',
+            'apple_pay_domain'    => 'ThirtybeesStripe\\ApplePayDomain',
+            'bank_account'        => 'ThirtybeesStripe\\BankAccount',
             'balance_transaction' => 'ThirtybeesStripe\\BalanceTransaction',
-            'card' => 'ThirtybeesStripe\\Card',
-            'charge' => 'ThirtybeesStripe\\Charge',
-            'country_spec' => 'ThirtybeesStripe\\CountrySpec',
-            'coupon' => 'ThirtybeesStripe\\Coupon',
-            'customer' => 'ThirtybeesStripe\\Customer',
-            'dispute' => 'ThirtybeesStripe\\Dispute',
-            'list' => 'ThirtybeesStripe\\Collection',
-            'invoice' => 'ThirtybeesStripe\\Invoice',
-            'invoiceitem' => 'ThirtybeesStripe\\InvoiceItem',
-            'event' => 'ThirtybeesStripe\\Event',
-            'file' => 'ThirtybeesStripe\\FileUpload',
-            'token' => 'ThirtybeesStripe\\Token',
-            'transfer' => 'ThirtybeesStripe\\Transfer',
-            'transfer_reversal' => 'ThirtybeesStripe\\TransferReversal',
-            'order' => 'ThirtybeesStripe\\Order',
-            'order_return' => 'ThirtybeesStripe\\OrderReturn',
-            'plan' => 'ThirtybeesStripe\\Plan',
-            'product' => 'ThirtybeesStripe\\Product',
-            'recipient' => 'ThirtybeesStripe\\Recipient',
-            'refund' => 'ThirtybeesStripe\\Refund',
-            'sku' => 'ThirtybeesStripe\\SKU',
-            'source' => 'ThirtybeesStripe\\Source',
-            'subscription' => 'ThirtybeesStripe\\Subscription',
-            'subscription_item' => 'ThirtybeesStripe\\SubscriptionItem',
-            'three_d_secure' => 'ThirtybeesStripe\\ThreeDSecure',
-            'fee_refund' => 'ThirtybeesStripe\\ApplicationFeeRefund',
-            'bitcoin_receiver' => 'ThirtybeesStripe\\BitcoinReceiver',
+            'card'                => 'ThirtybeesStripe\\Card',
+            'charge'              => 'ThirtybeesStripe\\Charge',
+            'country_spec'        => 'ThirtybeesStripe\\CountrySpec',
+            'coupon'              => 'ThirtybeesStripe\\Coupon',
+            'customer'            => 'ThirtybeesStripe\\Customer',
+            'dispute'             => 'ThirtybeesStripe\\Dispute',
+            'list'                => 'ThirtybeesStripe\\Collection',
+            'invoice'             => 'ThirtybeesStripe\\Invoice',
+            'invoiceitem'         => 'ThirtybeesStripe\\InvoiceItem',
+            'event'               => 'ThirtybeesStripe\\Event',
+            'file'                => 'ThirtybeesStripe\\FileUpload',
+            'token'               => 'ThirtybeesStripe\\Token',
+            'transfer'            => 'ThirtybeesStripe\\Transfer',
+            'transfer_reversal'   => 'ThirtybeesStripe\\TransferReversal',
+            'order'               => 'ThirtybeesStripe\\Order',
+            'order_return'        => 'ThirtybeesStripe\\OrderReturn',
+            'payout'              => 'ThirtybeesStripe\\Payout',
+            'plan'                => 'ThirtybeesStripe\\Plan',
+            'product'             => 'ThirtybeesStripe\\Product',
+            'recipient'           => 'ThirtybeesStripe\\Recipient',
+            'recipient_transfer'  => 'ThirtybeesStripe\\RecipientTransfer',
+            'refund'              => 'ThirtybeesStripe\\Refund',
+            'sku'                 => 'ThirtybeesStripe\\SKU',
+            'source'              => 'ThirtybeesStripe\\Source',
+            'subscription'        => 'ThirtybeesStripe\\Subscription',
+            'subscription_item'   => 'ThirtybeesStripe\\SubscriptionItem',
+            'three_d_secure'      => 'ThirtybeesStripe\\ThreeDSecure',
+            'fee_refund'          => 'ThirtybeesStripe\\ApplicationFeeRefund',
+            'bitcoin_receiver'    => 'ThirtybeesStripe\\BitcoinReceiver',
             'bitcoin_transaction' => 'ThirtybeesStripe\\BitcoinTransaction',
-        ];
+        );
         if (self::isList($resp)) {
-            $mapped = [];
+            $mapped = array();
             foreach ($resp as $i) {
                 array_push($mapped, self::convertToStripeObject($i, $opts));
             }
@@ -139,6 +142,35 @@ abstract class Util
             return utf8_encode($value);
         } else {
             return $value;
+        }
+    }
+
+    /**
+     * Compares two strings for equality. The time taken is independent of the
+     * number of characters that match.
+     *
+     * @param string $a one of the strings to compare.
+     * @param string $b the other string to compare.
+     * @return bool true if the strings are equal, false otherwise.
+     */
+    public static function secureCompare($a, $b)
+    {
+        if (self::$isHashEqualsAvailable === null) {
+            self::$isHashEqualsAvailable = function_exists('hash_equals');
+        }
+
+        if (self::$isHashEqualsAvailable) {
+            return hash_equals($a, $b);
+        } else {
+            if (strlen($a) != strlen($b)) {
+                return false;
+            }
+
+            $result = 0;
+            for ($i = 0; $i < strlen($a); $i++) {
+                $result |= ord($a[$i]) ^ ord($b[$i]);
+            }
+            return ($result == 0);
         }
     }
 }

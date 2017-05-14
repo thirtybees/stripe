@@ -8,19 +8,19 @@ class ExternalAccountTest extends TestCase
     {
         self::authorizeFromEnv();
         $bankAccountToken = Token::create(
-            [
-                'bank_account' => [
+            array(
+                'bank_account' => array(
                 'country' => 'US',
                 'routing_number' => '110000000',
                 'account_number' => '000123456789',
                 'account_holder_name' => 'Jane Austen',
                 'account_holder_type' => 'company'
-                ]
-            ]
+                )
+            )
         );
         $customer = Customer::create();
-        $externalAccount = $customer->sources->create(['bank_account' => $bankAccountToken->id]);
-        $verifiedAccount = $externalAccount->verify(['amounts' => [32, 45]], null);
+        $externalAccount = $customer->sources->create(array('bank_account' => $bankAccountToken->id));
+        $verifiedAccount = $externalAccount->verify(array('amounts' => array(32, 45)), null);
 
         $base = Customer::classUrl();
         $parentExtn = $externalAccount['customer'];

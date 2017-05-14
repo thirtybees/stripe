@@ -55,7 +55,7 @@ class CustomerTest extends TestCase
 
     public function testUpdateDescriptionNull()
     {
-        $customer = self::createTestCustomer(['description' => 'foo bar']);
+        $customer = self::createTestCustomer(array('description' => 'foo bar'));
         $customer->description = null;
 
         $customer->save();
@@ -108,7 +108,7 @@ class CustomerTest extends TestCase
         $customer->metadata['shirt size'] = 'XS';
         $customer->save();
 
-        $customer->metadata = ['shirt size' => 'XL'];
+        $customer->metadata = array('shirt size' => 'XL');
         $customer->save();
 
         $updatedCustomer = Customer::retrieve($customer->id);
@@ -132,12 +132,12 @@ class CustomerTest extends TestCase
         self::retrieveOrCreatePlan($planID);
 
         $customer = self::createTestCustomer(
-            [
+            array(
                 'plan' => $planID,
-            ]
+            )
         );
 
-        $customer->cancelSubscription(['at_period_end' => true]);
+        $customer->cancelSubscription(array('at_period_end' => true));
         $this->assertSame($customer->subscription->status, 'active');
         $this->assertTrue($customer->subscription->cancel_at_period_end);
         $customer->cancelSubscription();
@@ -147,18 +147,16 @@ class CustomerTest extends TestCase
     public function testCustomerAddCard()
     {
         $token = Token::create(
-            [
-                "card" => [
+            array("card" => array(
                 "number" => "4242424242424242",
                 "exp_month" => 5,
                 "exp_year" => date('Y') + 3,
                 "cvc" => "314"
-                ]
-            ]
+            ))
         );
 
         $customer = $this->createTestCustomer();
-        $createdCard = $customer->sources->create(["card" => $token->id]);
+        $createdCard = $customer->sources->create(array("card" => $token->id));
         $customer->save();
 
         $updatedCustomer = Customer::retrieve($customer->id);
@@ -186,18 +184,16 @@ class CustomerTest extends TestCase
     public function testCustomerDeleteCard()
     {
         $token = Token::create(
-            [
-                "card" => [
+            array("card" => array(
                 "number" => "4242424242424242",
                 "exp_month" => 5,
                 "exp_year" => date('Y') + 3,
                 "cvc" => "314"
-                ]
-            ]
+            ))
         );
 
         $customer = $this->createTestCustomer();
-        $createdCard = $customer->sources->create(["card" => $token->id]);
+        $createdCard = $customer->sources->create(array("card" => $token->id));
         $customer->save();
 
         $updatedCustomer = Customer::retrieve($customer->id);
@@ -217,18 +213,16 @@ class CustomerTest extends TestCase
     {
         self::authorizeFromEnv();
         $token = Token::create(
-            [
-                "card" => [
+            array("card" => array(
                 "number" => "4242424242424242",
                 "exp_month" => 5,
                 "exp_year" => date('Y') + 3,
                 "cvc" => "314"
-                ]
-            ]
+            ))
         );
 
         $customer = $this->createTestCustomer();
-        $createdSource = $customer->sources->create(["source" => $token->id]);
+        $createdSource = $customer->sources->create(array("source" => $token->id));
         $customer->save();
 
         $updatedCustomer = Customer::retrieve($customer->id);
@@ -257,18 +251,16 @@ class CustomerTest extends TestCase
     {
         self::authorizeFromEnv();
         $token = Token::create(
-            [
-                "card" => [
+            array("card" => array(
                 "number" => "4242424242424242",
                 "exp_month" => 5,
                 "exp_year" => date('Y') + 3,
                 "cvc" => "314"
-                ]
-            ]
+            ))
         );
 
         $customer = $this->createTestCustomer();
-        $createdSource = $customer->sources->create(["source" => $token->id]);
+        $createdSource = $customer->sources->create(array("source" => $token->id));
         $customer->save();
 
         $updatedCustomer = Customer::retrieve($customer->id);

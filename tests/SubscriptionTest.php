@@ -12,7 +12,7 @@ class SubscriptionTest extends TestCase
 
         $customer = self::createTestCustomer();
 
-        $sub = $customer->subscriptions->create(['plan' => $planID]);
+        $sub = $customer->subscriptions->create(array('plan' => $planID));
 
         $this->assertSame($sub->status, 'active');
         $this->assertSame($sub->plan->id, $planID);
@@ -25,10 +25,10 @@ class SubscriptionTest extends TestCase
         $this->assertSame($sub->plan->id, $planID);
         $this->assertSame($sub->quantity, 2);
 
-        $subs = $customer->subscriptions->all(['limit' =>3]);
+        $subs = $customer->subscriptions->all(array('limit'=>3));
         $this->assertSame(get_class($subs->data[0]), 'ThirtybeesStripe\Subscription');
 
-        $sub->cancel(['at_period_end' => true]);
+        $sub->cancel(array('at_period_end' => true));
 
         $sub = $customer->subscriptions->retrieve($sub->id);
         $this->assertSame($sub->status, 'active');
@@ -44,7 +44,7 @@ class SubscriptionTest extends TestCase
 
         $customer = self::createTestCustomer();
 
-        $sub = Subscription::create(['plan' => $planID, 'customer' => $customer->id]);
+        $sub = Subscription::create(array('plan' => $planID, 'customer' => $customer->id));
 
         $this->assertSame($sub->status, 'active');
         $this->assertSame($sub->plan->id, $planID);
@@ -58,15 +58,15 @@ class SubscriptionTest extends TestCase
         $this->assertSame($sub->quantity, 2);
 
         // Update the quantity parameter one more time
-        $sub = Subscription::update($sub->id, ["quantity" => 3]);
+        $sub = Subscription::update($sub->id, array("quantity" => 3));
         $this->assertSame($sub->status, 'active');
         $this->assertSame($sub->plan->id, $planID);
         $this->assertSame($sub->quantity, 3);
 
-        $subs = Subscription::all(['customer' =>$customer->id, 'plan' =>$planID, 'limit' =>3]);
+        $subs = Subscription::all(array('customer'=>$customer->id, 'plan'=>$planID, 'limit'=>3));
         $this->assertSame(get_class($subs->data[0]), 'ThirtybeesStripe\Subscription');
 
-        $sub->cancel(['at_period_end' => true]);
+        $sub->cancel(array('at_period_end' => true));
 
         $sub = Subscription::retrieve($sub->id);
         $this->assertSame($sub->status, 'active');
@@ -80,14 +80,12 @@ class SubscriptionTest extends TestCase
 
         $customer = self::createTestCustomer();
 
-        $sub = Subscription::create(
-            [
-                'customer' => $customer->id,
-                'items' => [
-                    ['plan' => $plan0ID],
-                ],
-            ]
-        );
+        $sub = Subscription::create(array(
+          'customer' => $customer->id,
+          'items' => array(
+            array('plan' => $plan0ID),
+          ),
+        ));
 
         $this->assertSame(count($sub->items->data), 1);
         $this->assertSame($sub->items->data[0]->plan->id, $plan0ID);
@@ -95,12 +93,11 @@ class SubscriptionTest extends TestCase
         $plan1ID = 'gold-' . self::generateRandomString(20);
         self::retrieveOrCreatePlan($plan1ID);
 
-        $sub = Subscription::update($sub->id, [
-            'items' => [
-                ['plan' => $plan1ID],
-            ],
-        ]
-        );
+        $sub = Subscription::update($sub->id, array(
+          'items' => array(
+            array('plan' => $plan1ID),
+          ),
+        ));
 
         $this->assertSame(count($sub->items->data), 2);
         $this->assertSame($sub->items->data[0]->plan->id, $plan0ID);
@@ -118,10 +115,10 @@ class SubscriptionTest extends TestCase
         $customer = self::createTestCustomer();
 
         $sub = $customer->subscriptions->create(
-            [
+            array(
                 'plan' => $planID,
                 'coupon' => $couponID
-            ]
+            )
         );
 
         $this->assertSame($sub->status, 'active');

@@ -96,7 +96,7 @@ class CurlClient implements ClientInterface
         $curl = curl_init();
         $method = strtolower($method);
 
-        $opts = [];
+        $opts = array();
         if (is_callable($this->defaultOptions)) { // call defaultOptions callback, set options to return value
             $opts = call_user_func_array($this->defaultOptions, func_get_args());
             if (!is_array($opts)) {
@@ -131,7 +131,7 @@ class CurlClient implements ClientInterface
         }
 
         // Create a callback to capture HTTP headers for the response
-        $rheaders = [];
+        $rheaders = array();
         $headerCallback = function ($curl, $header_line) use (&$rheaders) {
             // Ignore the HTTP request line (HTTP/1.1 200 OK)
             if (strpos($header_line, ":") === false) {
@@ -181,7 +181,7 @@ class CurlClient implements ClientInterface
         ) {
             array_push(
                 $headers,
-                'X-ThirtybeesStripe-Client-Info: {"ca":"using ThirtybeesStripe-supplied CA bundle"}'
+                'X-Stripe-Client-Info: {"ca":"using Stripe-supplied CA bundle"}'
             );
             $cert = self::caBundle();
             curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
@@ -198,7 +198,7 @@ class CurlClient implements ClientInterface
 
         $rcode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         curl_close($curl);
-        return [$rbody, $rcode, $rheaders];
+        return array($rbody, $rcode, $rheaders);
     }
 
     /**
@@ -212,20 +212,20 @@ class CurlClient implements ClientInterface
             case CURLE_COULDNT_CONNECT:
             case CURLE_COULDNT_RESOLVE_HOST:
             case CURLE_OPERATION_TIMEOUTED:
-                $msg = "Could not connect to ThirtybeesStripe ($url).  Please check your "
+                $msg = "Could not connect to Stripe ($url).  Please check your "
                  . "internet connection and try again.  If this problem persists, "
-                 . "you should check ThirtybeesStripe's service status at "
+                 . "you should check Stripe's service status at "
                  . "https://twitter.com/stripestatus, or";
                 break;
             case CURLE_SSL_CACERT:
             case CURLE_SSL_PEER_CERTIFICATE:
-                $msg = "Could not verify ThirtybeesStripe's SSL certificate.  Please make sure "
+                $msg = "Could not verify Stripe's SSL certificate.  Please make sure "
                  . "that your network is not intercepting certificates.  "
                  . "(Try going to $url in your browser.)  "
                  . "If this problem persists,";
                 break;
             default:
-                $msg = "Unexpected error communicating with ThirtybeesStripe.  "
+                $msg = "Unexpected error communicating with Stripe.  "
                  . "If this problem persists,";
         }
         $msg .= " let us know at support@stripe.com.";
@@ -253,7 +253,7 @@ class CurlClient implements ClientInterface
             return $arr;
         }
 
-        $r = [];
+        $r = array();
         foreach ($arr as $k => $v) {
             if (is_null($v)) {
                 continue;

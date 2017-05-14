@@ -15,18 +15,18 @@ class ChargeTest extends TestCase
     {
         self::authorizeFromEnv();
 
-        $card = [
+        $card = array(
             'number' => '4242424242424242',
             'exp_month' => 5,
             'exp_year' => date('Y') + 1
-        ];
+        );
 
         $c = Charge::create(
-            [
+            array(
                 'amount' => 100,
                 'currency' => 'usd',
                 'card' => $card
-            ]
+            )
         );
         $this->assertTrue($c->paid);
         $this->assertFalse($c->refunded);
@@ -36,21 +36,21 @@ class ChargeTest extends TestCase
     {
         self::authorizeFromEnv();
 
-        $card = [
+        $card = array(
             'number' => '4242424242424242',
             'exp_month' => 5,
             'exp_year' => date('Y') + 1
-        ];
+        );
 
         $c = Charge::create(
-            [
+            array(
                 'amount' => 100,
                 'currency' => 'usd',
                 'card' => $card
-            ],
-            [
+            ),
+            array(
                 'idempotency_key' => self::generateRandomString(),
-            ]
+            )
         );
 
         $this->assertTrue($c->paid);
@@ -61,18 +61,18 @@ class ChargeTest extends TestCase
     {
         self::authorizeFromEnv();
 
-        $card = [
+        $card = array(
             'number' => '4242424242424242',
             'exp_month' => 5,
             'exp_year' => date('Y') + 1
-        ];
+        );
 
         $c = Charge::create(
-            [
+            array(
                 'amount' => 100,
                 'currency' => 'usd',
                 'card' => $card
-            ]
+            )
         );
         $d = Charge::retrieve($c->id);
         $this->assertSame(200, $d->getLastResponse()->code);
@@ -83,18 +83,18 @@ class ChargeTest extends TestCase
     {
         self::authorizeFromEnv();
 
-        $card = [
+        $card = array(
             'number' => '4242424242424242',
             'exp_month' => 5,
             'exp_year' => date('Y') + 1
-        ];
+        );
 
         $charge = Charge::create(
-            [
+            array(
                 'amount' => 100,
                 'currency' => 'usd',
                 'card' => $card
-            ]
+            )
         );
 
         $charge->metadata['test'] = 'foo bar';
@@ -108,21 +108,21 @@ class ChargeTest extends TestCase
     {
         self::authorizeFromEnv();
 
-        $card = [
+        $card = array(
             'number' => '4242424242424242',
             'exp_month' => 5,
             'exp_year' => date('Y') + 1
-        ];
+        );
 
         $charge = Charge::create(
-            [
+            array(
                 'amount' => 100,
                 'currency' => 'usd',
                 'card' => $card
-            ]
+            )
         );
 
-        $charge->metadata = ['test' => 'foo bar'];
+        $charge->metadata = array('test' => 'foo bar');
         $charge->save();
         $this->assertSame(200, $charge->getLastResponse()->code);
 
@@ -134,18 +134,18 @@ class ChargeTest extends TestCase
     {
         self::authorizeFromEnv();
 
-        $card = [
+        $card = array(
             'number' => '4242424242424242',
             'exp_month' => 5,
             'exp_year' => date('Y') + 1
-        ];
+        );
 
         $charge = Charge::create(
-            [
+            array(
                 'amount' => 100,
                 'currency' => 'usd',
                 'card' => $card
-            ]
+            )
         );
 
         $charge->refunds->create();
@@ -165,11 +165,11 @@ class ChargeTest extends TestCase
         $receiver = $this->createTestBitcoinReceiver("do+fill_now@stripe.com");
 
         $charge = Charge::create(
-            [
+            array(
                 'amount' => 100,
                 'currency' => 'usd',
                 'source' => $receiver->id
-            ]
+            )
         );
 
         $this->assertSame($receiver->id, $charge->source->id);
@@ -182,18 +182,18 @@ class ChargeTest extends TestCase
     {
         self::authorizeFromEnv();
 
-        $card = [
+        $card = array(
             'number' => '4242424242424242',
             'exp_month' => 5,
             'exp_year' => date('Y') + 1
-        ];
+        );
 
         $charge = Charge::create(
-            [
+            array(
                 'amount' => 100,
                 'currency' => 'usd',
                 'card' => $card
-            ]
+            )
         );
 
         $charge->markAsSafe();

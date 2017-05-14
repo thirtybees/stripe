@@ -5,12 +5,13 @@ namespace ThirtybeesStripe;
 /**
  * Class Recipient
  *
- * @package ThirtybeesStripe
+ * @package Stripe
  */
 class Recipient extends ApiResource
 {
     /**
-     * @param string $id The ID of the recipient to retrieve.
+     * @param array|string $id The ID of the recipient to retrieve, or an
+     *     options array containing an `id` key.
      * @param array|string|null $opts
      *
      * @return Recipient
@@ -83,7 +84,7 @@ class Recipient extends ApiResource
     public function transfers($params = null)
     {
         if ($params === null) {
-            $params = [];
+            $params = array();
         }
         $params['recipient'] = $this->id;
         $transfers = Transfer::all($params, $this->_opts);

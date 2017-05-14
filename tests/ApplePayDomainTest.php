@@ -9,17 +9,15 @@ class ApplePayDomainTest extends TestCase
         $this->mockRequest(
             'POST',
             '/v1/apple_pay/domains',
-            ['domain_name' => 'test.com'],
-            [
+            array('domain_name' => 'test.com'),
+            array(
                 'id' => 'apwc_create',
                 'object' => 'apple_pay_domain'
-            ]
+            )
         );
-        $d = ApplePayDomain::create(
-            [
+        $d = ApplePayDomain::create(array(
             'domain_name' => 'test.com'
-            ]
-        );
+        ));
         $this->assertSame('apwc_create', $d->id);
         $this->assertInstanceOf('ThirtybeesStripe\\ApplePayDomain', $d);
     }
@@ -29,11 +27,11 @@ class ApplePayDomainTest extends TestCase
         $this->mockRequest(
             'GET',
             '/v1/apple_pay/domains/apwc_retrieve',
-            [],
-            [
+            array(),
+            array(
                 'id' => 'apwc_retrieve',
                 'object' => 'apple_pay_domain'
-            ]
+            )
         );
         $d = ApplePayDomain::retrieve('apwc_retrieve');
         $this->assertSame('apwc_retrieve', $d->id);
@@ -43,17 +41,15 @@ class ApplePayDomainTest extends TestCase
     public function testDeletion()
     {
         self::authorizeFromEnv();
-        $d = ApplePayDomain::create(
-            [
+        $d = ApplePayDomain::create(array(
             'domain_name' => 'jackshack.website'
-            ]
-        );
+        ));
         $this->assertInstanceOf('ThirtybeesStripe\\ApplePayDomain', $d);
         $this->mockRequest(
             'DELETE',
             '/v1/apple_pay/domains/' . $d->id,
-            [],
-            ['deleted' => true]
+            array(),
+            array('deleted' => true)
         );
         $d->delete();
         $this->assertTrue($d->deleted);
@@ -64,11 +60,11 @@ class ApplePayDomainTest extends TestCase
         $this->mockRequest(
             'GET',
             '/v1/apple_pay/domains',
-            [],
-            [
+            array(),
+            array(
                 'url' => '/v1/apple_pay/domains',
                 'object' => 'list'
-            ]
+            )
         );
         $all = ApplePayDomain::all();
         $this->assertSame($all->url, '/v1/apple_pay/domains');

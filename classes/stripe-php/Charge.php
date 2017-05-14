@@ -17,7 +17,7 @@ namespace ThirtybeesStripe;
  * @property string $customer
  * @property mixed $description
  * @property mixed $destination
- * @property mixed $dispute
+ * @property string|null $dispute
  * @property mixed $failure_code
  * @property mixed $failure_message
  * @property mixed $fraud_details
@@ -36,12 +36,13 @@ namespace ThirtybeesStripe;
  * @property mixed $statement_descriptor
  * @property string $status
  *
- * @package ThirtybeesStripe
+ * @package Stripe
  */
 class Charge extends ApiResource
 {
     /**
-     * @param string $id The ID of the charge to retrieve.
+     * @param array|string $id The ID of the charge to retrieve, or an options
+     *     array containing an `id` key.
      * @param array|string|null $options
      *
      * @return Charge
@@ -135,7 +136,7 @@ class Charge extends ApiResource
     {
         $url = $this->instanceUrl() . '/dispute';
         list($response, $opts) = $this->_request('post', $url, $params, $options);
-        $this->refreshFrom(['dispute' => $response], $opts, true);
+        $this->refreshFrom(array('dispute' => $response), $opts, true);
         return $this->dispute;
     }
 
@@ -161,7 +162,7 @@ class Charge extends ApiResource
      */
     public function markAsFraudulent($opts = null)
     {
-        $params = ['fraud_details' => ['user_report' => 'fraudulent']];
+        $params = array('fraud_details' => array('user_report' => 'fraudulent'));
         $url = $this->instanceUrl();
         list($response, $opts) = $this->_request('post', $url, $params, $opts);
         $this->refreshFrom($response, $opts);
@@ -175,7 +176,7 @@ class Charge extends ApiResource
      */
     public function markAsSafe($opts = null)
     {
-        $params = ['fraud_details' => ['user_report' => 'safe']];
+        $params = array('fraud_details' => array('user_report' => 'safe'));
         $url = $this->instanceUrl();
         list($response, $opts) = $this->_request('post', $url, $params, $opts);
         $this->refreshFrom($response, $opts);

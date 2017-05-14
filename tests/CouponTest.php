@@ -9,12 +9,12 @@ class CouponTest extends TestCase
         self::authorizeFromEnv();
         $id = 'test_coupon-' . self::generateRandomString(20);
         $c = Coupon::create(
-            [
+            array(
                 'percent_off' => 25,
                 'duration' => 'repeating',
                 'duration_in_months' => 5,
                 'id' => $id,
-            ]
+            )
         );
         $this->assertSame($id, $c->id);
         // @codingStandardsIgnoreStart

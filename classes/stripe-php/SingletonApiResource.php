@@ -5,7 +5,7 @@ namespace ThirtybeesStripe;
 /**
  * Class SingletonApiResource
  *
- * @package ThirtybeesStripe
+ * @package Stripe
  */
 abstract class SingletonApiResource extends ApiResource
 {

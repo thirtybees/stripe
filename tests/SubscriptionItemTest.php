@@ -10,12 +10,12 @@ class SubscriptionItemTest extends TestCase
         self::retrieveOrCreatePlan($plan0ID);
 
         $customer = self::createTestCustomer();
-        $sub = Subscription::create(['plan' => $plan0ID, 'customer' => $customer->id]);
+        $sub = Subscription::create(array('plan' => $plan0ID, 'customer' => $customer->id));
 
         $plan1ID = 'gold-' . self::generateRandomString(20);
         self::retrieveOrCreatePlan($plan1ID);
 
-        $subItem = SubscriptionItem::create(['plan' => $plan1ID, 'subscription' => $sub->id]);
+        $subItem = SubscriptionItem::create(array('plan' => $plan1ID, 'subscription' => $sub->id));
         $this->assertSame($subItem->plan->id, $plan1ID);
 
         $subItem->quantity = 2;
@@ -25,11 +25,11 @@ class SubscriptionItemTest extends TestCase
         $this->assertSame($subItem->quantity, 2);
 
         // Update the quantity parameter one more time
-        $subItem = SubscriptionItem::update($subItem->id, ['quantity' => 3]);
+        $subItem = SubscriptionItem::update($subItem->id, array('quantity' => 3));
         $this->assertSame($subItem->quantity, 3);
 
-        $subItems = SubscriptionItem::all(['subscription' =>$sub->id, 'limit' =>3]);
-        $this->assertSame(get_class($subItems->data[0]), 'ThirtybeesStripe\SubscriptionItem');
+        $subItems = SubscriptionItem::all(array('subscription'=>$sub->id, 'limit'=>3));
+        $this->assertSame(get_class($subItems->data[0]), 'Stripe\SubscriptionItem');
         $this->assertSame(2, count($subItems->data));
 
         $subItem->delete();
