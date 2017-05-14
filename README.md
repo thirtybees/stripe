@@ -9,7 +9,16 @@ The aim of this module is to make accepting payments with Stripe very easy.
 Contributions are more than welcome!
 
 ### Current features
-- Process Credit Card, Apple Pay, Alipay and Bitcoin (USD only) payments with Stripe
+- Process the following payment methods with Stripe: 
+  - Credit Card
+  - Credit Card (3D Secure)
+  - Apple Pay
+  - Alipay
+  - Bitcoin (USD only)
+  - iDEAL
+  - Bancontact
+  - Giropay
+  - Sofort Banking
 - Process refunds received by webhooks:
     - Partial refund
     - Full refund
