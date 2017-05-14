@@ -12,9 +12,9 @@
  * obtain it through the world-wide-web, please send an email
  * to license@thirtybees.com so we can send you a copy immediately.
  *
- *  @author    thirty bees <modules@thirtybees.com>
- *  @copyright 2017 thirty bees
- *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
+ * @author    thirty bees <modules@thirtybees.com>
+ * @copyright 2017 thirty bees
+ * @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
 
 use StripeModule\StripeTransaction;
@@ -24,15 +24,15 @@ if (!defined('_TB_VERSION_')) {
 }
 
 /**
- * Class StripeValidationModuleFrontController
+ * Class StripeSourcevalidationModuleFrontController
  */
-class StripeValidationModuleFrontController extends ModuleFrontController
+class StripeSourcevalidationModuleFrontController extends ModuleFrontController
 {
     /** @var Stripe $module */
     public $module;
 
     /**
-     * StripeValidationModuleFrontController constructor.
+     * StripeSourcevalidationModuleFrontController constructor.
      */
     public function __construct()
     {
@@ -62,7 +62,7 @@ class StripeValidationModuleFrontController extends ModuleFrontController
         $orderProcess = Configuration::get('PS_ORDER_PROCESS_TYPE') ? 'order-opc' : 'order';
         $this->context->smarty->assign(
             [
-            'orderLink' => $this->context->link->getPageLink($orderProcess, true),
+                'orderLink' => $this->context->link->getPageLink($orderProcess, true),
             ]
         );
 
@@ -70,7 +70,6 @@ class StripeValidationModuleFrontController extends ModuleFrontController
             $error = $this->module->l('An error occurred. Please contact us for more information.', 'validation');
             $this->errors[] = $error;
             $this->setTemplate('error.tpl');
-
 
             return false;
         }
@@ -83,7 +82,7 @@ class StripeValidationModuleFrontController extends ModuleFrontController
         $currency = new Currency((int) $cart->id_currency);
 
         $stripe = [
-            'secret_key' => Configuration::get(Stripe::SECRET_KEY),
+            'secret_key'      => Configuration::get(Stripe::SECRET_KEY),
             'publishable_key' => Configuration::get(Stripe::PUBLISHABLE_KEY),
         ];
 
@@ -94,8 +93,8 @@ class StripeValidationModuleFrontController extends ModuleFrontController
         try {
             $stripeCustomer = \ThirtybeesStripe\Customer::create(
                 [
-                'email' => $customer->email,
-                'source' => $token,
+                    'email'  => $customer->email,
+                    'source' => $token,
                 ]
             );
         } catch (Exception $e) {
@@ -115,7 +114,7 @@ class StripeValidationModuleFrontController extends ModuleFrontController
             $stripeCharge = \ThirtybeesStripe\Charge::create(
                 [
                     'customer' => $stripeCustomer->id,
-                    'amount' => $stripeAmount,
+                    'amount'   => $stripeAmount,
                     'currency' => Tools::strtolower($currency->iso_code),
                 ]
             );
