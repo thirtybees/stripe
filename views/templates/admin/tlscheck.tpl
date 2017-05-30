@@ -21,7 +21,7 @@
 		<strong>{l s='Check if your server supports TLS v1.2' mod='stripe'}</strong><br />
 		{l s='This module cannot process payments if TLS v1.2 is not supported by your server.' mod='stripe'}<br />
 		{l s='With this tool you can check if you need to configure your server in order to use the module.' mod='stripe'}<br />
-		{l s='If the module was unable to verify that TLS v1.2 is supported, ThirtybeesStripe will automatically be disabled.' mod='stripe'}
+		{l s='If the module was unable to verify that TLS v1.2 is supported, Stripe will automatically be disabled.' mod='stripe'}
 		{l s='Make sure you see a (green) confirmation message underneath and you will be good to go.' mod='stripe'}
 	</p>
 	{if $tls_ok === Stripe::ENUM_TLS_OK}
