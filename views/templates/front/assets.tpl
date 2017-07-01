@@ -37,29 +37,23 @@
 
 			{if $stripe_cc_form}
 				if (typeof Card === 'undefined') {
-					$.getScript('{$baseDir|escape:'javascript':'UTF-8' nofilter}js/jquery.card.js');
+					$.getScript('{$module_dir|escape:'javascript':'UTF-8'}views/js/jquery.card.js');
 				}
-				if (!$("link[href='{$baseDir|escape:'javascript':'UTF-8' nofilter}css/stripe-bootstrap.css']").length) {
-					$('<link href="{$baseDir|escape:'javascript':'UTF-8' nofilter}css/stripe-bootstrap.css" rel="stylesheet">').appendTo('head');
+				if (!$("link[href='{$module_dir|escape:'javascript':'UTF-8'}views/css/stripe-bootstrap.css']").length) {
+					$('<link href="{$module_dir|escape:'javascript':'UTF-8'}views/css/stripe-bootstrap.css" rel="stylesheet">').appendTo('head');
 				}
-				if (!$("link[href='{$baseDir|escape:'javascript':'UTF-8' nofilter}css/creditcard-embedded.css']").length) {
-					$('<link href="{$baseDir|escape:'javascript':'UTF-8' nofilter}css/creditcard-embedded.css" rel="stylesheet">').appendTo('head');
+				if (!$("link[href='{$module_dir|escape:'javascript':'UTF-8'}views/css/creditcard-embedded.css']").length) {
+					$('<link href="{$module_dir|escape:'javascript':'UTF-8'}views/css/creditcard-embedded.css" rel="stylesheet">').appendTo('head');
 				}
-				if (!$("link[href='{$baseDir|escape:'javascript':'UTF-8' nofilter}css/simplespinner.css']").length) {
-					$('<link href="{$baseDir|escape:'javascript':'UTF-8' nofilter}css/simplespinner.css" rel="stylesheet">').appendTo('head');
+				if (!$("link[href='{$module_dir|escape:'javascript':'UTF-8'}views/css/simplespinner.css']").length) {
+					$('<link href="{$module_dir|escape:'javascript':'UTF-8'}views/css/simplespinner.css" rel="stylesheet">').appendTo('head');
 				}
 			{/if}
 
 			{if $stripe_checkout}
-				{if $smarty.const._PS_VERSION_|@addcslashes:'\'' >= '1.6'}
-				if (!$("link[href='{$baseDir|escape:'javascript':'UTF-8' nofilter}css/front.css']").length) {
-					$('<link href="{$baseDir|escape:'javascript':'UTF-8' nofilter}css/front.css" rel="stylesheet">').appendTo('head');
+				if (!$("link[href='{$module_dir|escape:'javascript':'UTF-8'}views/css/front.css']").length) {
+					$('<link href="{$module_dir|escape:'javascript':'UTF-8'}views/css/front.css" rel="stylesheet">').appendTo('head');
 				}
-				{else}
-				if (!$("link[href='{$baseDir|escape:'javascript':'UTF-8' nofilter}css/front15.css']").length) {
-					$('<link href="{$baseDir|escape:'javascript':'UTF-8' nofilter}css/front15.css" rel="stylesheet">').appendTo('head');
-				}
-				{/if}
 			{/if}
 		}
 
