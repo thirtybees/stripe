@@ -1375,10 +1375,6 @@ class Stripe extends PaymentModule
      */
     protected function getApplePayOptions()
     {
-        if (version_compare(_PS_VERSION_, '1.7.0.0', '>=')) {
-            return [];
-        }
-
         return [
             'apple' => [
                 'title'  => $this->l('Apple Pay'),
@@ -1686,11 +1682,7 @@ class Stripe extends PaymentModule
         }
 
         /** @var Order $order */
-        if (version_compare(_PS_VERSION_, '1.7.0.0', '<')) {
-            $order = $params['objOrder'];
-        } else {
-            $order = $params['order'];
-        }
+        $order = $params['objOrder'];
         $currency = new Currency($order->id_currency);
 
         if (isset($order->reference) && $order->reference) {
