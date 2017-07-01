@@ -50,7 +50,7 @@ class StripeHookModuleFrontController extends ModuleFrontController
 
         if (!empty($body) && $data = Tools::jsonDecode($body, true)) {
             // Verify with ThirtybeesStripe
-            \ThirtybeesStripe\Stripe::setApiKey(Configuration::get(Stripe::SECRET_KEY));
+            \ThirtybeesStripe\Stripe::setApiKey(Configuration::get(Stripe::SECRET_KEY_TEST));
             $event = \ThirtybeesStripe\Event::retrieve($data['id']);
             switch ($data['type']) {
                 case 'charge.refunded':

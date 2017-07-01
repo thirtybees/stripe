@@ -81,22 +81,22 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
 
         $this->context->smarty->assign(
             [
-            'stripe_email' => $stripeEmail,
-            'stripe_currency' => $currency->iso_code,
-            'stripe_amount' => $stripeAmount,
-            'stripe_confirmation_page' => $link->getModuleLink('stripe', 'validation'),
-            'id_cart' => (int) $cart->id,
-            'stripe_secret_key' => Configuration::get(Stripe::SECRET_KEY),
-            'stripe_publishable_key' => Configuration::get(Stripe::PUBLISHABLE_KEY),
-            'stripe_locale' => Stripe::getStripeLanguage($this->context->language->language_code),
-            'stripe_zipcode' => (bool) Configuration::get(Stripe::ZIPCODE),
-            'stripe_bitcoin' => (bool) Configuration::get(Stripe::BITCOIN) && Tools::strtolower($currency->iso_code) === 'usd',
-            'stripe_alipay' => (bool) Configuration::get(Stripe::ALIPAY),
-            'stripe_shopname' => $this->context->shop->name,
-            'stripe_collect_billing' => Configuration::get(Stripe::COLLECT_BILLING),
-            'stripe_collect_shipping' => Configuration::get(Stripe::COLLECT_SHIPPING),
-            'autoplay' => true,
-            'stripeShopThumb' => $this->context->link->getMediaLink('/modules/stripe/views/img/shop'.$this->context->shop->id.'.jpg'),
+                'stripe_email' => $stripeEmail,
+                'stripe_currency' => $currency->iso_code,
+                'stripe_amount' => $stripeAmount,
+                'stripe_confirmation_page' => $link->getModuleLink('stripe', 'validation'),
+                'id_cart' => (int) $cart->id,
+                'stripe_secret_key' => Configuration::get(Stripe::SECRET_KEY_TEST),
+                'stripe_publishable_key' => Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
+                'stripe_locale' => Stripe::getStripeLanguage($this->context->language->language_code),
+                'stripe_zipcode' => (bool) Configuration::get(Stripe::ZIPCODE),
+                'stripe_bitcoin' => (bool) Configuration::get(Stripe::BITCOIN) && Tools::strtolower($currency->iso_code) === 'usd',
+                'stripe_alipay' => (bool) Configuration::get(Stripe::ALIPAY),
+                'stripe_shopname' => $this->context->shop->name,
+                'stripe_collect_billing' => Configuration::get(Stripe::COLLECT_BILLING),
+                'stripe_collect_shipping' => Configuration::get(Stripe::COLLECT_SHIPPING),
+                'autoplay' => true,
+                'stripeShopThumb' => $this->context->link->getMediaLink('/modules/stripe/views/img/shop'.$this->context->shop->id.'.jpg'),
             ]
         );
 
