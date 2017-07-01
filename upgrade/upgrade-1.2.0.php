@@ -34,7 +34,7 @@ function upgrade_module_1_2_0()
         } else {
             $secretKeyTest = $secretKey;
         }
-        if (substr($publishableKey, 0, 7) === 'pk_test') {
+        if (substr($publishableKey, 0, 7) === 'pk_live') {
             $goLive = true;
             $publishableKeyLive = $publishableKey;
         } else {
