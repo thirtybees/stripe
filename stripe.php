@@ -938,14 +938,13 @@ class Stripe extends PaymentModule
     }
 
     /**
-     * @param $helperList
-     * @param $fieldsList
+     * @param HelperList $helperList
+     * @param array      $fieldsList
      *
      * @return array|string
      */
     protected function getSQLFilter($helperList, $fieldsList)
     {
-        /** @var HelperList $helperList */
         if (!isset($helperList->list_id)) {
             $helperList->list_id = $helperList->table;
         }
@@ -970,13 +969,13 @@ class Stripe extends PaymentModule
                 } elseif (stripos($key, 'submitFilter') === 0) {
                     $helperList->context->cookie->$key = !is_array($value) ? $value : serialize($value);
                 }
-                if (stripos($key, $helperList->list_id.'Orderby') === 0 && Validate::isOrderBy($value)) {
+                if (stripos($key, $helperList->list_id.'Orderby') === 0 && is_string($value) && Validate::isOrderBy($value)) {
                     if ($value === '' || $value == $helperList->_defaultOrderBy) {
                         unset($helperList->context->cookie->{$prefix.$key});
                     } else {
                         $helperList->context->cookie->{$prefix.$key} = $value;
                     }
-                } elseif (stripos($key, $helperList->list_id.'Orderway') === 0 && Validate::isOrderWay($value)) {
+                } elseif (stripos($key, $helperList->list_id.'Orderway') === 0 && is_string($value) && Validate::isOrderWay($value)) {
                     if ($value === '') {
                         unset($helperList->context->cookie->{$prefix.$key});
                     } else {
@@ -1953,15 +1952,15 @@ class Stripe extends PaymentModule
             return '';
         }
 
-        $sql = new DbQuery();
-        $sql->select('tl.`name`');
-        $sql->from('tab_lang', 'tl');
-        $sql->innerJoin('tab', 't', 't.`id_tab` = tl.`id_tab`');
-        $sql->where('t.`class_name` = \''.pSQL($className).'\'');
-        $sql->where('tl.`id_lang` = '.(int) $idLang);
-
         try {
-            return (string) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
+            return (string) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue(
+                (new DbQuery())
+                    ->select('tl.`name`')
+                    ->from('tab_lang', 'tl')
+                    ->innerJoin('tab', 't', 't.`id_tab` = tl.`id_tab`')
+                    ->where('t.`class_name` = \''.pSQL($className).'\'')
+                    ->where('tl.`id_lang` = '.(int) $idLang)
+            );
         } catch (Exception $e) {
             return $this->l('Unknown');
         }
@@ -2002,14 +2001,15 @@ class Stripe extends PaymentModule
         foreach ($groups as &$group) {
             $group = (int) $group;
         }
-        $sql = new DbQuery();
-        $sql->select('mg.`id_module`');
-        $sql->from('module_group', 'mg');
-        $sql->where('mg.`id_module` = '.(int) $this->id);
-        $sql->where('mg.`id_group` IN ('.implode(',', $groups).')');
-        $sql->where('mg.`id_shop` = '.(int) $this->getShopId());
 
-        return (bool) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
+        return (bool) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue(
+            (new DbQuery())
+                ->select('mg.`id_module`')
+                ->from('module_group', 'mg')
+                ->where('mg.`id_module` = '.(int) $this->id)
+                ->where('mg.`id_group` IN ('.implode(',', $groups).')')
+                ->where('mg.`id_shop` = '.(int) $this->getShopId())
+        );
     }
 
     /**
@@ -2021,34 +2021,14 @@ class Stripe extends PaymentModule
      */
     protected function checkCountry($idCountry)
     {
-        $sql = new DbQuery();
-        $sql->select('mc.`id_module`');
-        $sql->from('module_country', 'mc');
-        $sql->where('mc.`id_module` = '.(int) $this->id);
-        $sql->where('mc.`id_country` = '.(int) $idCountry);
-        $sql->where('mc.`id_shop` = '.(int) $this->getShopId());
-
-        return (bool) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
-    }
-
-    /**
-     * Check carrier
-     * For PS1.7+
-     *
-     * @param int $reference Carrier Reference
-     *
-     * @return bool Whether the module should be shown
-     */
-    protected function checkCarrier($reference)
-    {
-        $sql = new DbQuery();
-        $sql->select('mc.`id_module`');
-        $sql->from('module_carrier', 'mc');
-        $sql->where('mc.`id_module` = '.(int) $this->id);
-        $sql->where('mc.`id_reference` = '.(int) $reference);
-        $sql->where('mc.`id_shop` = '.(int) $this->getShopId());
-
-        return (bool) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
+        return (bool) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue(
+            (new DbQuery())
+                ->select('mc.`id_module`')
+                ->from('module_country', 'mc')
+                ->where('mc.`id_module` = '.(int) $this->id)
+                ->where('mc.`id_country` = '.(int) $idCountry)
+                ->where('mc.`id_shop` = '.(int) $this->getShopId())
+        );
     }
 
     /**
