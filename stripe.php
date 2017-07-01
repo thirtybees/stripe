@@ -42,8 +42,11 @@ class Stripe extends PaymentModule
     const BITCOIN = 'STRIPE_BITCOIN';
     const ALIPAY = 'STRIPE_ALIPAY';
 
-    const SECRET_KEY = 'STRIPE_SECRET_KEY';
-    const PUBLISHABLE_KEY = 'STRIPE_PUBLISHABLE_KEY';
+    const GO_LIVE = 'STRIPE_GO_LIVE';
+    const SECRET_KEY_TEST = 'STRIPE_SECRET_KEY_TEST';
+    const PUBLISHABLE_KEY_TEST = 'STRIPE_PUBLISHABLE_KEY_TEST';
+    const SECRET_KEY_LIVE = 'STRIPE_SECRET_KEY_LIVE';
+    const PUBLISHABLE_KEY_LIVE = 'STRIPE_PUBLISHABLE_KEY_LIVE';
 
     const SHOP_THUMB = 'STRIPE_SHOP_THUMB';
 
@@ -103,7 +106,7 @@ class Stripe extends PaymentModule
     {
         $this->name = 'stripe';
         $this->tab = 'payments_gateways';
-        $this->version = '1.1.1';
+        $this->version = '1.2.0';
         $this->author = 'thirty bees';
         $this->need_instance = 1;
 
@@ -167,8 +170,11 @@ class Stripe extends PaymentModule
             $this->unregisterHook($hook);
         }
 
-        Configuration::deleteByName(static::SECRET_KEY);
-        Configuration::deleteByName(static::PUBLISHABLE_KEY);
+        Configuration::deleteByName(static::SECRET_KEY_TEST);
+        Configuration::deleteByName(static::PUBLISHABLE_KEY_TEST);
+        Configuration::deleteByName(static::SECRET_KEY_LIVE);
+        Configuration::deleteByName(static::PUBLISHABLE_KEY_LIVE);
+        Configuration::deleteByName(static::GO_LIVE);
         Configuration::deleteByName(static::USE_STATUS_REFUND);
         Configuration::deleteByName(static::USE_STATUS_PARTIAL_REFUND);
         Configuration::deleteByName(static::STATUS_PARTIAL_REFUND);
@@ -205,7 +211,7 @@ class Stripe extends PaymentModule
             'module_name' => $this->name,
         ]);
 
-        $output .= $this->postProcess();
+        $this->postProcess();
 
         $this->context->smarty->assign([
             'menutabs'           => $this->initNavigation(),
@@ -306,7 +312,7 @@ class Stripe extends PaymentModule
         $guzzle = new GuzzleClient();
         ApiRequestor::setHttpClient($guzzle);
         try {
-            \ThirtybeesStripe\Stripe::setApiKey(Configuration::get(Stripe::SECRET_KEY));
+            \ThirtybeesStripe\Stripe::setApiKey(Configuration::get(Stripe::SECRET_KEY_TEST));
             \ThirtybeesStripe\Refund::create(
                 [
                     'charge'   => $idCharge,
@@ -385,8 +391,11 @@ class Stripe extends PaymentModule
      */
     protected function postProcessGeneralOptions()
     {
-        $secretKey = Tools::getValue(static::SECRET_KEY);
-        $publishableKey = Tools::getValue(static::PUBLISHABLE_KEY);
+        $secretKeyTest = Tools::getValue(static::SECRET_KEY_TEST);
+        $publishableKeyTest = Tools::getValue(static::PUBLISHABLE_KEY_TEST);
+        $secretKeyLive = Tools::getValue(static::SECRET_KEY_LIVE);
+        $publishableKeyLive = Tools::getValue(static::PUBLISHABLE_KEY_LIVE);
+        $goLive = (bool) Tools::getValue(static::GO_LIVE);
         $zipcode = (bool) Tools::getValue(static::ZIPCODE);
         $bitcoin = (bool) Tools::getValue(static::BITCOIN);
         $alipay = (bool) Tools::getValue(static::ALIPAY);
@@ -403,10 +412,22 @@ class Stripe extends PaymentModule
         $ccanim = (bool) Tools::getValue(static::STRIPE_CC_ANIMATION);
         $apple = (bool) Tools::getValue(static::STRIPE_APPLE_PAY);
 
+        if ($goLive
+            && (substr($publishableKeyLive, 0, 7) !== 'pk_live' || substr($publishableKeyLive, 0, 7) !== 'sk_live')
+        ) {
+            $this->context->controller->confirmations = [];
+            $this->context->controller->errors[] = ($this->l('Live mode has been chosen but one or more of the live keys are invalid'));
+
+            return;
+        }
+
         if (Configuration::get('PS_MULTISHOP_FEATURE_ACTIVE')) {
             if (Shop::getContext() == Shop::CONTEXT_ALL) {
-                $this->updateAllValue(static::SECRET_KEY, $secretKey);
-                $this->updateAllValue(static::PUBLISHABLE_KEY, $publishableKey);
+                $this->updateAllValue(static::SECRET_KEY_TEST, $secretKeyTest);
+                $this->updateAllValue(static::PUBLISHABLE_KEY_TEST, $publishableKeyTest);
+                $this->updateAllValue(static::SECRET_KEY_LIVE, $secretKeyLive);
+                $this->updateAllValue(static::PUBLISHABLE_KEY_LIVE, $publishableKeyLive);
+                $this->updateAllValue(static::GO_LIVE, $goLive);
                 $this->updateAllValue(static::ZIPCODE, $zipcode);
                 $this->updateAllValue(static::BITCOIN, $bitcoin);
                 $this->updateAllValue(static::ALIPAY, $alipay);
@@ -427,11 +448,20 @@ class Stripe extends PaymentModule
                 $multishopOverride = Tools::getValue('multishopOverrideOption');
                 if (Shop::getContext() == Shop::CONTEXT_GROUP) {
                     foreach (Shop::getShops(false, $this->getShopId()) as $idShop) {
-                        if (isset($multishopOverride[static::SECRET_KEY]) && $multishopOverride[static::SECRET_KEY]) {
-                            Configuration::updateValue(static::SECRET_KEY, $secretKey, false, $idShopGroup, $idShop);
+                        if (isset($multishopOverride[static::SECRET_KEY_TEST]) && $multishopOverride[static::SECRET_KEY_TEST]) {
+                            Configuration::updateValue(static::SECRET_KEY_TEST, $secretKeyTest, false, $idShopGroup, $idShop);
                         }
-                        if (isset($multishopOverride[static::PUBLISHABLE_KEY]) && $multishopOverride[static::PUBLISHABLE_KEY]) {
-                            Configuration::updateValue(static::PUBLISHABLE_KEY, $publishableKey, false, $idShopGroup, $idShop);
+                        if (isset($multishopOverride[static::PUBLISHABLE_KEY_TEST]) && $multishopOverride[static::PUBLISHABLE_KEY_TEST]) {
+                            Configuration::updateValue(static::PUBLISHABLE_KEY_TEST, $publishableKeyTest, false, $idShopGroup, $idShop);
+                        }
+                        if (isset($multishopOverride[static::SECRET_KEY_LIVE]) && $multishopOverride[static::SECRET_KEY_LIVE]) {
+                            Configuration::updateValue(static::SECRET_KEY_LIVE, $secretKeyLive, false, $idShopGroup, $idShop);
+                        }
+                        if (isset($multishopOverride[static::PUBLISHABLE_KEY_LIVE]) && $multishopOverride[static::PUBLISHABLE_KEY_LIVE]) {
+                            Configuration::updateValue(static::PUBLISHABLE_KEY_LIVE, $publishableKeyLive, false, $idShopGroup, $idShop);
+                        }
+                        if (isset($multishopOverride[static::GO_LIVE]) && $multishopOverride[static::GO_LIVE]) {
+                            Configuration::updateValue(static::GO_LIVE, $goLive, false, $idShopGroup, $idShop);
                         }
                         if (isset($multishopOverride[static::ZIPCODE]) && $multishopOverride[static::ZIPCODE]) {
                             Configuration::updateValue(static::ZIPCODE, $zipcode, false, $idShopGroup, $idShop);
@@ -481,11 +511,20 @@ class Stripe extends PaymentModule
                     }
                 } else {
                     $idShop = (int) $this->getShopId();
-                    if (isset($multishopOverride[static::SECRET_KEY]) && $multishopOverride[static::SECRET_KEY]) {
-                        Configuration::updateValue(static::SECRET_KEY, $secretKey, false, $idShopGroup, $idShop);
+                    if (isset($multishopOverride[static::SECRET_KEY_TEST]) && $multishopOverride[static::SECRET_KEY_TEST]) {
+                        Configuration::updateValue(static::SECRET_KEY_TEST, $secretKeyTest, false, $idShopGroup, $idShop);
                     }
-                    if (isset($multishopOverride[static::PUBLISHABLE_KEY]) && $multishopOverride[static::PUBLISHABLE_KEY]) {
-                        Configuration::updateValue(static::PUBLISHABLE_KEY, $publishableKey, false, $idShopGroup, $idShop);
+                    if (isset($multishopOverride[static::PUBLISHABLE_KEY_TEST]) && $multishopOverride[static::PUBLISHABLE_KEY_TEST]) {
+                        Configuration::updateValue(static::PUBLISHABLE_KEY_TEST, $publishableKeyTest, false, $idShopGroup, $idShop);
+                    }
+                    if (isset($multishopOverride[static::SECRET_KEY_LIVE]) && $multishopOverride[static::SECRET_KEY_LIVE]) {
+                        Configuration::updateValue(static::SECRET_KEY_LIVE, $secretKeyLive, false, $idShopGroup, $idShop);
+                    }
+                    if (isset($multishopOverride[static::PUBLISHABLE_KEY_LIVE]) && $multishopOverride[static::PUBLISHABLE_KEY_LIVE]) {
+                        Configuration::updateValue(static::PUBLISHABLE_KEY_LIVE, $publishableKeyLive, false, $idShopGroup, $idShop);
+                    }
+                    if (isset($multishopOverride[static::GO_LIVE]) && $multishopOverride[static::GO_LIVE]) {
+                        Configuration::updateValue(static::GO_LIVE, $goLive, false, $idShopGroup, $idShop);
                     }
                     if (isset($multishopOverride[static::ZIPCODE]) && $multishopOverride[static::ZIPCODE]) {
                         Configuration::updateValue(static::ZIPCODE, $zipcode, false, $idShopGroup, $idShop);
@@ -536,8 +575,11 @@ class Stripe extends PaymentModule
             }
         }
 
-        Configuration::updateValue(static::SECRET_KEY, $secretKey);
-        Configuration::updateValue(static::PUBLISHABLE_KEY, $publishableKey);
+        Configuration::updateValue(static::SECRET_KEY_TEST, $secretKeyTest);
+        Configuration::updateValue(static::PUBLISHABLE_KEY_TEST, $publishableKeyTest);
+        Configuration::updateValue(static::SECRET_KEY_LIVE, $secretKeyLive);
+        Configuration::updateValue(static::PUBLISHABLE_KEY_LIVE, $publishableKeyLive);
+        Configuration::updateValue(static::GO_LIVE, $goLive);
         Configuration::updateValue(static::ZIPCODE, $zipcode);
         Configuration::updateValue(static::BITCOIN, $bitcoin);
         Configuration::updateValue(static::ALIPAY, $alipay);
@@ -1159,23 +1201,54 @@ class Stripe extends PaymentModule
                 'title'  => $this->l('API Settings'),
                 'icon'   => 'icon-server',
                 'fields' => [
-                    static::SECRET_KEY      => [
-                        'title'      => $this->l('Secret key'),
-                        'type'       => 'text',
-                        'name'       => static::SECRET_KEY,
-                        'value'      => Configuration::get(static::SECRET_KEY),
-                        'validation' => 'isString',
-                        'cast'       => 'strval',
-                        'size'       => 64,
+                    static::PUBLISHABLE_KEY_TEST => [
+                        'title'       => $this->l('Publishable key (test)'),
+                        'type'        => 'text',
+                        'name'        => static::PUBLISHABLE_KEY_TEST,
+                        'value'       => Configuration::get(static::PUBLISHABLE_KEY_TEST),
+                        'validation'  => 'isString',
+                        'cast'        => 'strval',
+                        'placeholder' => 'pk_test...',
+                        'size'        => 64,
                     ],
-                    static::PUBLISHABLE_KEY => [
-                        'title'      => $this->l('Publishable key'),
-                        'type'       => 'text',
-                        'name'       => static::PUBLISHABLE_KEY,
-                        'value'      => Configuration::get(static::PUBLISHABLE_KEY),
-                        'validation' => 'isString',
-                        'cast'       => 'strval',
-                        'size'       => 64,
+                    static::SECRET_KEY_TEST      => [
+                        'title'       => $this->l('Secret key (test)'),
+                        'type'        => 'text',
+                        'name'        => static::SECRET_KEY_TEST,
+                        'value'       => Configuration::get(static::SECRET_KEY_TEST),
+                        'validation'  => 'isString',
+                        'cast'        => 'strval',
+                        'placeholder' => 'sk_test...',
+                        'size'        => 64,
+                    ],
+                    static::PUBLISHABLE_KEY_LIVE => [
+                        'title'       => $this->l('Publishable key (live)'),
+                        'type'        => 'text',
+                        'name'        => static::PUBLISHABLE_KEY_TEST,
+                        'value'       => Configuration::get(static::PUBLISHABLE_KEY_TEST),
+                        'validation'  => 'isString',
+                        'cast'        => 'strval',
+                        'placeholder' => 'pk_live...',
+                        'size'        => 64,
+                    ],
+                    static::SECRET_KEY_LIVE      => [
+                        'title'       => $this->l('Secret key (live)'),
+                        'type'        => 'text',
+                        'name'        => static::SECRET_KEY_TEST,
+                        'value'       => Configuration::get(static::SECRET_KEY_TEST),
+                        'validation'  => 'isString',
+                        'cast'        => 'strval',
+                        'placeholder' => 'sk_live...',
+                        'size'        => 64,
+                    ],
+                    static::GO_LIVE    => [
+                        'title'      => $this->l('Go live'),
+                        'type'       => 'bool',
+                        'desc'       => $this->l('Enable this options to accept live payments, otherwise the test keys are used, which you can use to test your store.'),
+                        'name'       => static::GO_LIVE,
+                        'value'      => Configuration::get(static::GO_LIVE),
+                        'validation' => 'isBool',
+                        'cast'       => 'intval',
                     ],
                 ],
                 'submit' => [
@@ -1472,7 +1545,7 @@ class Stripe extends PaymentModule
                         'type'       => 'select',
                         'list'       => $orderStatuses,
                         'identifier' => 'id_order_state',
-                        'name'       => static::PUBLISHABLE_KEY,
+                        'name'       => static::PUBLISHABLE_KEY_TEST,
                         'value'      => $statusRefund,
                         'validation' => 'isString',
                         'cast'       => 'strval',
@@ -1516,7 +1589,7 @@ class Stripe extends PaymentModule
      */
     public function hookPayment($params)
     {
-        if (!$this->active || (!Configuration::get(static::SECRET_KEY) && !Configuration::get(static::PUBLISHABLE_KEY))) {
+        if (!$this->active || (!Configuration::get(static::SECRET_KEY_TEST) && !Configuration::get(static::PUBLISHABLE_KEY_TEST))) {
             return false;
         }
 
@@ -1553,8 +1626,8 @@ class Stripe extends PaymentModule
                 'stripe_amount_string'          => (string) $cart->getOrderTotal(),
                 'stripe_amount_formatted'       => Tools::displayPrice($cart->getOrderTotal(), Currency::getCurrencyInstance($cart->id_currency)),
                 'id_cart'                       => (int) $cart->id,
-                'stripe_secret_key'             => Configuration::get(static::SECRET_KEY),
-                'stripe_publishable_key'        => Configuration::get(static::PUBLISHABLE_KEY),
+                'stripe_secret_key'             => Configuration::get(static::SECRET_KEY_TEST),
+                'stripe_publishable_key'        => Configuration::get(static::PUBLISHABLE_KEY_TEST),
                 'stripe_locale'                 => static::getStripeLanguage($this->context->language->language_code),
                 'stripe_zipcode'                => (bool) Configuration::get(static::ZIPCODE),
                 'stripecc_zipcode'              => (bool) Configuration::get(static::ZIPCODE),
@@ -1651,7 +1724,7 @@ class Stripe extends PaymentModule
     public function hookDisplayPaymentEU($params)
     {
         /** @var Cart $cart */
-        if (!$this->active || (!Configuration::get(static::SECRET_KEY) && !Configuration::get(static::PUBLISHABLE_KEY))) {
+        if (!$this->active || (!Configuration::get(static::SECRET_KEY_TEST) && !Configuration::get(static::PUBLISHABLE_KEY_TEST))) {
             return false;
         }
 
