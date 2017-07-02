@@ -1589,7 +1589,10 @@ class Stripe extends PaymentModule
      */
     public function hookPayment($params)
     {
-        if (!$this->active || (!Configuration::get(static::SECRET_KEY_TEST) && !Configuration::get(static::PUBLISHABLE_KEY_TEST))) {
+        if (!$this->active ||
+            (!Configuration::get(static::SECRET_KEY_TEST) && !Configuration::get(static::PUBLISHABLE_KEY_TEST))
+            && (!Configuration::get(static::SECRET_KEY_LIVE) && !Configuration::get(static::PUBLISHABLE_KEY_LIVE))
+        ) {
             return false;
         }
 
@@ -1724,7 +1727,10 @@ class Stripe extends PaymentModule
     public function hookDisplayPaymentEU($params)
     {
         /** @var Cart $cart */
-        if (!$this->active || (!Configuration::get(static::SECRET_KEY_TEST) && !Configuration::get(static::PUBLISHABLE_KEY_TEST))) {
+        if (!$this->active ||
+            (!Configuration::get(static::SECRET_KEY_TEST) && !Configuration::get(static::PUBLISHABLE_KEY_TEST))
+            && (!Configuration::get(static::SECRET_KEY_LIVE) && !Configuration::get(static::PUBLISHABLE_KEY_LIVE))
+        ) {
             return false;
         }
 
