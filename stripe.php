@@ -1935,11 +1935,9 @@ class Stripe extends PaymentModule
         $helperList->identifier = 'id_stripe_transaction';
         $helperList->title = $this->l('Transactions');
         $helperList->token = Tools::getAdminTokenLite('AdminOrders');
-        $helperList->currentIndex = AdminController::$currentIndex.'&'.http_build_query(
-                [
-                    'id_order' => $idOrder,
-                ]
-            );
+        $helperList->currentIndex = AdminController::$currentIndex.'&'.http_build_query([
+            'id_order' => $idOrder,
+        ]);
 
         // Hide actions
         $helperList->tpl_vars['show_filters'] = false;
