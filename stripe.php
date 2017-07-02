@@ -2061,48 +2061,6 @@ class Stripe extends PaymentModule
     }
 
     /**
-     * Check customer group
-     *
-     * @param array $groups Customer Group IDs
-     *
-     * @return bool Whether the module should be shown
-     */
-    protected function checkGroup($groups)
-    {
-        foreach ($groups as &$group) {
-            $group = (int) $group;
-        }
-
-        return (bool) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue(
-            (new DbQuery())
-                ->select('mg.`id_module`')
-                ->from('module_group', 'mg')
-                ->where('mg.`id_module` = '.(int) $this->id)
-                ->where('mg.`id_group` IN ('.implode(',', $groups).')')
-                ->where('mg.`id_shop` = '.(int) $this->getShopId())
-        );
-    }
-
-    /**
-     * Check Country
-     *
-     * @param int $idCountry Country ID
-     *
-     * @return bool Whether the module should be shown
-     */
-    protected function checkCountry($idCountry)
-    {
-        return (bool) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue(
-            (new DbQuery())
-                ->select('mc.`id_module`')
-                ->from('module_country', 'mc')
-                ->where('mc.`id_module` = '.(int) $this->id)
-                ->where('mc.`id_country` = '.(int) $idCountry)
-                ->where('mc.`id_shop` = '.(int) $this->getShopId())
-        );
-    }
-
-    /**
      * Add information message
      *
      * @param string $message Message
