@@ -106,7 +106,7 @@ class Stripe extends PaymentModule
     {
         $this->name = 'stripe';
         $this->tab = 'payments_gateways';
-        $this->version = '1.2.0';
+        $this->version = '1.2.1';
         $this->author = 'thirty bees';
         $this->need_instance = 1;
 
@@ -413,7 +413,7 @@ class Stripe extends PaymentModule
         $apple = (bool) Tools::getValue(static::STRIPE_APPLE_PAY);
 
         if ($goLive
-            && (substr($publishableKeyLive, 0, 7) !== 'pk_live' || substr($publishableKeyLive, 0, 7) !== 'sk_live')
+            && (substr($publishableKeyLive, 0, 7) !== 'pk_live' || substr($secretKeyLive, 0, 7) !== 'sk_live')
         ) {
             $this->context->controller->confirmations = [];
             $this->context->controller->errors[] = ($this->l('Live mode has been chosen but one or more of the live keys are invalid'));
