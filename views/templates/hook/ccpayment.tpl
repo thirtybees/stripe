@@ -116,9 +116,9 @@
                 </div>
                 <div class="panel-body">
                     <div class="row">
-                        <div class="col-xs-12 col-md-12 form-group">
+                        <div class="col-md-12 form-group">
                             <label for="stripeCardNumber">{l s='CARD NUMBER' mod='stripe'}</label>
-                            <div class="input-group">
+                            <div class="input-group col-md-12">
                                 <input
                                         type="tel"
                                         class="form-control"
