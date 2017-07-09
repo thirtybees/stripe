@@ -47,6 +47,7 @@
 
       function initStripeCC() {
         if (typeof Stripe === 'undefined' || typeof Card === 'undefined') {
+          console.log('try again');
           setTimeout(initStripeCC, 100);
           return;
         }
@@ -67,11 +68,12 @@
         Stripe.setPublishableKey('{$stripe_publishable_key|escape:'javascript':'UTF-8'}');
 
         $form.submit(function (event) {
-            {* Disable the submit button to prevent repeated clicks: *}
+          event.preventDefault();
+          {* Disable the submit button to prevent repeated clicks: *}
           $form.find('.submit').prop('disabled', true);
           $form.find('.stripe-loader').show();
 
-            {* Request a token from ThirtybeesStripe: *}
+          {* Request a token from ThirtybeesStripe: *}
           var expiry = $('#stripeCardExpiry').val().split('/', 2);
           Stripe.source.create({
               type: 'card',

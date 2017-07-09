@@ -12,9 +12,9 @@
  * obtain it through the world-wide-web, please send an email
  * to license@thirtybees.com so we can send you a copy immediately.
  *
- *  @author    thirty bees <modules@thirtybees.com>
- *  @copyright 2017 thirty bees
- *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
+ * @author    thirty bees <modules@thirtybees.com>
+ * @copyright 2017 thirty bees
+ * @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
 
 use StripeModule\StripeTransaction;
@@ -65,7 +65,7 @@ class StripeAjaxvalidationModuleFrontController extends ModuleFrontController
         $orderProcess = Configuration::get('PS_ORDER_PROCESS_TYPE') ? 'order-opc' : 'order';
         $this->context->smarty->assign(
             [
-            'orderLink' => $this->context->link->getPageLink($orderProcess, true),
+                'orderLink' => $this->context->link->getPageLink($orderProcess, true),
             ]
         );
 
@@ -82,8 +82,8 @@ class StripeAjaxvalidationModuleFrontController extends ModuleFrontController
         $currency = new Currency((int) $cart->id_currency);
 
         $stripe = [
-            'secret_key' => Configuration::get(Stripe::SECRET_KEY_TEST),
-            'publishable_key' => Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
+            'secret_key'      => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST),
+            'publishable_key' => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::PUBLISHABLE_KEY_LIVE) : Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
         ];
 
         $guzzle = new \ThirtybeesStripe\HttpClient\GuzzleClient();
@@ -93,8 +93,8 @@ class StripeAjaxvalidationModuleFrontController extends ModuleFrontController
         try {
             $stripeCustomer = \ThirtybeesStripe\Customer::create(
                 [
-                'email' => $customer->email,
-                'source' => $token,
+                    'email'  => $customer->email,
+                    'source' => $token,
                 ]
             );
         } catch (Exception $e) {
@@ -111,7 +111,7 @@ class StripeAjaxvalidationModuleFrontController extends ModuleFrontController
             $stripeCharge = \ThirtybeesStripe\Charge::create(
                 [
                     'customer' => $stripeCustomer->id,
-                    'amount' => $stripeAmount,
+                    'amount'   => $stripeAmount,
                     'currency' => Tools::strtolower($currency->iso_code),
                 ]
             );

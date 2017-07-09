@@ -12,9 +12,9 @@
  * obtain it through the world-wide-web, please send an email
  * to license@thirtybees.com so we can send you a copy immediately.
  *
- *  @author    thirty bees <modules@thirtybees.com>
- *  @copyright 2017 thirty bees
- *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
+ * @author    thirty bees <modules@thirtybees.com>
+ * @copyright 2017 thirty bees
+ * @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
 
 if (!defined('_TB_VERSION_')) {
@@ -81,22 +81,22 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
 
         $this->context->smarty->assign(
             [
-                'stripe_email' => $stripeEmail,
-                'stripe_currency' => $currency->iso_code,
-                'stripe_amount' => $stripeAmount,
+                'stripe_email'             => $stripeEmail,
+                'stripe_currency'          => $currency->iso_code,
+                'stripe_amount'            => $stripeAmount,
                 'stripe_confirmation_page' => $link->getModuleLink('stripe', 'validation'),
-                'id_cart' => (int) $cart->id,
-                'stripe_secret_key' => Configuration::get(Stripe::SECRET_KEY_TEST),
-                'stripe_publishable_key' => Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
-                'stripe_locale' => Stripe::getStripeLanguage($this->context->language->language_code),
-                'stripe_zipcode' => (bool) Configuration::get(Stripe::ZIPCODE),
-                'stripe_bitcoin' => (bool) Configuration::get(Stripe::BITCOIN) && Tools::strtolower($currency->iso_code) === 'usd',
-                'stripe_alipay' => (bool) Configuration::get(Stripe::ALIPAY),
-                'stripe_shopname' => $this->context->shop->name,
-                'stripe_collect_billing' => Configuration::get(Stripe::COLLECT_BILLING),
-                'stripe_collect_shipping' => Configuration::get(Stripe::COLLECT_SHIPPING),
-                'autoplay' => true,
-                'stripeShopThumb' => $this->context->link->getMediaLink('/modules/stripe/views/img/shop'.$this->context->shop->id.'.jpg'),
+                'id_cart'                  => (int) $cart->id,
+                'stripe_secret_key'        => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST),
+                'stripe_publishable_key'   => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::PUBLISHABLE_KEY_LIVE) : Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
+                'stripe_locale'            => Stripe::getStripeLanguage($this->context->language->language_code),
+                'stripe_zipcode'           => (bool) Configuration::get(Stripe::ZIPCODE),
+                'stripe_bitcoin'           => (bool) Configuration::get(Stripe::BITCOIN) && Tools::strtolower($currency->iso_code) === 'usd',
+                'stripe_alipay'            => (bool) Configuration::get(Stripe::ALIPAY),
+                'stripe_shopname'          => $this->context->shop->name,
+                'stripe_collect_billing'   => Configuration::get(Stripe::COLLECT_BILLING),
+                'stripe_collect_shipping'  => Configuration::get(Stripe::COLLECT_SHIPPING),
+                'autoplay'                 => true,
+                'stripeShopThumb'          => $this->context->link->getMediaLink('/modules/stripe/views/img/shop'.$this->context->shop->id.'.jpg'),
             ]
         );
 

@@ -83,8 +83,8 @@ class StripeValidationModuleFrontController extends ModuleFrontController
         $currency = new Currency((int) $cart->id_currency);
 
         $stripe = [
-            'secret_key' => Configuration::get(Stripe::SECRET_KEY_TEST),
-            'publishable_key' => Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
+            'secret_key'      => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST),
+            'publishable_key' => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::PUBLISHABLE_KEY_LIVE) : Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
         ];
 
         $guzzle = new \ThirtybeesStripe\HttpClient\GuzzleClient();
