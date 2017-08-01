@@ -44,7 +44,7 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
      */
     public function initContent()
     {
-        if (!Module::isEnabled('stripe')) {
+        if (!Module::isEnabled('stripe') || (!Configuration::get(Stripe::STRIPE_CHECKOUT) && !Configuration::get(Stripe::STRIPE_CC_FORM))) {
             Tools::redirect('index.php?controller=order&step=1');
         }
         $cart = $this->context->cart;
@@ -57,9 +57,21 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
             Tools::redirect('index.php?controller=order&step=1');
         }
 
-        require_once _PS_MODULE_DIR_.'stripe/stripe.php';
-
         parent::initContent();
+
+        if (Configuration::get(Stripe::STRIPE_CC_FORM)) {
+            $this->initCreditCard();
+        } else {
+            $this->initStripeCheckout();
+        }
+
+    }
+
+    /**
+     * Init credit card payment
+     */
+    protected function initStripeCheckout()
+    {
         $this->context->controller->addJS('https://checkout.stripe.com/checkout.js');
 
         /** @var Cookie $email */
@@ -97,9 +109,76 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
                 'stripe_collect_shipping'  => Configuration::get(Stripe::COLLECT_SHIPPING),
                 'autoplay'                 => true,
                 'stripeShopThumb'          => $this->context->link->getMediaLink('/modules/stripe/views/img/shop'.$this->context->shop->id.'.jpg'),
+                'module_dir'               => __PS_BASE_URI__.'modules/stripe/',
             ]
         );
 
         $this->setTemplate('eupayment.tpl');
+    }
+
+    /**
+     * Init credit card payment
+     */
+    protected function initCreditCard()
+    {
+        $this->context->controller->addJS('https://checkout.stripe.com/checkout.js');
+
+        /** @var Cookie $email */
+        $cookie = $this->context->cookie;
+        $stripeEmail = $cookie->email;
+
+        /** @var Cart $cart */
+        $cart = $this->context->cart;
+        $currency = new Currency($cart->id_currency);
+
+        $link = $this->context->link;
+
+        $stripeAmount = $cart->getOrderTotal();
+        if (!in_array(Tools::strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
+            $stripeAmount = (int) ($stripeAmount * 100);
+        }
+
+        $invoiceAddress = new Address((int) $cart->id_address_invoice);
+        $country = new Country($invoiceAddress->id_country);
+        $customer = new Customer($cart->id_customer);
+
+        $this->module->checkShopThumb();
+
+        $this->context->smarty->assign(
+            [
+                'stripe_name'                   => $invoiceAddress->firstname.' '.$invoiceAddress->lastname,
+                'stripe_email'                  => $stripeEmail,
+                'stripe_currency'               => $currency->iso_code,
+                'stripe_country'                => Tools::strtoupper($country->iso_code),
+                'stripe_amount'                 => $stripeAmount,
+                'stripe_amount_string'          => (string) $cart->getOrderTotal(),
+                'stripe_amount_formatted'       => Tools::displayPrice($cart->getOrderTotal(), Currency::getCurrencyInstance($cart->id_currency)),
+                'id_cart'                       => (int) $cart->id,
+                'stripe_secret_key'             => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST),
+                'stripe_publishable_key'        => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::PUBLISHABLE_KEY_LIVE) : Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
+                'stripe_locale'                 => Stripe::getStripeLanguage($this->context->language->language_code),
+                'stripe_zipcode'                => (bool) Configuration::get(Stripe::ZIPCODE),
+                'stripecc_zipcode'              => (bool) Configuration::get(Stripe::ZIPCODE),
+                'stripe_bitcoin'                => (bool) Configuration::get(Stripe::BITCOIN) && Tools::strtolower($currency->iso_code) === 'usd',
+                'stripe_alipay'                 => (bool) Configuration::get(Stripe::ALIPAY),
+                'ideal'                         => Configuration::get(Stripe::IDEAL),
+                'stripe_shopname'               => $this->context->shop->name,
+                'stripe_ajax_validation'        => $link->getModuleLink($this->module->name, 'ajaxvalidation', [], Tools::usingSecureMode()),
+                'stripe_confirmation_page'      => $link->getModuleLink($this->module->name, 'validation', [], Tools::usingSecureMode()),
+                'stripe_ajax_confirmation_page' => $link->getPageLink('order-confirmation', Tools::usingSecureMode(), '&id_cart='.$cart->id.'&id_module='.$this->module->id.'&key='.$customer->secure_key),
+                'showPaymentLogos'              => Configuration::get(Stripe::SHOW_PAYMENT_LOGOS),
+                'stripeShopThumb'               => str_replace('http://', 'https://', $this->context->link->getMediaLink(__PS_BASE_URI__.'modules/stripe/views/img/shop'.$this->module->getShopId().'.jpg')),
+                'stripe_collect_billing'        => Configuration::get(Stripe::COLLECT_BILLING),
+                'stripe_collect_shipping'       => Configuration::get(Stripe::COLLECT_SHIPPING),
+                'stripe_apple_pay'              => Configuration::get(Stripe::STRIPE_APPLE_PAY),
+                'stripe_checkout'               => Configuration::get(Stripe::STRIPE_CHECKOUT),
+                'stripe_cc_form'                => Configuration::get(Stripe::STRIPE_CC_FORM),
+                'stripe_cc_animation'           => Configuration::get(Stripe::STRIPE_CC_ANIMATION),
+                'three_d_secure'                => Configuration::get(Stripe::THREEDSECURE),
+                'module_dir'                    => __PS_BASE_URI__.'modules/stripe/',
+            ]
+        );
+
+        $this->setTemplate('eucc.tpl');
     }
 }
