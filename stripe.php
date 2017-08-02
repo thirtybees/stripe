@@ -106,7 +106,7 @@ class Stripe extends PaymentModule
     {
         $this->name = 'stripe';
         $this->tab = 'payments_gateways';
-        $this->version = '1.2.2';
+        $this->version = '1.3.0';
         $this->author = 'thirty bees';
         $this->need_instance = 1;
 
@@ -1672,6 +1672,9 @@ class Stripe extends PaymentModule
         if (Configuration::get(static::SOFORT) && in_array(Tools::strtoupper($country->iso_code), ['AT', 'DE', 'NL', 'BE', 'ES'])) {
             $output .= $this->display(__FILE__, 'views/templates/hook/sofortpayment.tpl');
         }
+        if (Configuration::get(static::ALIPAY)) {
+            $output .= $this->display(__FILE__, 'views/templates/hook/alipaypayment.tpl');
+        }
         if (Configuration::get(static::STRIPE_CC_FORM)) {
             $output .= $this->display(__FILE__, 'views/templates/hook/ccpayment.tpl');
         }
@@ -1780,6 +1783,13 @@ class Stripe extends PaymentModule
                 'cta_text' => $this->l('Sofort Banking'),
                 'logo'     => Media::getMediaPath($this->local_path . 'views/img/sofort.png'),
                 'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'sofort'], Tools::usingSecureMode()),
+            ];
+        }
+        if (Configuration::get(static::ALIPAY)) {
+            $paymentOptions[] = [
+                'cta_text' => $this->l('Alipay'),
+                'logo'     => Media::getMediaPath($this->local_path . 'views/img/alipay.png'),
+                'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'alipay'], Tools::usingSecureMode()),
             ];
         }
 

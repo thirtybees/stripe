@@ -78,6 +78,10 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
             case 'sofort':
                 $this->initSofort();
                 break;
+            case 'alipay':
+                $this->initAlipay();
+                break;
+
             default:
                 if (Configuration::get(Stripe::STRIPE_CC_FORM)) {
                     $this->initCreditCard();
@@ -334,6 +338,34 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
             'sofort' => [
                 'country' => Tools::strtoupper($country->iso_code),
             ]
+        ]);
+
+        Tools::redirect($source->redirect->url);
+    }
+
+    /**
+     * Initialize Alipay payment
+     */
+    protected function initAlipay()
+    {
+        /** @var Cart $cart */
+        $cart = $this->context->cart;
+        $currency = new Currency($cart->id_currency);
+
+        $stripeAmount = $cart->getOrderTotal();
+        if (!in_array(Tools::strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
+            $stripeAmount = (int) ($stripeAmount * 100);
+        }
+
+        ThirtybeesStripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST));
+
+        $source = \ThirtybeesStripe\Source::create([
+            'type' => 'alipay',
+            'amount' => (int)$stripeAmount,
+            'currency' => $currency->iso_code,
+            'redirect' => [
+                'return_url' => $this->context->link->getModuleLink('stripe', 'sourcevalidation', ['stripe-id_cart' => $cart->id, 'type' => 'alipay'], true),
+            ],
         ]);
 
         Tools::redirect($source->redirect->url);
