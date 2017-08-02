@@ -48,7 +48,7 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
             Tools::redirect('index.php?controller=order&step=1');
         }
         $cart = $this->context->cart;
-        if ($cart->id_customer == 0 || $cart->id_address_delivery == 0 || $cart->id_address_invoice == 0 || !$this->module->active) {
+        if (!$cart->id_customer || !$cart->id_address_delivery || !$cart->id_address_invoice || !$this->module->active) {
             Tools::redirect('index.php?controller=order&step=1');
         }
 
@@ -59,12 +59,33 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
 
         parent::initContent();
 
-        if (Configuration::get(Stripe::STRIPE_CC_FORM)) {
-            $this->initCreditCard();
-        } else {
-            $this->initStripeCheckout();
+        switch (Tools::getValue('method')) {
+            case 'credit_card':
+                $this->initCreditCard();
+                break;
+            case 'stripe_checkout':
+                $this->initStripeCheckout();
+                break;
+            case 'ideal':
+                $this->initIdeal();
+                break;
+            case 'bancontact':
+                $this->initBancontact();
+                break;
+            case 'giropay':
+                $this->initGiropay();
+                break;
+            case 'sofort':
+                $this->initSofort();
+                break;
+            default:
+                if (Configuration::get(Stripe::STRIPE_CC_FORM)) {
+                    $this->initCreditCard();
+                } else {
+                    $this->initStripeCheckout();
+                }
+                break;
         }
-
     }
 
     /**
@@ -180,5 +201,141 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
         );
 
         $this->setTemplate('eucc.tpl');
+    }
+
+    /**
+     * Initialize iDEAL payment
+     */
+    protected function initIdeal()
+    {
+        /** @var Cart $cart */
+        $cart = $this->context->cart;
+        $currency = new Currency($cart->id_currency);
+
+        $stripeAmount = $cart->getOrderTotal();
+        if (!in_array(Tools::strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
+            $stripeAmount = (int) ($stripeAmount * 100);
+        }
+
+        $invoiceAddress = new Address((int) $cart->id_address_invoice);
+
+        ThirtybeesStripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST));
+
+        $source = \ThirtybeesStripe\Source::create([
+            'type' => 'ideal',
+            'amount' => (int)$stripeAmount,
+            'currency' => $currency->iso_code,
+            'owner' => [
+                'name' => $invoiceAddress->firstname.' '.$invoiceAddress->lastname,
+            ],
+            'redirect' => [
+                'return_url' => $this->context->link->getModuleLink('stripe', 'sourcevalidation', ['stripe-id_cart' => $cart->id, 'type' => 'ideal'], true),
+            ]
+        ]);
+
+        Tools::redirect($source->redirect->url);
+    }
+
+    /**
+     * Initialize Bancontact payment
+     */
+    protected function initBancontact()
+    {
+        /** @var Cart $cart */
+        $cart = $this->context->cart;
+        $currency = new Currency($cart->id_currency);
+
+        $stripeAmount = $cart->getOrderTotal();
+        if (!in_array(Tools::strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
+            $stripeAmount = (int) ($stripeAmount * 100);
+        }
+
+        $invoiceAddress = new Address((int) $cart->id_address_invoice);
+
+        ThirtybeesStripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST));
+
+        $source = \ThirtybeesStripe\Source::create([
+            'type' => 'bancontact',
+            'amount' => (int)$stripeAmount,
+            'currency' => $currency->iso_code,
+            'owner' => [
+                'name' => $invoiceAddress->firstname.' '.$invoiceAddress->lastname,
+            ],
+            'redirect' => [
+                'return_url' => $this->context->link->getModuleLink('stripe', 'sourcevalidation', ['stripe-id_cart' => $cart->id, 'type' => 'bancontact'], true),
+            ]
+        ]);
+
+        Tools::redirect($source->redirect->url);
+    }
+
+    /**
+     * Initialize Giropay payment
+     */
+    protected function initGiropay()
+    {
+        /** @var Cart $cart */
+        $cart = $this->context->cart;
+        $currency = new Currency($cart->id_currency);
+
+        $stripeAmount = $cart->getOrderTotal();
+        if (!in_array(Tools::strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
+            $stripeAmount = (int) ($stripeAmount * 100);
+        }
+
+        $invoiceAddress = new Address((int) $cart->id_address_invoice);
+
+        ThirtybeesStripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST));
+
+        $source = \ThirtybeesStripe\Source::create([
+            'type' => 'giropay',
+            'amount' => (int)$stripeAmount,
+            'currency' => $currency->iso_code,
+            'owner' => [
+                'name' => $invoiceAddress->firstname.' '.$invoiceAddress->lastname,
+            ],
+            'redirect' => [
+                'return_url' => $this->context->link->getModuleLink('stripe', 'sourcevalidation', ['stripe-id_cart' => $cart->id, 'type' => 'giropay'], true),
+            ]
+        ]);
+
+        Tools::redirect($source->redirect->url);
+    }
+
+    /**
+     * Initialize Sofort Banking payment
+     */
+    protected function initSofort()
+    {
+        /** @var Cart $cart */
+        $cart = $this->context->cart;
+        $currency = new Currency($cart->id_currency);
+
+        $stripeAmount = $cart->getOrderTotal();
+        if (!in_array(Tools::strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
+            $stripeAmount = (int) ($stripeAmount * 100);
+        }
+
+        $invoiceAddress = new Address((int) $cart->id_address_invoice);
+        $country = new Country($invoiceAddress->id_country);
+
+        ThirtybeesStripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST));
+
+        $source = \ThirtybeesStripe\Source::create([
+            'type' => 'sofort',
+            'amount' => (int)$stripeAmount,
+            'currency' => $currency->iso_code,
+            'owner' => [
+                'name' => $invoiceAddress->firstname.' '.$invoiceAddress->lastname,
+            ],
+            'redirect' => [
+                'return_url' => $this->context->link->getModuleLink('stripe', 'sourcevalidation', ['stripe-id_cart' => $cart->id, 'type' => 'sofort'], true),
+            ],
+            'sofort' => [
+                'country' => Tools::strtoupper($country->iso_code),
+            ]
+        ]);
+
+        Tools::redirect($source->redirect->url);
     }
 }

@@ -1737,12 +1737,51 @@ class Stripe extends PaymentModule
 
         $this->checkShopThumb();
 
-        $paymentOptions = [
-            'cta_text'        => $this->l('Pay by Credit Card'),
-            'logo'            => Media::getMediaPath($this->local_path.'views/img/stripebtnlogo.png'),
-            'action'          => $this->context->link->getModuleLink($this->name, 'eupayment', [], Tools::usingSecureMode()),
-            'stripeShopThumb' => $this->context->link->getMediaLink('/modules/stripe/views/img/shop'.$this->getShopId().'.jpg'),
-        ];
+        $paymentOptions = [];
+
+        if (Configuration::get(static::STRIPE_CC_FORM)) {
+            $paymentOptions[] = [
+                'cta_text' => $this->l('Pay by Credit Card'),
+                'logo'     => Media::getMediaPath($this->local_path . 'views/img/stripebtnlogo.png'),
+                'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'credit_card'], Tools::usingSecureMode()),
+            ];
+        }
+        if (Configuration::get(static::STRIPE_CHECKOUT)) {
+            $paymentOptions[] = [
+                'cta_text'        => $this->l('Pay by Credit Card'),
+                'logo'            => Media::getMediaPath($this->local_path . 'views/img/stripebtnlogo.png'),
+                'action'          => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'stripe_checkout'], Tools::usingSecureMode()),
+                'stripeShopThumb' => $this->context->link->getMediaLink('/modules/stripe/views/img/shop' . $this->getShopId() . '.jpg'),
+            ];
+        }
+        if (Configuration::get(static::IDEAL)) {
+            $paymentOptions[] = [
+                'cta_text' => $this->l('iDEAL'),
+                'logo'     => Media::getMediaPath($this->local_path . 'views/img/ideal.png'),
+                'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'ideal'], Tools::usingSecureMode()),
+            ];
+        }
+        if (Configuration::get(static::BANCONTACT)) {
+            $paymentOptions[] = [
+                'cta_text' => $this->l('Bancontact'),
+                'logo'     => Media::getMediaPath($this->local_path . 'views/img/bancontact.png'),
+                'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'bancontact'], Tools::usingSecureMode()),
+            ];
+        }
+        if (Configuration::get(static::GIROPAY)) {
+            $paymentOptions[] = [
+                'cta_text' => $this->l('Giropay'),
+                'logo'     => Media::getMediaPath($this->local_path . 'views/img/giropay.png'),
+                'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'giropay'], Tools::usingSecureMode()),
+            ];
+        }
+        if (Configuration::get(static::SOFORT)) {
+            $paymentOptions[] = [
+                'cta_text' => $this->l('Sofort Banking'),
+                'logo'     => Media::getMediaPath($this->local_path . 'views/img/sofort.png'),
+                'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'sofort'], Tools::usingSecureMode()),
+            ];
+        }
 
         return $paymentOptions;
     }
