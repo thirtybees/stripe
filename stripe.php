@@ -855,6 +855,7 @@ class Stripe extends PaymentModule
             if (!in_array(Tools::strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
                 $result['amount'] = (float) ($result['amount'] / 100);
             }
+            $result['card_last_digits'] = str_pad($result['card_last_digits'], 4, '0', STR_PAD_LEFT);
             $result['amount'] = Tools::displayPrice($result['amount'], $currency);
             switch ($result['type']) {
                 case StripeTransaction::TYPE_CHARGE:
