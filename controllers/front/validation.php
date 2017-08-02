@@ -175,7 +175,7 @@ class StripeValidationModuleFrontController extends ModuleFrontController
              */
             $currencyId = (int) Context::getContext()->currency->id;
 
-            $this->module->validateOrder($idCart, $paymentStatus, $cart->getOrderTotal(), 'Stripe', $message, [], $currencyId, false, $cart->secure_key);
+            $this->module->validateOrder($idCart, $paymentStatus, $cart->getOrderTotal(), 'Credit Card', $message, [], $currencyId, false, $cart->secure_key);
 
             /**
              * If the order has been validated we try to retrieve it
