@@ -845,7 +845,7 @@ class Stripe extends PaymentModule
         $sql->from(bqSQL(StripeTransaction::$definition['table']), 'st');
         $sql->orderBy('`'.bqSQL($helperList->orderBy).'` '.pSQL($helperList->orderWay));
         $sql->where('1 '.$filterSql);
-        $sql->limit($pagination, $currentPage - 1);
+        $sql->limit($pagination, ($currentPage - 1) * $pagination);
 
         $results = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
 
