@@ -98,6 +98,44 @@ class Stripe extends PaymentModule
     public $menu;
 
     /**
+     * Minimum amounts array
+     * The keys are the 15 bank account settlement currencies (lowercase) available in Stripe
+     *
+     * @var float[] Minimum amounts
+     */
+    public static $minimumAmounts = [
+        'aud' => 0.50,
+        'gbp' => 0.30,
+        'cad' => 0.50,
+        'dkk' => 2.50,
+        'eur' => 0.50,
+        'hkd' => 4.00,
+        'jpy' => 50,
+        'mxn' => 10,
+        'nkk' => 3.00,
+        'sgd' => 0.50,
+        'sek' => 3.00,
+        'chf' => 0.50,
+        'usd' => 0.50,
+    ];
+
+    /**
+     * Currency restrictions per payment method
+     *
+     * @var array
+     */
+    public static $methodCurrencies = [
+        'credit_card'    => ['afn', 'all', 'dzd', 'aoa', 'ars', 'amd', 'awg', 'aud', 'azn', 'bsd', 'bdt', 'bbd', 'bzd', 'bmd', 'bob', 'bam', 'bwp', 'brl', 'gbp', 'bnd', 'bgn', 'bif', 'bif', 'khr', 'cad', 'cve', 'kyd', 'xaf', 'xpf', 'clp', 'cny', 'cop', 'kmf', 'cdf', 'crc', 'hrk', 'czk', 'dkk', 'djf', 'dop', 'xcd', 'egp', 'etb', 'eur', 'fkp', 'fjd', 'gmd', 'gel', 'gip', 'gtq', 'gnf', 'gyd', 'htg', 'hnl', 'hkd', 'huf', 'isk', 'inr', 'idr', 'ils', 'jmd', 'jpy', 'kzt', 'kes', 'kgs', 'lak', 'lbp', 'lsl', 'lrd', 'mop', 'mkd', 'mga', 'mwk', 'myr', 'mvr', 'mro', 'mur', 'mxn', 'mdl', 'mnt', 'mad', 'mzn', 'mmk', 'nad', 'npr', 'ang', 'twd', 'nzd', 'nio', 'ngn', 'nok', 'pkr', 'pab', 'pgk', 'pyg', 'pen', 'php', 'pln', 'qar', 'ron', 'rub', 'rwf', 'std', 'shp', 'svc', 'wst', 'sar', 'rsd', 'scr', 'sll', 'sgd', 'sbd', 'sos', 'zar', 'krw', 'lkr', 'srd', 'szl', 'sek', 'chf', 'tjs', 'tzs', 'thb', 'top', 'ttd', 'try', 'ugx', 'uah', 'aed', 'usd', 'uyu', 'uzs', 'vuv', 'vnd', 'xof', 'yer', 'zmw'],
+        'three_d_secure' => ['afn', 'all', 'dzd', 'aoa', 'ars', 'amd', 'awg', 'aud', 'azn', 'bsd', 'bdt', 'bbd', 'bzd', 'bmd', 'bob', 'bam', 'bwp', 'brl', 'gbp', 'bnd', 'bgn', 'bif', 'bif', 'khr', 'cad', 'cve', 'kyd', 'xaf', 'xpf', 'clp', 'cny', 'cop', 'kmf', 'cdf', 'crc', 'hrk', 'czk', 'dkk', 'djf', 'dop', 'xcd', 'egp', 'etb', 'eur', 'fkp', 'fjd', 'gmd', 'gel', 'gip', 'gtq', 'gnf', 'gyd', 'htg', 'hnl', 'hkd', 'huf', 'isk', 'inr', 'idr', 'ils', 'jmd', 'jpy', 'kzt', 'kes', 'kgs', 'lak', 'lbp', 'lsl', 'lrd', 'mop', 'mkd', 'mga', 'mwk', 'myr', 'mvr', 'mro', 'mur', 'mxn', 'mdl', 'mnt', 'mad', 'mzn', 'mmk', 'nad', 'npr', 'ang', 'twd', 'nzd', 'nio', 'ngn', 'nok', 'pkr', 'pab', 'pgk', 'pyg', 'pen', 'php', 'pln', 'qar', 'ron', 'rub', 'rwf', 'std', 'shp', 'svc', 'wst', 'sar', 'rsd', 'scr', 'sll', 'sgd', 'sbd', 'sos', 'zar', 'krw', 'lkr', 'srd', 'szl', 'sek', 'chf', 'tjs', 'tzs', 'thb', 'top', 'ttd', 'try', 'ugx', 'uah', 'aed', 'usd', 'uyu', 'uzs', 'vuv', 'vnd', 'xof', 'yer', 'zmw'],
+        'alipay'         => ['aud', 'cad', 'eur', 'gbp', 'hkd', 'jpy', 'nzd', 'sgd', 'usd'],
+        'bancontact'     => ['eur'],
+        'giropay'        => ['eur'],
+        'ideal'          => ['eur'],
+        'p24'            => ['eur', 'pln'],
+        'sofort'         => ['eur'],
+    ];
+
+    /**
      * ThirtybeesStripe constructor.
      *
      * @since 1.0.0
