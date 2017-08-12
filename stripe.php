@@ -1645,6 +1645,7 @@ class Stripe extends PaymentModule
         /** @var Cart $cart */
         $cart = $params['cart'];
         $currency = new Currency($cart->id_currency);
+        $stripeCurrency = strtolower($currency->iso_code);
 
         $link = $this->context->link;
 
@@ -1662,7 +1663,7 @@ class Stripe extends PaymentModule
             [
                 'stripe_name'                   => $invoiceAddress->firstname.' '.$invoiceAddress->lastname,
                 'stripe_email'                  => $stripeEmail,
-                'stripe_currency'               => $currency->iso_code,
+                'stripe_currency'               => $stripeCurrency,
                 'stripe_country'                => Tools::strtoupper($country->iso_code),
                 'stripe_amount'                 => $stripeAmount,
                 'stripe_amount_string'          => (string) $cart->getOrderTotal(),
@@ -1695,28 +1696,28 @@ class Stripe extends PaymentModule
 
         $output = '';
 
-        if (Configuration::get(static::STRIPE_CHECKOUT)) {
+        if (Configuration::get(static::STRIPE_CHECKOUT) && in_array($stripeCurrency, static::$methodCurrencies['credit_card'])) {
             $output .= $this->display(__FILE__, 'views/templates/hook/payment.tpl');
         }
-        if (Configuration::get(static::IDEAL)) {
+        if (Configuration::get(static::IDEAL) && in_array($stripeCurrency, static::$methodCurrencies['ideal'])) {
             $output .= $this->display(__FILE__, 'views/templates/hook/idealpayment.tpl');
         }
-        if (Configuration::get(static::BANCONTACT)) {
+        if (Configuration::get(static::BANCONTACT) && in_array($stripeCurrency, static::$methodCurrencies['bancontact'])) {
             $output .= $this->display(__FILE__, 'views/templates/hook/bancontactpayment.tpl');
         }
-        if (Configuration::get(static::GIROPAY)) {
+        if (Configuration::get(static::GIROPAY) && in_array($stripeCurrency, static::$methodCurrencies['giropay'])) {
             $output .= $this->display(__FILE__, 'views/templates/hook/giropaypayment.tpl');
         }
-        if (Configuration::get(static::SOFORT) && in_array(Tools::strtoupper($country->iso_code), ['AT', 'DE', 'NL', 'BE', 'ES'])) {
+        if (Configuration::get(static::SOFORT) && in_array(Tools::strtoupper($country->iso_code), ['AT', 'DE', 'NL', 'BE', 'ES'])  && in_array($stripeCurrency, static::$methodCurrencies['sofort'])) {
             $output .= $this->display(__FILE__, 'views/templates/hook/sofortpayment.tpl');
         }
-        if (Configuration::get(static::ALIPAY)) {
+        if (Configuration::get(static::ALIPAY) && in_array($stripeCurrency, static::$methodCurrencies['alipay'])) {
             $output .= $this->display(__FILE__, 'views/templates/hook/alipaypayment.tpl');
         }
-        if (Configuration::get(static::STRIPE_CC_FORM)) {
+        if (Configuration::get(static::STRIPE_CC_FORM) && in_array($stripeCurrency, static::$methodCurrencies['credit_card'])) {
             $output .= $this->display(__FILE__, 'views/templates/hook/ccpayment.tpl');
         }
-        if (Configuration::get(static::STRIPE_APPLE_PAY)) {
+        if (Configuration::get(static::STRIPE_APPLE_PAY) && in_array($stripeCurrency, static::$methodCurrencies['credit_card'])) {
             $output .= $this->display(__FILE__, 'views/templates/hook/applepayment.tpl');
         }
 
@@ -1778,55 +1779,56 @@ class Stripe extends PaymentModule
 
         $this->checkShopThumb();
 
+        $stripeCurrency = strtolower(Context::getContext()->currency->iso_code);
+
         $paymentOptions = [];
 
-        if (Configuration::get(static::STRIPE_CC_FORM)) {
+        if (Configuration::get(static::STRIPE_CC_FORM) && in_array($stripeCurrency, static::$methodCurrencies['credit_card'])) {
             $paymentOptions[] = [
                 'cta_text' => $this->l('Pay by Credit Card'),
-                'logo'     => Media::getMediaPath($this->local_path . 'views/img/stripebtnlogo.png'),
+                'logo'     => Media::getMediaPath($this->local_path.'views/img/stripebtnlogo.png'),
                 'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'credit_card'], Tools::usingSecureMode()),
             ];
         }
-        if (Configuration::get(static::STRIPE_CHECKOUT)) {
+        if (Configuration::get(static::STRIPE_CHECKOUT) && in_array($stripeCurrency, static::$methodCurrencies['credit_card'])) {
             $paymentOptions[] = [
                 'cta_text'        => $this->l('Pay by Credit Card'),
-                'logo'            => Media::getMediaPath($this->local_path . 'views/img/stripebtnlogo.png'),
+                'logo'            => Media::getMediaPath($this->local_path.'views/img/stripebtnlogo.png'),
                 'action'          => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'stripe_checkout'], Tools::usingSecureMode()),
-                'stripeShopThumb' => $this->context->link->getMediaLink('/modules/stripe/views/img/shop' . $this->getShopId() . '.jpg'),
             ];
         }
-        if (Configuration::get(static::IDEAL)) {
+        if (Configuration::get(static::IDEAL) && in_array($stripeCurrency, static::$methodCurrencies['ideal'])) {
             $paymentOptions[] = [
                 'cta_text' => $this->l('iDEAL'),
-                'logo'     => Media::getMediaPath($this->local_path . 'views/img/ideal.png'),
+                'logo'     => Media::getMediaPath($this->local_path.'views/img/ideal.png'),
                 'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'ideal'], Tools::usingSecureMode()),
             ];
         }
-        if (Configuration::get(static::BANCONTACT)) {
+        if (Configuration::get(static::BANCONTACT) && in_array($stripeCurrency, static::$methodCurrencies['bancontact'])) {
             $paymentOptions[] = [
                 'cta_text' => $this->l('Bancontact'),
-                'logo'     => Media::getMediaPath($this->local_path . 'views/img/bancontact.png'),
+                'logo'     => Media::getMediaPath($this->local_path.'views/img/bancontact.png'),
                 'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'bancontact'], Tools::usingSecureMode()),
             ];
         }
-        if (Configuration::get(static::GIROPAY)) {
+        if (Configuration::get(static::GIROPAY) && in_array($stripeCurrency, static::$methodCurrencies['giropay'])) {
             $paymentOptions[] = [
                 'cta_text' => $this->l('Giropay'),
-                'logo'     => Media::getMediaPath($this->local_path . 'views/img/giropay.png'),
+                'logo'     => Media::getMediaPath($this->local_path.'views/img/giropay.png'),
                 'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'giropay'], Tools::usingSecureMode()),
             ];
         }
-        if (Configuration::get(static::SOFORT)) {
+        if (Configuration::get(static::SOFORT) && in_array($stripeCurrency, static::$methodCurrencies['sofort'])) {
             $paymentOptions[] = [
                 'cta_text' => $this->l('Sofort Banking'),
-                'logo'     => Media::getMediaPath($this->local_path . 'views/img/sofort.png'),
+                'logo'     => Media::getMediaPath($this->local_path.'views/img/sofort.png'),
                 'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'sofort'], Tools::usingSecureMode()),
             ];
         }
-        if (Configuration::get(static::ALIPAY)) {
+        if (Configuration::get(static::ALIPAY) && in_array($stripeCurrency, static::$methodCurrencies['alipay'])) {
             $paymentOptions[] = [
                 'cta_text' => $this->l('Alipay'),
-                'logo'     => Media::getMediaPath($this->local_path . 'views/img/alipay.png'),
+                'logo'     => Media::getMediaPath($this->local_path.'views/img/alipay.png'),
                 'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'alipay'], Tools::usingSecureMode()),
             ];
         }
