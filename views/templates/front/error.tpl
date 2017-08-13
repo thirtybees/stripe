@@ -27,7 +27,7 @@
     </span>
 {/capture}
 <div class="alert alert-danger">
-  <h3>{l s='An error occurred' mod='stripe'}:</h3>
+  <strong>{l s='An error occurred' mod='stripe'}:</strong>
   <ul>
     {foreach from=$errors item='error'}
       <li>{$error|escape:'htmlall':'UTF-8'}</li>
