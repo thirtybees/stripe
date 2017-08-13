@@ -16,26 +16,26 @@
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
 {if (Configuration::get(Stripe::STRIPE_CHECKOUT) && in_array($stripe_currency, Stripe::$methodCurrencies['credit_card']))}
-  {if file_exists('./payment.tpl')}{include file="./payment.tpl"}{else}{include file="{$smarty.const.PS_MODULE_DIR}stripe/views/templates/hook/payment.tpl"}{/if}
+  {if file_exists('./payment.tpl')}{include file="./payment.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/payment.tpl"}{/if}
 {/if}
 {if (Configuration::get(Stripe::IDEAL) && in_array($stripe_currency, Stripe::$methodCurrencies['ideal']))}
-  {if file_exists('./idealpayment.tpl')}{include file="./idealpayment.tpl"}{else}{include file="{$smarty.const.PS_MODULE_DIR}stripe/views/templates/hook/idealpayment.tpl"}{/if}
+  {if file_exists('./idealpayment.tpl')}{include file="./idealpayment.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/idealpayment.tpl"}{/if}
 {/if}
 {if (Configuration::get(Stripe::BANCONTACT) && in_array($stripe_currency, Stripe::$methodCurrencies['bancontact']))}
-  {if file_exists('./bancontactplayment.tpl')}{include file="./bancontactpayment.tpl"}{else}{include file="{$smarty.const.PS_MODULE_DIR}stripe/views/templates/hook/bancontactpayment.tpl"}{/if}
+  {if file_exists('./bancontactplayment.tpl')}{include file="./bancontactpayment.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/bancontactpayment.tpl"}{/if}
 {/if}
 {if (Configuration::get(Stripe::GIROPAY) && in_array($stripe_currency, Stripe::$methodCurrencies['giropay']))}
-  {if file_exists('./giropaypayment.tpl')}{include file="./giropaypayment.tpl"}{else}{include file="{$smarty.const.PS_MODULE_DIR}stripe/views/templates/hook/giropaypayment.tpl"}{/if}
+  {if file_exists('./giropaypayment.tpl')}{include file="./giropaypayment.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/giropaypayment.tpl"}{/if}
 {/if}
 {if (Configuration::get(Stripe::SOFORT) && in_array(Tools::strtoupper($country->iso_code), ['AT', 'DE', 'NL', 'BE', 'ES'])  && in_array($stripe_currency, Stripe::$methodCurrencies['sofort']))}
-  {if file_exists('./sofortpayment.tpl')}{include file="./sofortpayment.tpl"}{else}{include file="{$smarty.const.PS_MODULE_DIR}stripe/views/templates/hook/sofortpayment.tpl"}{/if}
+  {if file_exists('./sofortpayment.tpl')}{include file="./sofortpayment.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/sofortpayment.tpl"}{/if}
 {/if}
 {if (Configuration::get(Stripe::ALIPAY) && in_array($stripe_currency, Stripe::$methodCurrencies['alipay']))}
-  {if file_exists('./alipaypayment.tpl')}{include file="./alipaypayment.tpl"}{else}{include file="{$smarty.const.PS_MODULE_DIR}stripe/views/templates/hook/alipaypayment.tpl"}{/if}
+  {if file_exists('./alipaypayment.tpl')}{include file="./alipaypayment.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/alipaypayment.tpl"}{/if}
 {/if}
 {if (Configuration::get(Stripe::STRIPE_CC_FORM) && in_array($stripe_currency, Stripe::$methodCurrencies['credit_card']))}
-  {if file_exists('./ccpayment.tpl')}{include file="./ccpayment.tpl"}{else}{include file="{$smarty.const.PS_MODULE_DIR}stripe/views/templates/hook/ccpayment.tpl"}{/if}
+  {if file_exists('./ccpayment.tpl')}{include file="./ccpayment.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/ccpayment.tpl"}{/if}
 {/if}
 {if (Configuration::get(Stripe::STRIPE_APPLE_PAY) && in_array($stripe_currency, Stripe::$methodCurrencies['credit_card']))}
-  {if file_exists('./applepayment.tpl')}{include file="./applepayment.tpl"}{else}{include file="{$smarty.const.PS_MODULE_DIR}stripe/views/templates/hook/applepayment.tpl"}{/if}
+  {if file_exists('./applepayment.tpl')}{include file="./applepayment.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/applepayment.tpl"}{/if}
 {/if}

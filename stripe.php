@@ -1544,6 +1544,7 @@ class Stripe extends PaymentModule
                 'stripe_cc_animation'           => Configuration::get(static::STRIPE_CC_ANIMATION),
                 'autoplay'                      => $autoplay,
                 'three_d_secure'                => Configuration::get(static::THREEDSECURE),
+                'local_module_dir'              => _PS_MODULE_DIR_,
             ]
         );
 
