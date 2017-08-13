@@ -75,6 +75,8 @@ class Stripe extends PaymentModule
     const TLS_OK = 'STRIPE_TLS_OK';
     const TLS_LAST_CHECK = 'STRIPE_TLS_LAST_CHECK';
 
+    const INCLUDE_STRIPE_BOOTSTRAP = 'STRIPE_INCLUDE_BOOTSTRAP';
+
     const ENUM_TLS_OK = 1;
     const ENUM_TLS_ERROR = -1;
     /** @var array Supported languages */
@@ -144,7 +146,7 @@ class Stripe extends PaymentModule
     {
         $this->name = 'stripe';
         $this->tab = 'payments_gateways';
-        $this->version = '1.3.0';
+        $this->version = '1.4.0';
         $this->author = 'thirty bees';
         $this->need_instance = 1;
 
@@ -191,6 +193,7 @@ class Stripe extends PaymentModule
         Configuration::updateGlobalValue(static::USE_STATUS_PARTIAL_REFUND, false);
         Configuration::updateGlobalValue(static::STATUS_PARTIAL_REFUND, Configuration::get('PS_OS_REFUND'));
         Configuration::updateGlobalValue(static::GENERATE_CREDIT_SLIP, true);
+        Configuration::updateGlobalValue(static::INCLUDE_STRIPE_BOOTSTRAP, true);
 
         return true;
     }
@@ -222,6 +225,7 @@ class Stripe extends PaymentModule
         Configuration::deleteByName(static::ALIPAY);
         Configuration::deleteByName(static::BITCOIN);
         Configuration::deleteByName(static::SHOW_PAYMENT_LOGOS);
+        Configuration::deleteByName(static::INCLUDE_STRIPE_BOOTSTRAP);
 
         return parent::uninstall();
     }
@@ -366,9 +370,9 @@ class Stripe extends PaymentModule
             return;
         }
 
-        if (Configuration::get(Stripe::USE_STATUS_REFUND) && 0 === (int) ($orderTotal - ($amountRefunded + $amount))) {
+        if (Configuration::get(static::USE_STATUS_REFUND) && 0 === (int) ($orderTotal - ($amountRefunded + $amount))) {
             // Full refund
-            if (Configuration::get(Stripe::GENERATE_CREDIT_SLIP)) {
+            if (Configuration::get(static::GENERATE_CREDIT_SLIP)) {
                 $sql = new DbQuery();
                 $sql->select('od.`id_order_detail`, od.`product_quantity`');
                 $sql->from('order_detail', 'od');
@@ -429,26 +433,33 @@ class Stripe extends PaymentModule
      */
     protected function postProcessGeneralOptions()
     {
-        $secretKeyTest = Tools::getValue(static::SECRET_KEY_TEST);
-        $publishableKeyTest = Tools::getValue(static::PUBLISHABLE_KEY_TEST);
-        $secretKeyLive = Tools::getValue(static::SECRET_KEY_LIVE);
         $publishableKeyLive = Tools::getValue(static::PUBLISHABLE_KEY_LIVE);
+        $secretKeyLive = Tools::getValue(static::SECRET_KEY_LIVE);
         $goLive = (bool) Tools::getValue(static::GO_LIVE);
-        $zipcode = (bool) Tools::getValue(static::ZIPCODE);
-        $bitcoin = (bool) Tools::getValue(static::BITCOIN);
-        $alipay = (bool) Tools::getValue(static::ALIPAY);
-        $ideal = (bool) Tools::getValue(static::IDEAL);
-        $bancontact = (bool) Tools::getValue(static::BANCONTACT);
-        $giropay = (bool) Tools::getValue(static::GIROPAY);
-        $sofort = (bool) Tools::getValue(static::SOFORT);
-        $threedsecure = (bool) Tools::getValue(static::THREEDSECURE);
-        $showPaymentLogos = (bool) Tools::getValue(static::SHOW_PAYMENT_LOGOS);
-        $collectBilling = (bool) Tools::getValue(static::COLLECT_BILLING);
-        $collectShipping = (bool) Tools::getValue(static::COLLECT_SHIPPING);
-        $checkout = (bool) Tools::getValue(static::STRIPE_CHECKOUT);
-        $ccform = (bool) Tools::getValue(static::STRIPE_CC_FORM);
-        $ccanim = (bool) Tools::getValue(static::STRIPE_CC_ANIMATION);
-        $apple = (bool) Tools::getValue(static::STRIPE_APPLE_PAY);
+
+        $options = [
+            static::SECRET_KEY_TEST          => Tools::getValue(static::SECRET_KEY_TEST),
+            static::PUBLISHABLE_KEY_TEST     => Tools::getValue(static::PUBLISHABLE_KEY_TEST),
+            static::SECRET_KEY_LIVE          => $secretKeyLive,
+            static::PUBLISHABLE_KEY_LIVE     => $publishableKeyLive,
+            static::GO_LIVE                  => $goLive,
+            static::ZIPCODE                  => (bool) Tools::getValue(static::ZIPCODE),
+            static::BITCOIN                  => (bool) Tools::getValue(static::BITCOIN),
+            static::ALIPAY                   => (bool) Tools::getValue(static::ALIPAY),
+            static::IDEAL                    => (bool) Tools::getValue(static::IDEAL),
+            static::BANCONTACT               => (bool) Tools::getValue(static::BANCONTACT),
+            static::GIROPAY                  => (bool) Tools::getValue(static::GIROPAY),
+            static::SOFORT                   => (bool) Tools::getValue(static::SOFORT),
+            static::THREEDSECURE             => (bool) Tools::getValue(static::THREEDSECURE),
+            static::SHOW_PAYMENT_LOGOS       => (bool) Tools::getValue(static::SHOW_PAYMENT_LOGOS),
+            static::COLLECT_BILLING          => (bool) Tools::getValue(static::COLLECT_BILLING),
+            static::COLLECT_SHIPPING         => (bool) Tools::getValue(static::COLLECT_SHIPPING),
+            static::STRIPE_CHECKOUT          => (bool) Tools::getValue(static::STRIPE_CHECKOUT),
+            static::STRIPE_CC_FORM           => (bool) Tools::getValue(static::STRIPE_CC_FORM),
+            static::STRIPE_CC_ANIMATION      => (bool) Tools::getValue(static::STRIPE_CC_ANIMATION),
+            static::STRIPE_APPLE_PAY         => (bool) Tools::getValue(static::STRIPE_APPLE_PAY),
+            static::INCLUDE_STRIPE_BOOTSTRAP => (bool) Tools::getValue(static::INCLUDE_STRIPE_BOOTSTRAP),
+        ];
 
         if ($goLive
             && (substr($publishableKeyLive, 0, 7) !== 'pk_live' || substr($secretKeyLive, 0, 7) !== 'sk_live')
@@ -459,180 +470,77 @@ class Stripe extends PaymentModule
             return;
         }
 
-        if (Configuration::get('PS_MULTISHOP_FEATURE_ACTIVE')) {
+        $this->postProcessOptions($options);
+    }
+
+    /**
+     * Process Order Options
+     *
+     * @return void
+     */
+    protected function postProcessOrderOptions()
+    {
+        $options = [
+            static::STATUS_VALIDATED => Tools::getValue(static::STATUS_VALIDATED),
+            static::USE_STATUS_REFUND => Tools::getValue(static::USE_STATUS_REFUND),
+            static::STATUS_REFUND => Tools::getValue(static::STATUS_REFUND),
+            static::STATUS_SOFORT => Tools::getValue(static::STATUS_SOFORT),
+            static::USE_STATUS_PARTIAL_REFUND => Tools::getValue(static::USE_STATUS_PARTIAL_REFUND),
+            static::STATUS_PARTIAL_REFUND => Tools::getValue(static::STATUS_PARTIAL_REFUND),
+            static::GENERATE_CREDIT_SLIP => (bool) Tools::getValue(static::GENERATE_CREDIT_SLIP),
+        ];
+
+        $this->postProcessOptions($options);
+    }
+
+    /**
+     * Process Advanced Options
+     *
+     * @return void
+     */
+    protected function postProcessAdvancedOptions()
+    {
+        $options = [
+            static::INCLUDE_STRIPE_BOOTSTRAP => (bool) Tools::getValue(static::INCLUDE_STRIPE_BOOTSTRAP),
+        ];
+
+
+        $this->postProcessOptions($options);
+    }
+
+    /**
+     * Process options
+     *
+     * @param array $options
+     */
+    protected function postProcessOptions($options)
+    {
+        if (Shop::isFeatureActive()) {
             if (Shop::getContext() == Shop::CONTEXT_ALL) {
-                $this->updateAllValue(static::SECRET_KEY_TEST, $secretKeyTest);
-                $this->updateAllValue(static::PUBLISHABLE_KEY_TEST, $publishableKeyTest);
-                $this->updateAllValue(static::SECRET_KEY_LIVE, $secretKeyLive);
-                $this->updateAllValue(static::PUBLISHABLE_KEY_LIVE, $publishableKeyLive);
-                $this->updateAllValue(static::GO_LIVE, $goLive);
-                $this->updateAllValue(static::ZIPCODE, $zipcode);
-                $this->updateAllValue(static::BITCOIN, $bitcoin);
-                $this->updateAllValue(static::ALIPAY, $alipay);
-                $this->updateAllValue(static::IDEAL, $ideal);
-                $this->updateAllValue(static::BANCONTACT, $bancontact);
-                $this->updateAllValue(static::GIROPAY, $giropay);
-                $this->updateAllValue(static::SOFORT, $sofort);
-                $this->updateAllValue(static::THREEDSECURE, $threedsecure);
-                $this->updateAllValue(static::SHOW_PAYMENT_LOGOS, $showPaymentLogos);
-                $this->updateAllValue(static::COLLECT_BILLING, $collectBilling);
-                $this->updateAllValue(static::COLLECT_SHIPPING, $collectShipping);
-                $this->updateAllValue(static::STRIPE_CHECKOUT, $checkout);
-                $this->updateAllValue(static::STRIPE_CC_FORM, $ccform);
-                $this->updateAllValue(static::STRIPE_CC_ANIMATION, $ccanim);
-                $this->updateAllValue(static::STRIPE_APPLE_PAY, $apple);
+                foreach ($options as $key => $value) {
+                    $this->updateAllValue($key, $value);
+                }
             } elseif (is_array(Tools::getValue('multishopOverrideOption'))) {
                 $idShopGroup = (int) Shop::getGroupFromShop($this->getShopId(), true);
                 $multishopOverride = Tools::getValue('multishopOverrideOption');
                 if (Shop::getContext() == Shop::CONTEXT_GROUP) {
-                    foreach (Shop::getShops(false, $this->getShopId()) as $idShop) {
-                        if (isset($multishopOverride[static::SECRET_KEY_TEST]) && $multishopOverride[static::SECRET_KEY_TEST]) {
-                            Configuration::updateValue(static::SECRET_KEY_TEST, $secretKeyTest, false, $idShopGroup, $idShop);
-                        }
-                        if (isset($multishopOverride[static::PUBLISHABLE_KEY_TEST]) && $multishopOverride[static::PUBLISHABLE_KEY_TEST]) {
-                            Configuration::updateValue(static::PUBLISHABLE_KEY_TEST, $publishableKeyTest, false, $idShopGroup, $idShop);
-                        }
-                        if (isset($multishopOverride[static::SECRET_KEY_LIVE]) && $multishopOverride[static::SECRET_KEY_LIVE]) {
-                            Configuration::updateValue(static::SECRET_KEY_LIVE, $secretKeyLive, false, $idShopGroup, $idShop);
-                        }
-                        if (isset($multishopOverride[static::PUBLISHABLE_KEY_LIVE]) && $multishopOverride[static::PUBLISHABLE_KEY_LIVE]) {
-                            Configuration::updateValue(static::PUBLISHABLE_KEY_LIVE, $publishableKeyLive, false, $idShopGroup, $idShop);
-                        }
-                        if (isset($multishopOverride[static::GO_LIVE]) && $multishopOverride[static::GO_LIVE]) {
-                            Configuration::updateValue(static::GO_LIVE, $goLive, false, $idShopGroup, $idShop);
-                        }
-                        if (isset($multishopOverride[static::ZIPCODE]) && $multishopOverride[static::ZIPCODE]) {
-                            Configuration::updateValue(static::ZIPCODE, $zipcode, false, $idShopGroup, $idShop);
-                        }
-                        if (isset($multishopOverride[static::BITCOIN]) && $multishopOverride[static::BITCOIN]) {
-                            Configuration::updateValue(static::BITCOIN, $bitcoin, false, $idShopGroup, $idShop);
-                        }
-                        if (isset($multishopOverride[static::ALIPAY]) && $multishopOverride[static::ALIPAY]) {
-                            Configuration::updateValue(static::ALIPAY, $alipay, false, $idShopGroup, $idShop);
-                        }
-                        if (isset($multishopOverride[static::IDEAL]) && $multishopOverride[static::IDEAL]) {
-                            Configuration::updateValue(static::IDEAL, $ideal, false, $idShopGroup, $idShop);
-                        }
-                        if (isset($multishopOverride[static::BANCONTACT]) && $multishopOverride[static::BANCONTACT]) {
-                            Configuration::updateValue(static::BANCONTACT, $bancontact, false, $idShopGroup, $idShop);
-                        }
-                        if (isset($multishopOverride[static::GIROPAY]) && $multishopOverride[static::GIROPAY]) {
-                            Configuration::updateValue(static::GIROPAY, $giropay, false, $idShopGroup, $idShop);
-                        }
-                        if (isset($multishopOverride[static::SOFORT]) && $multishopOverride[static::SOFORT]) {
-                            Configuration::updateValue(static::SOFORT, $sofort, false, $idShopGroup, $idShop);
-                        }
-                        if (isset($multishopOverride[static::THREEDSECURE]) && $multishopOverride[static::THREEDSECURE]) {
-                            Configuration::updateValue(static::THREEDSECURE, $threedsecure, false, $idShopGroup, $idShop);
-                        }
-                        if (isset($multishopOverride[static::SHOW_PAYMENT_LOGOS]) && $multishopOverride[static::SHOW_PAYMENT_LOGOS]) {
-                            Configuration::updateValue(static::SHOW_PAYMENT_LOGOS, $showPaymentLogos, false, $idShopGroup, $idShop);
-                        }
-                        if (isset($multishopOverride[static::COLLECT_BILLING]) && $multishopOverride[static::COLLECT_BILLING]) {
-                            Configuration::updateValue(static::COLLECT_BILLING, $collectBilling, false, $idShopGroup, $idShop);
-                        }
-                        if (isset($multishopOverride[static::COLLECT_SHIPPING]) && $multishopOverride[static::COLLECT_SHIPPING]) {
-                            Configuration::updateValue(static::COLLECT_SHIPPING, $collectShipping, false, $idShopGroup, $idShop);
-                        }
-                        if (isset($multishopOverride[static::STRIPE_CHECKOUT]) && $multishopOverride[static::STRIPE_CHECKOUT]) {
-                            Configuration::updateValue(static::STRIPE_CHECKOUT, $checkout, false, $idShopGroup, $idShop);
-                        }
-                        if (isset($multishopOverride[static::STRIPE_CC_FORM]) && $multishopOverride[static::STRIPE_CC_FORM]) {
-                            Configuration::updateValue(static::STRIPE_CC_FORM, $ccform, false, $idShopGroup, $idShop);
-                        }
-                        if (isset($multishopOverride[static::STRIPE_CC_ANIMATION]) && $multishopOverride[static::STRIPE_CC_ANIMATION]) {
-                            Configuration::updateValue(static::STRIPE_CC_ANIMATION, $ccanim, false, $idShopGroup, $idShop);
-                        }
-                        if (isset($multishopOverride[static::STRIPE_APPLE_PAY]) && $multishopOverride[static::STRIPE_APPLE_PAY]) {
-                            Configuration::updateValue(static::STRIPE_APPLE_PAY, $apple, false, $idShopGroup, $idShop);
-                        }
-                    }
+                    $shops = Shop::getShops(false, null, true);
                 } else {
-                    $idShop = (int) $this->getShopId();
-                    if (isset($multishopOverride[static::SECRET_KEY_TEST]) && $multishopOverride[static::SECRET_KEY_TEST]) {
-                        Configuration::updateValue(static::SECRET_KEY_TEST, $secretKeyTest, false, $idShopGroup, $idShop);
-                    }
-                    if (isset($multishopOverride[static::PUBLISHABLE_KEY_TEST]) && $multishopOverride[static::PUBLISHABLE_KEY_TEST]) {
-                        Configuration::updateValue(static::PUBLISHABLE_KEY_TEST, $publishableKeyTest, false, $idShopGroup, $idShop);
-                    }
-                    if (isset($multishopOverride[static::SECRET_KEY_LIVE]) && $multishopOverride[static::SECRET_KEY_LIVE]) {
-                        Configuration::updateValue(static::SECRET_KEY_LIVE, $secretKeyLive, false, $idShopGroup, $idShop);
-                    }
-                    if (isset($multishopOverride[static::PUBLISHABLE_KEY_LIVE]) && $multishopOverride[static::PUBLISHABLE_KEY_LIVE]) {
-                        Configuration::updateValue(static::PUBLISHABLE_KEY_LIVE, $publishableKeyLive, false, $idShopGroup, $idShop);
-                    }
-                    if (isset($multishopOverride[static::GO_LIVE]) && $multishopOverride[static::GO_LIVE]) {
-                        Configuration::updateValue(static::GO_LIVE, $goLive, false, $idShopGroup, $idShop);
-                    }
-                    if (isset($multishopOverride[static::ZIPCODE]) && $multishopOverride[static::ZIPCODE]) {
-                        Configuration::updateValue(static::ZIPCODE, $zipcode, false, $idShopGroup, $idShop);
-                    }
-                    if (isset($multishopOverride[static::BITCOIN]) && $multishopOverride[static::BITCOIN]) {
-                        Configuration::updateValue(static::BITCOIN, $bitcoin, false, $idShopGroup, $idShop);
-                    }
-                    if (isset($multishopOverride[static::ALIPAY]) && $multishopOverride[static::ALIPAY]) {
-                        Configuration::updateValue(static::ALIPAY, $alipay, false, $idShopGroup, $idShop);
-                    }
-                    if (isset($multishopOverride[static::IDEAL]) && $multishopOverride[static::IDEAL]) {
-                        Configuration::updateValue(static::IDEAL, $ideal, false, $idShopGroup, $idShop);
-                    }
-                    if (isset($multishopOverride[static::BANCONTACT]) && $multishopOverride[static::BANCONTACT]) {
-                        Configuration::updateValue(static::BANCONTACT, $bancontact, false, $idShopGroup, $idShop);
-                    }
-                    if (isset($multishopOverride[static::GIROPAY]) && $multishopOverride[static::GIROPAY]) {
-                        Configuration::updateValue(static::GIROPAY, $giropay, false, $idShopGroup, $idShop);
-                    }
-                    if (isset($multishopOverride[static::SOFORT]) && $multishopOverride[static::SOFORT]) {
-                        Configuration::updateValue(static::SOFORT, $sofort, false, $idShopGroup, $idShop);
-                    }
-                    if (isset($multishopOverride[static::THREEDSECURE]) && $multishopOverride[static::THREEDSECURE]) {
-                        Configuration::updateValue(static::THREEDSECURE, $threedsecure, false, $idShopGroup, $idShop);
-                    }
-                    if (isset($multishopOverride[static::SHOW_PAYMENT_LOGOS]) && $multishopOverride[static::SHOW_PAYMENT_LOGOS]) {
-                        Configuration::updateValue(static::SHOW_PAYMENT_LOGOS, $showPaymentLogos, false, $idShopGroup, $idShop);
-                    }
-                    if (isset($multishopOverride[static::COLLECT_BILLING]) && $multishopOverride[static::COLLECT_BILLING]) {
-                        Configuration::updateValue(static::COLLECT_BILLING, $collectBilling, false, $idShopGroup, $idShop);
-                    }
-                    if (isset($multishopOverride[static::COLLECT_SHIPPING]) && $multishopOverride[static::COLLECT_SHIPPING]) {
-                        Configuration::updateValue(static::COLLECT_SHIPPING, $collectShipping, false, $idShopGroup, $idShop);
-                    }
-                    if (isset($multishopOverride[static::STRIPE_CHECKOUT]) && $multishopOverride[static::STRIPE_CHECKOUT]) {
-                        Configuration::updateValue(static::STRIPE_CHECKOUT, $checkout, false, $idShopGroup, $idShop);
-                    }
-                    if (isset($multishopOverride[static::STRIPE_CC_FORM]) && $multishopOverride[static::STRIPE_CC_FORM]) {
-                        Configuration::updateValue(static::STRIPE_CC_FORM, $ccform, false, $idShopGroup, $idShop);
-                    }
-                    if (isset($multishopOverride[static::STRIPE_CC_ANIMATION]) && $multishopOverride[static::STRIPE_CC_ANIMATION]) {
-                        Configuration::updateValue(static::STRIPE_CC_ANIMATION, $ccanim, false, $idShopGroup, $idShop);
-                    }
-                    if (isset($multishopOverride[static::STRIPE_APPLE_PAY]) && $multishopOverride[static::STRIPE_APPLE_PAY]) {
-                        Configuration::updateValue(static::STRIPE_APPLE_PAY, $apple, false, $idShopGroup, $idShop);
+                    $shops = [$this->getShopId()];
+                }
+                foreach ($shops as $idShop) {
+                    foreach ($options as $key => $value) {
+                        if (isset($multishopOverride[$key]) && $multishopOverride[$key]) {
+                            Configuration::updateValue($key, $value, false, $idShopGroup, $idShop);
+                        }
                     }
                 }
             }
         }
 
-        Configuration::updateValue(static::SECRET_KEY_TEST, $secretKeyTest);
-        Configuration::updateValue(static::PUBLISHABLE_KEY_TEST, $publishableKeyTest);
-        Configuration::updateValue(static::SECRET_KEY_LIVE, $secretKeyLive);
-        Configuration::updateValue(static::PUBLISHABLE_KEY_LIVE, $publishableKeyLive);
-        Configuration::updateValue(static::GO_LIVE, $goLive);
-        Configuration::updateValue(static::ZIPCODE, $zipcode);
-        Configuration::updateValue(static::BITCOIN, $bitcoin);
-        Configuration::updateValue(static::ALIPAY, $alipay);
-        Configuration::updateValue(static::IDEAL, $ideal);
-        Configuration::updateValue(static::BANCONTACT, $bancontact);
-        Configuration::updateValue(static::GIROPAY, $giropay);
-        Configuration::updateValue(static::SOFORT, $sofort);
-        Configuration::updateValue(static::THREEDSECURE, $threedsecure);
-        Configuration::updateValue(static::SHOW_PAYMENT_LOGOS, $showPaymentLogos);
-        Configuration::updateValue(static::COLLECT_BILLING, $collectBilling);
-        Configuration::updateValue(static::COLLECT_SHIPPING, $collectShipping);
-        Configuration::updateValue(static::STRIPE_CHECKOUT, $checkout);
-        Configuration::updateValue(static::STRIPE_CC_FORM, $ccform);
-        Configuration::updateValue(static::STRIPE_CC_ANIMATION, $ccanim);
-        Configuration::updateValue(static::STRIPE_APPLE_PAY, $apple);
+        foreach ($options as $key => $value) {
+            Configuration::updateValue($key, $value);
+        }
     }
 
     /**
@@ -665,93 +573,6 @@ class Stripe extends PaymentModule
         }
 
         return (int) Context::getContext()->shop->id;
-    }
-
-    /**
-     * Process Order Options
-     *
-     * @return void
-     */
-    protected function postProcessOrderOptions()
-    {
-        $statusValidated = Tools::getValue(static::STATUS_VALIDATED);
-        $useStatusRefund = Tools::getValue(static::USE_STATUS_REFUND);
-        $statusRefund = Tools::getValue(static::STATUS_REFUND);
-        $statusSofort = Tools::getValue(static::STATUS_SOFORT);
-        $useStatusPartialRefund = Tools::getValue(static::USE_STATUS_PARTIAL_REFUND);
-        $statusPartialRefund = Tools::getValue(static::STATUS_PARTIAL_REFUND);
-        $generateCreditSlip = (bool) Tools::getValue(static::GENERATE_CREDIT_SLIP);
-
-        if (Configuration::get('PS_MULTISHOP_FEATURE_ACTIVE')) {
-            if (Shop::getContext() == Shop::CONTEXT_ALL) {
-                $this->updateAllValue(static::STATUS_VALIDATED, $statusValidated);
-                $this->updateAllValue(static::USE_STATUS_REFUND, $useStatusRefund);
-                $this->updateAllValue(static::STATUS_REFUND, $statusRefund);
-                $this->updateAllValue(static::STATUS_SOFORT, $statusSofort);
-                $this->updateAllValue(static::STATUS_PARTIAL_REFUND, $statusPartialRefund);
-                $this->updateAllValue(static::USE_STATUS_PARTIAL_REFUND, $useStatusPartialRefund);
-                $this->updateAllValue(static::GENERATE_CREDIT_SLIP, $generateCreditSlip);
-            } elseif (is_array(Tools::getValue('multishopOverrideOption'))) {
-                $idShopGroup = (int) Shop::getGroupFromShop($this->getShopId(), true);
-                $multishopOverride = Tools::getValue('multishopOverrideOption');
-                if (Shop::getContext() == Shop::CONTEXT_GROUP) {
-                    foreach (Shop::getShops(false, $this->getShopId()) as $idShop) {
-                        if (isset($multishopOverride[static::STATUS_VALIDATED]) && $multishopOverride[static::STATUS_VALIDATED]) {
-                            Configuration::updateValue(static::STATUS_VALIDATED, $statusValidated, false, $idShopGroup, $idShop);
-                        }
-                        if (isset($multishopOverride[static::USE_STATUS_REFUND]) && $multishopOverride[static::USE_STATUS_REFUND]) {
-                            Configuration::updateValue(static::USE_STATUS_REFUND, $useStatusRefund, false, $idShopGroup, $idShop);
-                        }
-                        if (isset($multishopOverride[static::STATUS_REFUND]) && $multishopOverride[static::STATUS_REFUND]) {
-                            Configuration::updateValue(static::STATUS_REFUND, $statusRefund, false, $idShopGroup, $idShop);
-                        }
-                        if (isset($multishopOverride[static::STATUS_SOFORT]) && $multishopOverride[static::STATUS_SOFORT]) {
-                            Configuration::updateValue(static::STATUS_SOFORT, $statusSofort, false, $idShopGroup, $idShop);
-                        }
-                        if (isset($multishopOverride[static::USE_STATUS_PARTIAL_REFUND]) && $multishopOverride[static::USE_STATUS_PARTIAL_REFUND]) {
-                            Configuration::updateValue(static::STATUS_PARTIAL_REFUND, $useStatusPartialRefund, false, $idShopGroup, $idShop);
-                        }
-                        if (isset($multishopOverride[static::STATUS_PARTIAL_REFUND]) && $multishopOverride[static::STATUS_PARTIAL_REFUND]) {
-                            Configuration::updateValue(static::STATUS_PARTIAL_REFUND, $statusPartialRefund, false, $idShopGroup, $idShop);
-                        }
-                        if (isset($multishopOverride[static::GENERATE_CREDIT_SLIP]) && $multishopOverride[static::GENERATE_CREDIT_SLIP]) {
-                            Configuration::updateValue(static::GENERATE_CREDIT_SLIP, $generateCreditSlip, false, $idShopGroup, $idShop);
-                        }
-                    }
-                } else {
-                    $idShop = (int) $this->getShopId();
-                    if (isset($multishopOverride[static::STATUS_VALIDATED]) && $multishopOverride[static::STATUS_VALIDATED]) {
-                        Configuration::updateValue(static::STATUS_VALIDATED, $statusValidated, false, $idShopGroup, $idShop);
-                    }
-                    if (isset($multishopOverride[static::USE_STATUS_REFUND]) && $multishopOverride[static::USE_STATUS_REFUND]) {
-                        Configuration::updateValue(static::USE_STATUS_REFUND, $useStatusRefund, false, $idShopGroup, $idShop);
-                    }
-                    if (isset($multishopOverride[static::STATUS_REFUND]) && $multishopOverride[static::STATUS_REFUND]) {
-                        Configuration::updateValue(static::STATUS_REFUND, $statusRefund, false, $idShopGroup, $idShop);
-                    }
-                    if (isset($multishopOverride[static::STATUS_SOFORT]) && $multishopOverride[static::STATUS_SOFORT]) {
-                        Configuration::updateValue(static::STATUS_SOFORT, $statusSofort, false, $idShopGroup, $idShop);
-                    }
-                    if (isset($multishopOverride[static::USE_STATUS_PARTIAL_REFUND]) && $multishopOverride[static::USE_STATUS_PARTIAL_REFUND]) {
-                        Configuration::updateValue(static::STATUS_PARTIAL_REFUND, $useStatusPartialRefund, false, $idShopGroup, $idShop);
-                    }
-                    if (isset($multishopOverride[static::STATUS_PARTIAL_REFUND]) && $multishopOverride[static::STATUS_PARTIAL_REFUND]) {
-                        Configuration::updateValue(static::STATUS_PARTIAL_REFUND, $statusPartialRefund, false, $idShopGroup, $idShop);
-                    }
-                    if (isset($multishopOverride[static::GENERATE_CREDIT_SLIP]) && $multishopOverride[static::GENERATE_CREDIT_SLIP]) {
-                        Configuration::updateValue(static::GENERATE_CREDIT_SLIP, $generateCreditSlip, false, $idShopGroup, $idShop);
-                    }
-                }
-            }
-        }
-
-        Configuration::updateValue(static::STATUS_VALIDATED, $statusValidated);
-        Configuration::updateValue(static::USE_STATUS_REFUND, $useStatusRefund);
-        Configuration::updateValue(static::STATUS_REFUND, $statusRefund);
-        Configuration::updateValue(static::STATUS_SOFORT, $statusSofort);
-        Configuration::updateValue(static::USE_STATUS_PARTIAL_REFUND, $useStatusPartialRefund);
-        Configuration::updateValue(static::STATUS_PARTIAL_REFUND, $statusPartialRefund);
-        Configuration::updateValue(static::GENERATE_CREDIT_SLIP, $generateCreditSlip);
     }
 
     /**
@@ -1221,7 +1042,8 @@ class Stripe extends PaymentModule
                 $this->getStripeCreditCardOptions(),
                 $this->getEuropeanPaymentMethodsOptions(),
                 $this->getApplePayOptions(),
-                $this->getOrderOptions()
+                $this->getOrderOptions(),
+                $this->getAdvancedOptions()
             )
         );
     }
@@ -1606,6 +1428,37 @@ class Stripe extends PaymentModule
                         'type'       => 'bool',
                         'name'       => static::GENERATE_CREDIT_SLIP,
                         'value'      => Configuration::get(static::GENERATE_CREDIT_SLIP),
+                        'validation' => 'isBool',
+                        'cast'       => 'intval',
+                    ],
+                ],
+                'submit' => [
+                    'title' => $this->l('Save'),
+                    'class' => 'button',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Get advanced options
+     *
+     * @return array Advanced options
+     *
+     * @since 1.0.0
+     */
+    protected function getAdvancedOptions()
+    {
+        return [
+            'orders' => [
+                'title'  => $this->l('Advanced Settings'),
+                'icon'   => 'icon-cogs',
+                'fields' => [
+                    static::INCLUDE_STRIPE_BOOTSTRAP => [
+                        'title'      => $this->l('Include Bootstrap CSS for the stripe credit card form'),
+                        'type'       => 'bool',
+                        'name'       => static::INCLUDE_STRIPE_BOOTSTRAP,
+                        'value'      => Configuration::get(static::INCLUDE_STRIPE_BOOTSTRAP),
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                     ],
