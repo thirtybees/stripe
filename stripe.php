@@ -403,7 +403,7 @@ class Stripe extends PaymentModule
 
             $orderHistory = new OrderHistory();
             $orderHistory->id_order = $order->id;
-            $orderHistory->changeIdOrderState((int) Configuration::get(Stripe::STATUS_REFUND), $idOrder);
+            $orderHistory->changeIdOrderState((int) Configuration::get(Stripe::STATUS_REFUND), $idOrder, !$order->hasInvoice());
             $orderHistory->addWithemail(true);
         } else {
             $transaction = new StripeTransaction();
@@ -418,7 +418,7 @@ class Stripe extends PaymentModule
             if (Configuration::get(Stripe::USE_STATUS_PARTIAL_REFUND)) {
                 $orderHistory = new OrderHistory();
                 $orderHistory->id_order = $order->id;
-                $orderHistory->changeIdOrderState((int) Configuration::get(Stripe::STATUS_PARTIAL_REFUND), $idOrder);
+                $orderHistory->changeIdOrderState((int) Configuration::get(Stripe::STATUS_PARTIAL_REFUND), $idOrder, !$order->hasInvoice());
                 $orderHistory->addWithemail(true);
             }
         }
