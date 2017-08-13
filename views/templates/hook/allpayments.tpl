@@ -27,7 +27,7 @@
 {if (Configuration::get(Stripe::GIROPAY) && in_array($stripe_currency, Stripe::$methodCurrencies['giropay']))}
   {if file_exists('./giropaypayment.tpl')}{include file="./giropaypayment.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/giropaypayment.tpl"}{/if}
 {/if}
-{if (Configuration::get(Stripe::SOFORT) && in_array(Tools::strtoupper($country->iso_code), ['AT', 'DE', 'NL', 'BE', 'ES'])  && in_array($stripe_currency, Stripe::$methodCurrencies['sofort']))}
+{if (Configuration::get(Stripe::SOFORT) && in_array($stripe_country, ['AT', 'DE', 'NL', 'BE', 'ES'])  && in_array($stripe_currency, Stripe::$methodCurrencies['sofort']))}
   {if file_exists('./sofortpayment.tpl')}{include file="./sofortpayment.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/sofortpayment.tpl"}{/if}
 {/if}
 {if (Configuration::get(Stripe::ALIPAY) && in_array($stripe_currency, Stripe::$methodCurrencies['alipay']))}
