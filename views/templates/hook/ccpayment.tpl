@@ -107,8 +107,8 @@
             <input type="hidden" name="stripe-id_cart" value="{$id_cart|escape:'htmlall':'UTF-8'}">
             <div class="panel panel-default credit-card-box">
                 <div class="panel-heading">
-                  <h3 class="panel-title" style="min-height: 40px;font-size: 24px;line-height: 40px;">{l s='Payment Details' mod='stripe'}</h3>
                   <img class="img-responsive pull-right" src="{$module_dir|escape:'htmlall':'UTF-8'}views/img/maincreditcards.png">
+                  <h3 class="panel-title" style="min-height: 40px;font-size: 24px;line-height: 40px;">{l s='Payment Details' mod='stripe'}</h3>
                 </div>
                 <div class="panel-body">
                     <div class="row">
