@@ -16,24 +16,24 @@
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
 {capture name=path}
-	<a href="{$orderLink|escape:'html':'UTF-8'}">
-		{l s='Order'}
-	</a>
-	<span class="navigation-pipe">
+  <a href="{$orderLink|escape:'html':'UTF-8'}">
+    {l s='Order'}
+  </a>
+  <span class="navigation-pipe">
         {$navigationPipe}
     </span>
-	<span class="navigation_page">
+  <span class="navigation_page">
         {l s='Payment error'}
     </span>
 {/capture}
-<div>
-	<h3>{l s='An error occurred' mod='stripe'}:</h3>
-	<ul class="alert alert-danger">
-		{foreach from=$errors item='error'}
-			<li>{$error|escape:'htmlall':'UTF-8'}</li>
-		{/foreach}
-	</ul>
+<div class="alert alert-danger">
+  <h3>{l s='An error occurred' mod='stripe'}:</h3>
+  <ul>
+    {foreach from=$errors item='error'}
+      <li>{$error|escape:'htmlall':'UTF-8'}</li>
+    {/foreach}
+  </ul>
 </div>
 <ul class="footer_links clearfix">
-	<li><a class="btn btn-default button button-small" href="{$orderLink|escape:'html':'UTF-8'}" title="{l s='Back to your shopping cart' mod='stripe'}"><span><i class="icon-chevron-left"></i> {l s='Back to your shopping cart' mod='stripe'}</span></a></li>
+  <li><a class="btn btn-default button button-small" href="{$orderLink|escape:'html':'UTF-8'}" title="{l s='Back to your shopping cart' mod='stripe'}"><span><i class="icon-chevron-left"></i> {l s='Back to your shopping cart' mod='stripe'}</span></a></li>
 </ul>
