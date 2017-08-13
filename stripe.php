@@ -1450,7 +1450,7 @@ class Stripe extends PaymentModule
     protected function getAdvancedOptions()
     {
         return [
-            'orders' => [
+            'advanced' => [
                 'title'  => $this->l('Advanced Settings'),
                 'icon'   => 'icon-cogs',
                 'fields' => [
