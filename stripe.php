@@ -1547,34 +1547,7 @@ class Stripe extends PaymentModule
             ]
         );
 
-        $output = '';
-
-        if (Configuration::get(static::STRIPE_CHECKOUT) && in_array($stripeCurrency, static::$methodCurrencies['credit_card'])) {
-            $output .= $this->display(__FILE__, 'views/templates/hook/payment.tpl');
-        }
-        if (Configuration::get(static::IDEAL) && in_array($stripeCurrency, static::$methodCurrencies['ideal'])) {
-            $output .= $this->display(__FILE__, 'views/templates/hook/idealpayment.tpl');
-        }
-        if (Configuration::get(static::BANCONTACT) && in_array($stripeCurrency, static::$methodCurrencies['bancontact'])) {
-            $output .= $this->display(__FILE__, 'views/templates/hook/bancontactpayment.tpl');
-        }
-        if (Configuration::get(static::GIROPAY) && in_array($stripeCurrency, static::$methodCurrencies['giropay'])) {
-            $output .= $this->display(__FILE__, 'views/templates/hook/giropaypayment.tpl');
-        }
-        if (Configuration::get(static::SOFORT) && in_array(Tools::strtoupper($country->iso_code), ['AT', 'DE', 'NL', 'BE', 'ES'])  && in_array($stripeCurrency, static::$methodCurrencies['sofort'])) {
-            $output .= $this->display(__FILE__, 'views/templates/hook/sofortpayment.tpl');
-        }
-        if (Configuration::get(static::ALIPAY) && in_array($stripeCurrency, static::$methodCurrencies['alipay'])) {
-            $output .= $this->display(__FILE__, 'views/templates/hook/alipaypayment.tpl');
-        }
-        if (Configuration::get(static::STRIPE_CC_FORM) && in_array($stripeCurrency, static::$methodCurrencies['credit_card'])) {
-            $output .= $this->display(__FILE__, 'views/templates/hook/ccpayment.tpl');
-        }
-        if (Configuration::get(static::STRIPE_APPLE_PAY) && in_array($stripeCurrency, static::$methodCurrencies['credit_card'])) {
-            $output .= $this->display(__FILE__, 'views/templates/hook/applepayment.tpl');
-        }
-
-        return $output;
+        return $this->display(__FILE__, 'allpayments.tpl');
     }
 
     /**
