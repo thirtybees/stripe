@@ -1716,11 +1716,15 @@ class Stripe extends PaymentModule
         $this->context->controller->addJQuery();
         $this->context->smarty->assign(
             [
-                'baseDir'          => Tools::getHttpHost(true).__PS_BASE_URI__.'modules/stripe/views/',
-                'stripe_checkout'  => (bool) Configuration::get(static::STRIPE_CHECKOUT),
-                'stripe_cc_form'   => (bool) Configuration::get(static::STRIPE_CC_FORM),
-                'stripe_apple_pay' => (bool) Configuration::get(static::STRIPE_APPLE_PAY),
-                'stripe_ideal'     => (bool) Configuration::get(static::IDEAL),
+                'baseDir'           => Tools::getHttpHost(true).__PS_BASE_URI__.'modules/stripe/views/',
+                'stripe_checkout'   => (bool) Configuration::get(static::STRIPE_CHECKOUT),
+                'stripe_cc_form'    => (bool) Configuration::get(static::STRIPE_CC_FORM),
+                'stripe_apple_pay'  => (bool) Configuration::get(static::STRIPE_APPLE_PAY),
+                'stripe_ideal'      => (bool) Configuration::get(static::IDEAL),
+                'stripe_bancontact' => (bool) Configuration::get(static::BANCONTACT),
+                'stripe_giropay'    => (bool) Configuration::get(static::GIROPAY),
+                'stripe_sofort'     => (bool) Configuration::get(static::SOFORT),
+                'stripe_alipay'     => (bool) Configuration::get(static::ALIPAY),
             ]
         );
 
