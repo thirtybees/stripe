@@ -24,9 +24,9 @@
       }
 
       {if $stripe_checkout}
-        if (typeof StripeCheckout === 'undefined') {
-          $.getScript('https://checkout.stripe.com/checkout.js');
-        }
+      if (typeof StripeCheckout === 'undefined') {
+        $.getScript('https://checkout.stripe.com/checkout.js');
+      }
       {/if}
 
       {if $stripe_cc_form || $stripe_apple_pay || $stripe_ideal || $stripe_bancontact || $stripe_giropay || $stripe_sofort || $stripe_alipay}

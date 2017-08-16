@@ -46,42 +46,9 @@
 </div>
 <script type="text/javascript">
   (function () {
-    var initTime = 0;
-
-    window.stripeBlockerOpen = window.stripeBlockerOpen || {if isset($stripe_blocker_info) && !$stripe_blocker_info}true{else}false{/if};
-
-    function showBlockerInfo() {
-      if (window.stripeBlockerOpen) {
-        return;
-      }
-
-      window.stripeBlockerOpen = true;
-
-      $.fancybox({
-        height: 800,
-        content: '<h2 style="color: red"><i class="icon icon-times-circle-o"></i> {l s='Unable to initialize checkout' js=1}</h2><strong>{l s='Please enable Stripe in Ghostery as follows:' js=1}</strong><br /><img class="responsive" src="{$module_dir|escape:'javascript'}views/img/fixstripeghostery.gif">',
-        afterClose: function () {
-          window.stripeBlockerOpen = false;
-        },
-        helpers: {
-          overlay: {
-            closeClick: false
-          }
-        }
-      });
-    }
-
     function initApplePay() {
-      if (initTime > 5000) {
-        showBlockerInfo();
-
-        return;
-      }
-
       if (typeof $ === 'undefined' || typeof Stripe === 'undefined') {
         setTimeout(initApplePay, 100);
-        initTime += 100;
-
         return;
       }
 
