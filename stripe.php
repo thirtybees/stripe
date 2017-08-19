@@ -354,7 +354,7 @@ class Stripe extends PaymentModule
         $guzzle = new GuzzleClient();
         ApiRequestor::setHttpClient($guzzle);
         try {
-            \ThirtybeesStripe\Stripe::setApiKey(Configuration::get(Stripe::SECRET_KEY_TEST));
+            \ThirtybeesStripe\Stripe::setApiKey(Configuration::get(static::GO_LIVE) ? Configuration::get(static::SECRET_KEY_LIVE) : Configuration::get(static::SECRET_KEY_TEST));
             \ThirtybeesStripe\Refund::create(
                 [
                     'charge'   => $idCharge,
@@ -364,7 +364,7 @@ class Stripe extends PaymentModule
                     ],
                 ]
             );
-        } catch (InvalidRequest $e) {
+        } catch (Exception $e) {
             $this->context->controller->errors[] = sprintf('Invalid Stripe request: %s', $e->getMessage());
 
             return;
@@ -423,7 +423,7 @@ class Stripe extends PaymentModule
             }
         }
 
-        Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&id_order='.$idOrder);
+        Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&stripeRefund=refunded&id_order='.$idOrder);
     }
 
     /**
@@ -1746,6 +1746,10 @@ class Stripe extends PaymentModule
      */
     public function hookDisplayAdminOrder($params)
     {
+        if (Tools::getValue('stripeRefund') === 'refunded') {
+            $this->context->controller->confirmations[] = $this->l('The refund via Stripe has been successfully processed');
+        }
+
         if (StripeTransaction::getTransactionsByOrderId($params['id_order'], true)) {
             $this->context->controller->addJS($this->_path.'views/js/sweetalert.min.js');
             $this->context->controller->addCSS($this->_path.'views/css/sweetalert.min.css', 'all');
