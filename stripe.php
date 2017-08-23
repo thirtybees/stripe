@@ -165,7 +165,7 @@ class Stripe extends PaymentModule
 
         $this->tb_versions_compliancy = '~1.0.0';
 
-        \ThirtyBeesStripe\Stripe::setAppInfo('thirty bees', $this->version, 'https://thirtybees.com/');
+        ThirtybeesStripe\Stripe::setAppInfo('thirty bees', $this->version, 'https://thirtybees.com/');
     }
 
     /**
