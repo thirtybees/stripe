@@ -1,6 +1,6 @@
 <?php
 
-namespace ThirtybeesStripe;
+namespace ThirtyBeesStripe;
 
 class RequestOptionsTest extends TestCase
 {
@@ -60,7 +60,7 @@ class RequestOptionsTest extends TestCase
     }
 
     /**
-     * @expectedException ThirtybeesStripe\Error\Api
+     * @expectedException \ThirtyBeesStripe\Error\Api
      */
     public function testWrongType()
     {

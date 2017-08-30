@@ -1,6 +1,6 @@
 <?php
 
-namespace ThirtybeesStripe;
+namespace ThirtyBeesStripe;
 
 class ApplicationFeeTest extends TestCase
 {

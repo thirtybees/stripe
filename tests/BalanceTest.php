@@ -1,6 +1,6 @@
 <?php
 
-namespace ThirtybeesStripe;
+namespace ThirtyBeesStripe;
 
 class BalanceTest extends TestCase
 {

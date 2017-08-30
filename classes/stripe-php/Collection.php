@@ -1,6 +1,6 @@
 <?php
 
-namespace ThirtybeesStripe;
+namespace ThirtyBeesStripe;
 
 /**
  * Class Collection
@@ -56,7 +56,7 @@ class Collection extends ApiResource
     }
 
     /**
-     * @return AutoPagingIterator An iterator that can be used to iterate
+     * @return Util\AutoPagingIterator An iterator that can be used to iterate
      *    across all objects across all pages. As page boundaries are
      *    encountered, the next page will be fetched automatically for
      *    continued iteration.

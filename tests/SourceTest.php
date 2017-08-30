@@ -1,6 +1,6 @@
 <?php
 
-namespace ThirtybeesStripe;
+namespace ThirtyBeesStripe;
 
 class SourceTest extends TestCase
 {
@@ -165,7 +165,7 @@ class SourceTest extends TestCase
     }
 
     /**
-     * @expectedException ThirtybeesStripe\Error\Api
+     * @expectedException \ThirtyBeesStripe\Error\Api
      */
     public function testDeleteUnattached()
     {

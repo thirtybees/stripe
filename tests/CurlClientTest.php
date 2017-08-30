@@ -1,8 +1,8 @@
 <?php
 
-namespace ThirtybeesStripe;
+namespace ThirtyBeesStripe;
 
-use ThirtybeesStripe\HttpClient\CurlClient;
+use ThirtyBeesStripe\HttpClient\CurlClient;
 
 class CurlClientTest extends TestCase
 {
@@ -21,6 +21,15 @@ class CurlClientTest extends TestCase
         $curl->setConnectTimeout(-999);
         $this->assertSame(0, $curl->getTimeout());
         $this->assertSame(0, $curl->getConnectTimeout());
+    }
+
+    public function testUserAgentInfo()
+    {
+        $curl = new CurlClient();
+        $uaInfo = $curl->getUserAgentInfo();
+        $this->assertNotNull($uaInfo);
+        $this->assertNotNull($uaInfo['httplib']);
+        $this->assertNotNull($uaInfo['ssllib']);
     }
 
     public function testDefaultOptions()
@@ -44,50 +53,8 @@ class CurlClientTest extends TestCase
         $withBadClosure = new CurlClient(function () {
             return 'thisShouldNotWork';
         });
-        $this->setExpectedException('ThirtybeesStripe\Error\Api', "Non-array value returned by defaultOptions CurlClient callback");
+        $this->setExpectedException('ThirtyBeesStripe\Error\Api', "Non-array value returned by defaultOptions CurlClient callback");
         $withBadClosure->request('get', 'https://httpbin.org/status/200', array(), array(), false);
-    }
-
-    public function testEncode()
-    {
-        $a = array(
-            'my' => 'value',
-            'that' => array('your' => 'example'),
-            'bar' => 1,
-            'baz' => null
-        );
-
-        $enc = CurlClient::encode($a);
-        $this->assertSame('my=value&that%5Byour%5D=example&bar=1', $enc);
-
-        $a = array('that' => array('your' => 'example', 'foo' => null));
-        $enc = CurlClient::encode($a);
-        $this->assertSame('that%5Byour%5D=example', $enc);
-
-        $a = array('that' => 'example', 'foo' => array('bar', 'baz'));
-        $enc = CurlClient::encode($a);
-        $this->assertSame('that=example&foo%5B%5D=bar&foo%5B%5D=baz', $enc);
-
-        $a = array(
-            'my' => 'value',
-            'that' => array('your' => array('cheese', 'whiz', null)),
-            'bar' => 1,
-            'baz' => null
-        );
-
-        $enc = CurlClient::encode($a);
-        $expected = 'my=value&that%5Byour%5D%5B%5D=cheese'
-              . '&that%5Byour%5D%5B%5D=whiz&bar=1';
-        $this->assertSame($expected, $enc);
-
-        // Ignores an empty array
-        $enc = CurlClient::encode(array('foo' => array(), 'bar' => 'baz'));
-        $expected = 'bar=baz';
-        $this->assertSame($expected, $enc);
-
-        $a = array('foo' => array(array('bar' => 'baz'), array('bar' => 'bin')));
-        $enc = CurlClient::encode($a);
-        $this->assertSame('foo%5B0%5D%5Bbar%5D=baz&foo%5B1%5D%5Bbar%5D=bin', $enc);
     }
 
     public function testSslOption()

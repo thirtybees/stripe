@@ -1,6 +1,6 @@
 <?php
 
-namespace ThirtybeesStripe;
+namespace ThirtyBeesStripe;
 
 /**
  * Class OrderReturn
@@ -9,6 +9,17 @@ namespace ThirtybeesStripe;
  */
 class OrderReturn extends ApiResource
 {
+    /**
+     * This is a special case because the order returns endpoint has an
+     *    underscore in it. The parent `className` function strips underscores.
+     *
+     * @return string The name of the class.
+     */
+    public static function className()
+    {
+        return 'order_return';
+    }
+
     /**
      * @param array|string $id The ID of the order return to retrieve, or an
      *     options array containing an `id` field.

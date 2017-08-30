@@ -1,6 +1,6 @@
 <?php
 
-namespace ThirtybeesStripe\Util;
+namespace ThirtyBeesStripe\Util;
 
 /**
  * Describes a logger instance.

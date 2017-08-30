@@ -1,6 +1,6 @@
 <?php
 
-namespace ThirtybeesStripe;
+namespace ThirtyBeesStripe;
 
 class ApplePayDomainTest extends TestCase
 {
@@ -19,7 +19,7 @@ class ApplePayDomainTest extends TestCase
             'domain_name' => 'test.com'
         ));
         $this->assertSame('apwc_create', $d->id);
-        $this->assertInstanceOf('ThirtybeesStripe\\ApplePayDomain', $d);
+        $this->assertInstanceOf('ThirtyBeesStripe\\ApplePayDomain', $d);
     }
 
     public function testRetrieve()
@@ -35,7 +35,7 @@ class ApplePayDomainTest extends TestCase
         );
         $d = ApplePayDomain::retrieve('apwc_retrieve');
         $this->assertSame('apwc_retrieve', $d->id);
-        $this->assertInstanceOf('ThirtybeesStripe\\ApplePayDomain', $d);
+        $this->assertInstanceOf('ThirtyBeesStripe\\ApplePayDomain', $d);
     }
 
     public function testDeletion()
@@ -44,7 +44,7 @@ class ApplePayDomainTest extends TestCase
         $d = ApplePayDomain::create(array(
             'domain_name' => 'jackshack.website'
         ));
-        $this->assertInstanceOf('ThirtybeesStripe\\ApplePayDomain', $d);
+        $this->assertInstanceOf('ThirtyBeesStripe\\ApplePayDomain', $d);
         $this->mockRequest(
             'DELETE',
             '/v1/apple_pay/domains/' . $d->id,

@@ -1,6 +1,6 @@
 <?php
 
-namespace ThirtybeesStripe;
+namespace ThirtyBeesStripe;
 
 /**
  * Class Account
@@ -129,5 +129,14 @@ class Account extends ApiResource
     public static function all($params = null, $opts = null)
     {
         return self::_all($params, $opts);
+    }
+
+    public function deauthorize($clientId = null, $opts = null)
+    {
+        $params = array(
+            'client_id' => $clientId,
+            'stripe_user_id' => $this->id,
+        );
+        OAuth::deauthorize($params, $opts);
     }
 }

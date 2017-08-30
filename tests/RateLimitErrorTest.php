@@ -1,6 +1,6 @@
 <?php
 
-namespace ThirtybeesStripe;
+namespace ThirtyBeesStripe;
 
 class RateLimitErrorTest extends TestCase
 {
@@ -12,7 +12,7 @@ class RateLimitErrorTest extends TestCase
     }
 
     /**
-     * @expectedException \ThirtybeesStripe\Error\RateLimit
+     * @expectedException \PHPUnit_Framework_MockObject_RuntimeException
      */
     public function testRateLimit()
     {

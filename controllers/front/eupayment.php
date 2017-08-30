@@ -223,9 +223,9 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
 
         $invoiceAddress = new Address((int) $cart->id_address_invoice);
 
-        ThirtybeesStripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST));
+        ThirtyBeesStripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST));
 
-        $source = \ThirtybeesStripe\Source::create([
+        $source = \ThirtyBeesStripe\Source::create([
             'type' => 'ideal',
             'amount' => (int)$stripeAmount,
             'currency' => $currency->iso_code,
@@ -256,9 +256,9 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
 
         $invoiceAddress = new Address((int) $cart->id_address_invoice);
 
-        ThirtybeesStripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST));
+        ThirtyBeesStripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST));
 
-        $source = \ThirtybeesStripe\Source::create([
+        $source = \ThirtyBeesStripe\Source::create([
             'type' => 'bancontact',
             'amount' => (int)$stripeAmount,
             'currency' => $currency->iso_code,
@@ -289,9 +289,9 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
 
         $invoiceAddress = new Address((int) $cart->id_address_invoice);
 
-        ThirtybeesStripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST));
+        ThirtyBeesStripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST));
 
-        $source = \ThirtybeesStripe\Source::create([
+        $source = \ThirtyBeesStripe\Source::create([
             'type' => 'giropay',
             'amount' => (int)$stripeAmount,
             'currency' => $currency->iso_code,
@@ -323,9 +323,9 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
         $invoiceAddress = new Address((int) $cart->id_address_invoice);
         $country = new Country($invoiceAddress->id_country);
 
-        ThirtybeesStripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST));
+        ThirtyBeesStripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST));
 
-        $source = \ThirtybeesStripe\Source::create([
+        $source = \ThirtyBeesStripe\Source::create([
             'type' => 'sofort',
             'amount' => (int)$stripeAmount,
             'currency' => $currency->iso_code,
@@ -357,9 +357,9 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
             $stripeAmount = (int) ($stripeAmount * 100);
         }
 
-        ThirtybeesStripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST));
+        ThirtyBeesStripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST));
 
-        $source = \ThirtybeesStripe\Source::create([
+        $source = \ThirtyBeesStripe\Source::create([
             'type' => 'alipay',
             'amount' => (int)$stripeAmount,
             'currency' => $currency->iso_code,

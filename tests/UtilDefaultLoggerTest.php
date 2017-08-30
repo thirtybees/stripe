@@ -2,9 +2,9 @@
 
 // Test in a slightly different namespace than usual. See comment on
 // `error_log` below.
-namespace ThirtybeesStripe\Util;
+namespace ThirtyBeesStripe\Util;
 
-class UtilLoggerTest extends \ThirtybeesStripe\TestCase
+class UtilLoggerTest extends \ThirtyBeesStripe\TestCase
 {
     public function testDefaultLogger()
     {

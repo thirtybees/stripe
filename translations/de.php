@@ -2,13 +2,13 @@
 
 global $_MODULE;
 $_MODULE = [];
-$_MODULE['<{stripe}default-bootstrap>stripe_ce7566d1d08cc094b74cf283cf9c56a5'] = 'ThirtybeesStripe';
-$_MODULE['<{stripe}default-bootstrap>stripe_5b8aea560ed15f6e7b3051397061d7c6'] = 'Zahlungen mit ThirtybeesStripe akzeptieren';
+$_MODULE['<{stripe}default-bootstrap>stripe_ce7566d1d08cc094b74cf283cf9c56a5'] = 'Stripe';
+$_MODULE['<{stripe}default-bootstrap>stripe_5b8aea560ed15f6e7b3051397061d7c6'] = 'Zahlungen mit Stripe akzeptieren';
 $_MODULE['<{stripe}default-bootstrap>stripe_92d4773a9f32fc3333cb8238471cf763'] = 'cURL muss verfügbar sein um dieses Modul zu installieren';
 $_MODULE['<{stripe}default-bootstrap>stripe_f4f70727dc34561dfde1a3c529b6205c'] = 'Einstellungen';
 $_MODULE['<{stripe}default-bootstrap>stripe_1a11db3d2781e8ee1401eab17b296b6a'] = 'Module-Einstellungen';
 $_MODULE['<{stripe}default-bootstrap>stripe_31112aca11d0e9e6eb7db96f317dda49'] = 'Transaktionen';
-$_MODULE['<{stripe}default-bootstrap>stripe_6def9ae0f38dac32623c7d4ca5a724cb'] = 'ThirtybeesStripe Transaktionen';
+$_MODULE['<{stripe}default-bootstrap>stripe_6def9ae0f38dac32623c7d4ca5a724cb'] = 'Stripe Transaktionen';
 $_MODULE['<{stripe}default-bootstrap>stripe_cec2ab5f5e872165e2fadfe47ad6caf5'] = 'API-Einstellungen';
 $_MODULE['<{stripe}default-bootstrap>stripe_952bf87c967660b7bbd4e1eb08cefc92'] = 'Secret key';
 $_MODULE['<{stripe}default-bootstrap>stripe_30ca9973e71cc47268616e139765f5df'] = 'Publishable key';
@@ -58,12 +58,12 @@ $_MODULE['<{stripe}default-bootstrap>adminorder_93cba07454f06a4a960172bbd6e2a435
 $_MODULE['<{stripe}default-bootstrap>adminorder_bafd7322c6e97d25b6299b5d6fe8920b'] = 'Nein';
 $_MODULE['<{stripe}default-bootstrap>adminorder_729a51874fe901b092899e9e8b31c97a'] = 'Sind Sie sicher?';
 $_MODULE['<{stripe}default-bootstrap>adminorder_90d6df5c26afc535595405df532d9917'] = 'Möchten Sie diese Bestellung zurückerstatten?';
-$_MODULE['<{stripe}default-bootstrap>adminorder_ce7566d1d08cc094b74cf283cf9c56a5'] = 'ThirtybeesStripe';
+$_MODULE['<{stripe}default-bootstrap>adminorder_ce7566d1d08cc094b74cf283cf9c56a5'] = 'Stripe';
 $_MODULE['<{stripe}default-bootstrap>adminorder_c0a3c3e9b5fbd21c505e082644b2220c'] = 'Vollständige Rückerstattung';
 $_MODULE['<{stripe}default-bootstrap>adminorder_5a4f7f7d4dc617e949c08eb201536d5b'] = 'Verbleibend:';
 $_MODULE['<{stripe}default-bootstrap>adminorder_c985a711556e2edf5cac28dfbdb43ff0'] = 'Teilweise Rückerstattung';
-$_MODULE['<{stripe}default-bootstrap>configure_ce7566d1d08cc094b74cf283cf9c56a5'] = 'ThirtybeesStripe';
-$_MODULE['<{stripe}default-bootstrap>configure_5b8aea560ed15f6e7b3051397061d7c6'] = 'Zahlungen mit ThirtybeesStripe akzeptieren';
+$_MODULE['<{stripe}default-bootstrap>configure_ce7566d1d08cc094b74cf283cf9c56a5'] = 'Stripe';
+$_MODULE['<{stripe}default-bootstrap>configure_5b8aea560ed15f6e7b3051397061d7c6'] = 'Zahlungen mit Stripe akzeptieren';
 $_MODULE['<{stripe}default-bootstrap>configure_4ffc31eb13a9db09daca5bb5bd3371ac'] = 'Danke daß Sie dieses Modul benutzen!';
 $_MODULE['<{stripe}default-bootstrap>configure_06ad314b340900d226b1196e1fe289e9'] = 'Schnellstart';
 $_MODULE['<{stripe}default-bootstrap>configure_5e706a9b7eb9b142a619e4331d6976e6'] = 'Besuchen Sie';
@@ -79,7 +79,7 @@ $_MODULE['<{stripe}default-bootstrap>tlscheck_f73b772abeb25bc94269804be357918d']
 $_MODULE['<{stripe}default-bootstrap>tlscheck_c377c11dcd956b56b5721169dba44e20'] = 'Überprüfen ob Ihr Server TLS v1.2 unterstützt';
 $_MODULE['<{stripe}default-bootstrap>tlscheck_5a5f5df29ed99192d3016517d2f9a8ca'] = 'Dieses Modul kann keine Zahlungen abwickeln wenn TLS v1.2 auf Ihrem Server nicht unterstützt wird.';
 $_MODULE['<{stripe}default-bootstrap>tlscheck_2de6b6c293ef0e17aad15cad7b2cf21a'] = 'Mit diesem Tool können Sie überprüfen ob Sie Ihren Server konfigurieren müssen um dieses Modul benutzen zu können.';
-$_MODULE['<{stripe}default-bootstrap>tlscheck_29ef91bbcf9b087cfb1b574a054752ee'] = 'Wenn das Modul nicht verifizieren kann, daß TLS v1.2 unterstützt wird, wird ThirtybeesStripe automatisch deaktiviert.';
+$_MODULE['<{stripe}default-bootstrap>tlscheck_29ef91bbcf9b087cfb1b574a054752ee'] = 'Wenn das Modul nicht verifizieren kann, daß TLS v1.2 unterstützt wird, wird Stripe automatisch deaktiviert.';
 $_MODULE['<{stripe}default-bootstrap>tlscheck_bbeb91411acbd7cf6a7733755b653128'] = 'Vergewissern Sie sich, daß Sie eine (grüne) Bestätigungsnachricht unterhalb sehen, dann können Sie beruhigt fortsetzen.';
 $_MODULE['<{stripe}default-bootstrap>tlscheck_72f8c87558ceb35b6c11d00e147e51ad'] = 'TLS v1.2 wird unterstützt';
 $_MODULE['<{stripe}default-bootstrap>tlscheck_b0c3a5317d13cdb1754d8a82c2902e72'] = 'TLS v1.2 wird nicht unterstützt. Bitte aktualisieren Sie Ihren Server.';

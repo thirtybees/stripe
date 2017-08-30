@@ -1,6 +1,6 @@
 <?php
 
-namespace ThirtybeesStripe\Util;
+namespace ThirtyBeesStripe\Util;
 
 use IteratorAggregate;
 use ArrayIterator;

@@ -49,9 +49,9 @@ class StripeHookModuleFrontController extends ModuleFrontController
         $body = file_get_contents('php://input');
 
         if (!empty($body) && $data = Tools::jsonDecode($body, true)) {
-            // Verify with ThirtybeesStripe
-            \ThirtybeesStripe\Stripe::setApiKey(Configuration::get(Stripe::SECRET_KEY_TEST));
-            $event = \ThirtybeesStripe\Event::retrieve($data['id']);
+            // Verify with Stripe
+            \ThirtyBeesStripe\Stripe::setApiKey(Configuration::get(Stripe::SECRET_KEY_TEST));
+            $event = \ThirtyBeesStripe\Event::retrieve($data['id']);
             switch ($data['type']) {
                 case 'charge.refunded':
                     $this->processRefund($event);
@@ -78,11 +78,11 @@ class StripeHookModuleFrontController extends ModuleFrontController
     /**
      * Process `charge.succeeded` event
      *
-     * @param \ThirtybeesStripe\Event $event
+     * @param \ThirtyBeesStripe\Event $event
      */
     protected function processSucceeded($event)
     {
-        /** @var \ThirtybeesStripe\Charge $charge */
+        /** @var \ThirtyBeesStripe\Charge $charge */
         $charge = $event->data['object'];
 
         // This is only supported for Sofort Banking at the moment
@@ -116,11 +116,11 @@ class StripeHookModuleFrontController extends ModuleFrontController
     /**
      * Process `charge.failed` event
      *
-     * @param \ThirtybeesStripe\Event $event
+     * @param \ThirtyBeesStripe\Event $event
      */
     protected function processFailed($event)
     {
-        /** @var \ThirtybeesStripe\Charge $charge */
+        /** @var \ThirtyBeesStripe\Charge $charge */
         $charge = $event->data['object'];
 
         if (!$idOrder = StripeTransaction::getIdOrderByCharge($charge->id)) {
@@ -150,11 +150,11 @@ class StripeHookModuleFrontController extends ModuleFrontController
     /**
      * Process `charge.refund` event
      *
-     * @param \ThirtybeesStripe\Event $event
+     * @param \ThirtyBeesStripe\Event $event
      */
     protected function processRefund($event)
     {
-        /** @var \ThirtybeesStripe\Charge $charge */
+        /** @var \ThirtyBeesStripe\Charge $charge */
         $charge = $event->data['object'];
 
         $refunds = [];

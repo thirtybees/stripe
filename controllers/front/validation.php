@@ -60,11 +60,9 @@ class StripeValidationModuleFrontController extends ModuleFrontController
         }
 
         $orderProcess = Configuration::get('PS_ORDER_PROCESS_TYPE') ? 'order-opc' : 'order';
-        $this->context->smarty->assign(
-            [
+        $this->context->smarty->assign([
             'orderLink' => $this->context->link->getPageLink($orderProcess, true),
-            ]
-        );
+        ]);
 
         if ((Tools::isSubmit('stripe-id_cart') == false) || (Tools::isSubmit('stripe-token') == false) || (int) Tools::getValue('stripe-id_cart') != $cart->id) {
             $error = $this->module->l('An error occurred. Please contact us for more information.', 'validation');
@@ -87,24 +85,9 @@ class StripeValidationModuleFrontController extends ModuleFrontController
             'publishable_key' => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::PUBLISHABLE_KEY_LIVE) : Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
         ];
 
-        $guzzle = new \ThirtybeesStripe\HttpClient\GuzzleClient();
-        \ThirtybeesStripe\ApiRequestor::setHttpClient($guzzle);
-        \ThirtybeesStripe\Stripe::setApiKey($stripe['secret_key']);
-
-        try {
-            $stripeCustomer = \ThirtybeesStripe\Customer::create(
-                [
-                'email' => $customer->email,
-                'source' => $token,
-                ]
-            );
-        } catch (Exception $e) {
-            $error = $e->getMessage();
-            $this->errors[] = $error;
-            $this->setTemplate('error.tpl');
-
-            return false;
-        }
+        $guzzle = new \ThirtyBeesStripe\HttpClient\GuzzleClient();
+        \ThirtyBeesStripe\ApiRequestor::setHttpClient($guzzle);
+        \ThirtyBeesStripe\Stripe::setApiKey($stripe['secret_key']);
 
         $stripeAmount = $cart->getOrderTotal();
         if (!in_array(Tools::strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
@@ -112,7 +95,10 @@ class StripeValidationModuleFrontController extends ModuleFrontController
         }
 
         try {
-            $defaultCard = \ThirtybeesStripe\Source::retrieve($stripeCustomer->default_source);
+            $stripeCustomer = \ThirtyBeesStripe\Customer::create([
+                'email'  => $customer->email,
+                'source' => $token,
+            ]);
         } catch (Exception $e) {
             $error = $e->getMessage();
             $this->errors[] = $error;
@@ -121,18 +107,16 @@ class StripeValidationModuleFrontController extends ModuleFrontController
             return false;
         }
 
-        /** @var \ThirtybeesStripe\Card $defaultCard */
-        $defaultCard = $defaultCard->card;
-
+        /** @var \ThirtyBeesStripe\Card $defaultCard */
         if (Configuration::get(Stripe::THREEDSECURE) && $defaultCard->three_d_secure !== 'not_supported' || $defaultCard->three_d_secure === 'required') {
             try {
-                $source = \ThirtybeesStripe\Source::create(
+                $source = \ThirtyBeesStripe\Source::create(
                     [
                         'amount'         => $stripeAmount,
                         'currency'       => Tools::strtolower($currency->iso_code),
                         'type'           => 'three_d_secure',
                         'three_d_secure' => [
-                            'card' => $stripeCustomer->default_source,
+                            'card' => $defaultCard,
                         ],
                         'redirect'       => [
                             'return_url' => $this->context->link->getModuleLink('stripe', 'sourcevalidation', ['stripe-id_cart' => (string) $cart->id, 'type' => 'three_d_secure'], true),
@@ -151,13 +135,11 @@ class StripeValidationModuleFrontController extends ModuleFrontController
         }
 
         try {
-            $stripeCharge = \ThirtybeesStripe\Charge::create(
-                [
-                    'customer' => $stripeCustomer->id,
-                    'amount' => $stripeAmount,
-                    'currency' => Tools::strtolower($currency->iso_code),
-                ]
-            );
+            $stripeCharge = \ThirtyBeesStripe\Charge::create([
+                'customer' => $stripeCustomer->id,
+                'amount' => $stripeAmount,
+                'currency' => Tools::strtolower($currency->iso_code),
+            ]);
         } catch (Exception $e) {
             $error = $e->getMessage();
             $this->errors[] = $error;

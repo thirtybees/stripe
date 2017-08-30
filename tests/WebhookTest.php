@@ -1,6 +1,6 @@
 <?php
 
-namespace ThirtybeesStripe;
+namespace ThirtyBeesStripe;
 
 class WebhookTest extends TestCase
 {
@@ -42,7 +42,7 @@ class WebhookTest extends TestCase
     }
 
     /**
-     * @expectedException \ThirtybeesStripe\Error\SignatureVerification
+     * @expectedException \ThirtyBeesStripe\Error\SignatureVerification
      */
     public function testValidJsonAndInvalidHeader()
     {
@@ -51,7 +51,7 @@ class WebhookTest extends TestCase
     }
 
     /**
-     * @expectedException \ThirtybeesStripe\Error\SignatureVerification
+     * @expectedException \ThirtyBeesStripe\Error\SignatureVerification
      * @expectedExceptionMessage Unable to extract timestamp and signatures from header
      */
     public function testMalformedHeader()
@@ -61,7 +61,7 @@ class WebhookTest extends TestCase
     }
 
     /**
-     * @expectedException \ThirtybeesStripe\Error\SignatureVerification
+     * @expectedException \ThirtyBeesStripe\Error\SignatureVerification
      * @expectedExceptionMessage No signatures found with expected scheme
      */
     public function testNoSignaturesWithExpectedScheme()
@@ -71,7 +71,7 @@ class WebhookTest extends TestCase
     }
 
     /**
-     * @expectedException \ThirtybeesStripe\Error\SignatureVerification
+     * @expectedException \ThirtyBeesStripe\Error\SignatureVerification
      * @expectedExceptionMessage No signatures found matching the expected signature for payload
      */
     public function testNoValidSignatureForPayload()
@@ -81,7 +81,7 @@ class WebhookTest extends TestCase
     }
 
     /**
-     * @expectedException \ThirtybeesStripe\Error\SignatureVerification
+     * @expectedException \ThirtyBeesStripe\Error\SignatureVerification
      * @expectedExceptionMessage Timestamp outside the tolerance zone
      */
     public function testTimestampOutsideTolerance()

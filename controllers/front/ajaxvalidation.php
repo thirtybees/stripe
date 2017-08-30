@@ -86,12 +86,12 @@ class StripeAjaxvalidationModuleFrontController extends ModuleFrontController
             'publishable_key' => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::PUBLISHABLE_KEY_LIVE) : Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
         ];
 
-        $guzzle = new \ThirtybeesStripe\HttpClient\GuzzleClient();
-        \ThirtybeesStripe\ApiRequestor::setHttpClient($guzzle);
-        \ThirtybeesStripe\Stripe::setApiKey($stripe['secret_key']);
+        $guzzle = new \ThirtyBeesStripe\HttpClient\GuzzleClient();
+        \ThirtyBeesStripe\ApiRequestor::setHttpClient($guzzle);
+        \ThirtyBeesStripe\Stripe::setApiKey($stripe['secret_key']);
 
         try {
-            $stripeCustomer = \ThirtybeesStripe\Customer::create(
+            $stripeCustomer = \ThirtyBeesStripe\Customer::create(
                 [
                     'email'  => $customer->email,
                     'source' => $token,
@@ -108,7 +108,7 @@ class StripeAjaxvalidationModuleFrontController extends ModuleFrontController
         }
 
         try {
-            $stripeCharge = \ThirtybeesStripe\Charge::create(
+            $stripeCharge = \ThirtyBeesStripe\Charge::create(
                 [
                     'customer' => $stripeCustomer->id,
                     'amount'   => $stripeAmount,

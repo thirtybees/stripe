@@ -1,6 +1,6 @@
 <?php
 
-namespace ThirtybeesStripe;
+namespace ThirtyBeesStripe;
 
 /**
  * Base class for Stripe test cases, provides some utility methods for creating
@@ -24,7 +24,7 @@ class TestCase extends \PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
-        ApiRequestor::setHttpClient(HttpClient\CurlClient::instance());
+        ApiRequestor::setHttpClient(HttpClient\GuzzleClient::instance());
 
         // Peg the API version so that it can be varied independently of the
         // one set on the test account.
@@ -34,12 +34,12 @@ class TestCase extends \PHPUnit_Framework_TestCase
         $this->call = 0;
     }
 
-    protected function mockRequest($method, $path, $params = array(), $return = array('id' => 'myId'), $rcode = 200)
+    protected function mockRequest($method, $path, $params = array(), $return = array('id' => 'myId'), $rcode = 200, $base = 'https://api.stripe.com')
     {
         $mock = $this->setUpMockRequest();
         $mock->expects($this->at($this->call++))
              ->method('request')
-             ->with(strtolower($method), 'https://api.stripe.com' . $path, $this->anything(), $params, false)
+             ->with(strtolower($method), $base . $path, $this->anything(), $params, false)
              ->willReturn(array(json_encode($return), $rcode, array()));
     }
 
@@ -65,11 +65,7 @@ class TestCase extends \PHPUnit_Framework_TestCase
                 'amount' => 2000,
                 'currency' => 'usd',
                 'description' => 'Charge for test@example.com',
-                'card' => array(
-                    'number' => '4242424242424242',
-                    'exp_month' => 5,
-                    'exp_year' => date('Y') + 3,
-                ),
+                'card' => 'tok_visa',
             )
         );
     }
@@ -103,11 +99,7 @@ class TestCase extends \PHPUnit_Framework_TestCase
 
         return Customer::create(
             $attributes + array(
-                'card' => array(
-                    'number' => '4242424242424242',
-                    'exp_month' => 5,
-                    'exp_year' => date('Y') + 3,
-                ),
+                'card' => 'tok_visa',
             )
         );
     }

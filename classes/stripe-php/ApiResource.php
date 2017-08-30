@@ -1,6 +1,6 @@
 <?php
 
-namespace ThirtybeesStripe;
+namespace ThirtyBeesStripe;
 
 /**
  * Class ApiResource
@@ -99,8 +99,7 @@ abstract class ApiResource extends StripeObject
             $message = "You must pass an array as the first argument to Stripe API "
                . "method calls.  (HINT: an example call to create a charge "
                . "would be: \"Stripe\\Charge::create(array('amount' => 100, "
-               . "'currency' => 'usd', 'card' => array('number' => "
-               . "4242424242424242, 'exp_month' => 5, 'exp_year' => 2015)))\")";
+               . "'currency' => 'usd', 'source' => 'tok_1234'))\")";
             throw new Error\Api($message);
         }
     }
@@ -141,9 +140,9 @@ abstract class ApiResource extends StripeObject
 
         list($response, $opts) = static::_staticRequest('get', $url, $params, $options);
         $obj = Util\Util::convertToStripeObject($response->json, $opts);
-        if (!is_a($obj, 'ThirtybeesStripe\\Collection')) {
+        if (!is_a($obj, 'ThirtyBeesStripe\\Collection')) {
             $class = get_class($obj);
-            $message = "Expected type \"ThirtybeesStripe\\Collection\", got \"$class\" instead";
+            $message = "Expected type \"ThirtyBeesStripe\\Collection\", got \"$class\" instead";
             throw new Error\Api($message);
         }
         $obj->setLastResponse($response);

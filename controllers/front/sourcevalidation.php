@@ -87,9 +87,9 @@ class StripeSourcevalidationModuleFrontController extends ModuleFrontController
             'publishable_key' => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::PUBLISHABLE_KEY_LIVE) : Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
         ];
 
-        $guzzle = new \ThirtybeesStripe\HttpClient\GuzzleClient();
-        \ThirtybeesStripe\ApiRequestor::setHttpClient($guzzle);
-        \ThirtybeesStripe\Stripe::setApiKey($stripe['secret_key']);
+        $guzzle = new \ThirtyBeesStripe\HttpClient\GuzzleClient();
+        \ThirtyBeesStripe\ApiRequestor::setHttpClient($guzzle);
+        \ThirtyBeesStripe\Stripe::setApiKey($stripe['secret_key']);
 
 
         $stripeAmount = $cart->getOrderTotal();
@@ -98,7 +98,7 @@ class StripeSourcevalidationModuleFrontController extends ModuleFrontController
         }
 
         try {
-            $stripeCharge = \ThirtybeesStripe\Charge::create(
+            $stripeCharge = \ThirtyBeesStripe\Charge::create(
                 [
                     'amount'   => $stripeAmount,
                     'currency' => Tools::strtolower($currency->iso_code),

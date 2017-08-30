@@ -1,8 +1,8 @@
 <?php
 
-namespace ThirtybeesStripe\Util;
+namespace ThirtyBeesStripe\Util;
 
-use ThirtybeesStripe\Error;
+use ThirtyBeesStripe\Error;
 
 class RequestOptions
 {

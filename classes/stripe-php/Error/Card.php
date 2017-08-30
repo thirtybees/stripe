@@ -1,6 +1,6 @@
 <?php
 
-namespace ThirtybeesStripe\Error;
+namespace ThirtyBeesStripe\Error;
 
 class Card extends Base
 {

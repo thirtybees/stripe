@@ -1,6 +1,6 @@
 <?php
 
-namespace ThirtybeesStripe;
+namespace ThirtyBeesStripe;
 
 class CountrySpecTest extends TestCase
 {
@@ -26,6 +26,6 @@ class CountrySpecTest extends TestCase
         $this->assertSame($d->object, "list");
         $this->assertGreaterThan(0, count($d->data));
         $this->assertSame($d->data[0]->object, "country_spec");
-        $this->assertInstanceOf("ThirtybeesStripe\\CountrySpec", $d->data[0]);
+        $this->assertInstanceOf("ThirtyBeesStripe\\CountrySpec", $d->data[0]);
     }
 }

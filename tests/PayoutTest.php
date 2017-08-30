@@ -1,6 +1,6 @@
 <?php
 
-namespace ThirtybeesStripe;
+namespace ThirtyBeesStripe;
 
 class PayoutTest extends TestCase
 {
@@ -18,15 +18,10 @@ class PayoutTest extends TestCase
             self::authorizeFromEnv();
             $account = self::createTestManagedAccount();
 
-            $charge = \ThirtybeesStripe\Charge::create(array(
+            $charge = \ThirtyBeesStripe\Charge::create(array(
                 'currency' => 'usd',
                 'amount' => '10000',
-                'source' => array(
-                    'object' => 'card',
-                    'number' => '4000000000000077',
-                    'exp_month' => '09',
-                    'exp_year' => date('Y') + 3,
-                ),
+                'source' => 'tok_bypassPending',
                 'destination' => array(
                     'account' => $account->id
                 )

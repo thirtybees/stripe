@@ -1,6 +1,6 @@
 <?php
 
-namespace ThirtybeesStripe;
+namespace ThirtyBeesStripe;
 
 abstract class Webhook
 {
@@ -18,7 +18,7 @@ abstract class Webhook
      * @param string $secret secret used to generate the signature.
      * @param int $tolerance maximum difference allowed between the header's
      *  timestamp and the current time
-     * @return \ThirtybeesStripe\Event the Event instance
+     * @return \ThirtyBeesStripe\Event the Event instance
      * @throws \UnexpectedValueException if the payload is not valid JSON,
      *  \Stripe\SignatureVerification if the verification fails.
      */

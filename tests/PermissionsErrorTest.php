@@ -1,6 +1,6 @@
 <?php
 
-namespace ThirtybeesStripe;
+namespace ThirtyBeesStripe;
 
 class PermissionErrorTest extends TestCase
 {
@@ -12,7 +12,7 @@ class PermissionErrorTest extends TestCase
     }
 
     /**
-     * @expectedException ThirtybeesStripe\Error\Permission
+     * @expectedException \ThirtyBeesStripe\Error\Permission
      */
     public function testPermission()
     {

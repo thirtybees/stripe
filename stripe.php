@@ -18,15 +18,15 @@
  */
 
 use StripeModule\StripeTransaction;
-use ThirtybeesStripe\ApiRequestor;
-use ThirtybeesStripe\Error\InvalidRequest;
-use ThirtybeesStripe\HttpClient\GuzzleClient;
+use ThirtyBeesStripe\ApiRequestor;
+use ThirtyBeesStripe\Error\InvalidRequest;
+use ThirtyBeesStripe\HttpClient\GuzzleClient;
 
 if (!defined('_TB_VERSION_')) {
     exit;
 }
 
-require_once __DIR__.'/classes/autoload.php';
+require_once __DIR__.'/vendor/autoload.php';
 
 /**
  * Class Stripe
@@ -138,7 +138,7 @@ class Stripe extends PaymentModule
     ];
 
     /**
-     * ThirtybeesStripe constructor.
+     * ThirtyBeesStripe constructor.
      *
      * @since 1.0.0
      */
@@ -146,7 +146,7 @@ class Stripe extends PaymentModule
     {
         $this->name = 'stripe';
         $this->tab = 'payments_gateways';
-        $this->version = '1.3.2';
+        $this->version = '1.4.0';
         $this->author = 'thirty bees';
         $this->need_instance = 1;
 
@@ -338,6 +338,19 @@ class Stripe extends PaymentModule
      */
     protected function processRefund()
     {
+        $access = Profile::getProfileAccess($this->context->employee->id_profile, Tab::getIdFromClassName('AdminOrders'));
+        if (!$access) {
+            $this->context->controller->errors[] = $this->l('Unable to determine employee permissions.');
+
+            return '';
+        }
+
+        if (!$access['edit']) {
+            $this->context->controller->errors[] = $this->l('You do not have permission to refund orders.');
+
+            return '';
+        }
+
         $idOrder = (int) Tools::getValue('stripe_refund_order');
         $amount = (float) Tools::getValue('stripe_refund_amount');
 
@@ -356,8 +369,8 @@ class Stripe extends PaymentModule
         $guzzle = new GuzzleClient();
         ApiRequestor::setHttpClient($guzzle);
         try {
-            \ThirtybeesStripe\Stripe::setApiKey(Configuration::get(static::GO_LIVE) ? Configuration::get(static::SECRET_KEY_LIVE) : Configuration::get(static::SECRET_KEY_TEST));
-            \ThirtybeesStripe\Refund::create(
+            \ThirtyBeesStripe\Stripe::setApiKey(Configuration::get(static::GO_LIVE) ? Configuration::get(static::SECRET_KEY_LIVE) : Configuration::get(static::SECRET_KEY_TEST));
+            \ThirtyBeesStripe\Refund::create(
                 [
                     'charge'   => $idCharge,
                     'amount'   => $amount,
@@ -582,14 +595,14 @@ class Stripe extends PaymentModule
      */
     protected function tlsCheck()
     {
-        $guzzle = new \ThirtybeesStripe\HttpClient\GuzzleClient();
-        \ThirtybeesStripe\ApiRequestor::setHttpClient($guzzle);
-        \ThirtybeesStripe\Stripe::setApiKey('sk_test_BQokikJOvBiI2HlWgH4olfQ2');
-        \ThirtybeesStripe\Stripe::$apiBase = 'https://api-tls12.stripe.com';
+        $guzzle = new \ThirtyBeesStripe\HttpClient\GuzzleClient();
+        \ThirtyBeesStripe\ApiRequestor::setHttpClient($guzzle);
+        \ThirtyBeesStripe\Stripe::setApiKey('sk_test_BQokikJOvBiI2HlWgH4olfQ2');
+        \ThirtyBeesStripe\Stripe::$apiBase = 'https://api-tls12.stripe.com';
         try {
-            \ThirtybeesStripe\Charge::all();
+            \ThirtyBeesStripe\Charge::all();
             $this->updateAllValue(static::TLS_OK, static::ENUM_TLS_OK);
-        } catch (\ThirtybeesStripe\Error\ApiConnection $e) {
+        } catch (\ThirtyBeesStripe\Error\ApiConnection $e) {
             $this->updateAllValue(static::TLS_OK, static::ENUM_TLS_ERROR);
         }
     }
@@ -1780,6 +1793,8 @@ class Stripe extends PaymentModule
                     'stripe_module_refund_action' => $this->context->link->getAdminLink('AdminModules', true).
                         '&configure=stripe&tab_module=payments_gateways&module_name=stripe&orderstriperefund',
                     'id_order'                    => (int) $order->id,
+                    'canViewStripeRefunds'        => $this->context->controller->tabAccess['view'],
+                    'canEditStripeRefunds'        => $this->context->controller->tabAccess['edit'],
                 ]
             );
 

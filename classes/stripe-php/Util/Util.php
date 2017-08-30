@@ -1,8 +1,8 @@
 <?php
 
-namespace ThirtybeesStripe\Util;
+namespace ThirtyBeesStripe\Util;
 
-use ThirtybeesStripe\StripeObject;
+use ThirtyBeesStripe\StripeObject;
 
 abstract class Util
 {
@@ -65,41 +65,43 @@ abstract class Util
     public static function convertToStripeObject($resp, $opts)
     {
         $types = array(
-            'account'             => 'ThirtybeesStripe\\Account',
-            'alipay_account'      => 'ThirtybeesStripe\\AlipayAccount',
-            'apple_pay_domain'    => 'ThirtybeesStripe\\ApplePayDomain',
-            'bank_account'        => 'ThirtybeesStripe\\BankAccount',
-            'balance_transaction' => 'ThirtybeesStripe\\BalanceTransaction',
-            'card'                => 'ThirtybeesStripe\\Card',
-            'charge'              => 'ThirtybeesStripe\\Charge',
-            'country_spec'        => 'ThirtybeesStripe\\CountrySpec',
-            'coupon'              => 'ThirtybeesStripe\\Coupon',
-            'customer'            => 'ThirtybeesStripe\\Customer',
-            'dispute'             => 'ThirtybeesStripe\\Dispute',
-            'list'                => 'ThirtybeesStripe\\Collection',
-            'invoice'             => 'ThirtybeesStripe\\Invoice',
-            'invoiceitem'         => 'ThirtybeesStripe\\InvoiceItem',
-            'event'               => 'ThirtybeesStripe\\Event',
-            'file'                => 'ThirtybeesStripe\\FileUpload',
-            'token'               => 'ThirtybeesStripe\\Token',
-            'transfer'            => 'ThirtybeesStripe\\Transfer',
-            'transfer_reversal'   => 'ThirtybeesStripe\\TransferReversal',
-            'order'               => 'ThirtybeesStripe\\Order',
-            'order_return'        => 'ThirtybeesStripe\\OrderReturn',
-            'payout'              => 'ThirtybeesStripe\\Payout',
-            'plan'                => 'ThirtybeesStripe\\Plan',
-            'product'             => 'ThirtybeesStripe\\Product',
-            'recipient'           => 'ThirtybeesStripe\\Recipient',
-            'recipient_transfer'  => 'ThirtybeesStripe\\RecipientTransfer',
-            'refund'              => 'ThirtybeesStripe\\Refund',
-            'sku'                 => 'ThirtybeesStripe\\SKU',
-            'source'              => 'ThirtybeesStripe\\Source',
-            'subscription'        => 'ThirtybeesStripe\\Subscription',
-            'subscription_item'   => 'ThirtybeesStripe\\SubscriptionItem',
-            'three_d_secure'      => 'ThirtybeesStripe\\ThreeDSecure',
-            'fee_refund'          => 'ThirtybeesStripe\\ApplicationFeeRefund',
-            'bitcoin_receiver'    => 'ThirtybeesStripe\\BitcoinReceiver',
-            'bitcoin_transaction' => 'ThirtybeesStripe\\BitcoinTransaction',
+            'account'             => 'ThirtyBeesStripe\\Account',
+            'alipay_account'      => 'ThirtyBeesStripe\\AlipayAccount',
+            'apple_pay_domain'    => 'ThirtyBeesStripe\\ApplePayDomain',
+            'bank_account'        => 'ThirtyBeesStripe\\BankAccount',
+            'balance_transaction' => 'ThirtyBeesStripe\\BalanceTransaction',
+            'card'                => 'ThirtyBeesStripe\\Card',
+            'charge'              => 'ThirtyBeesStripe\\Charge',
+            'country_spec'        => 'ThirtyBeesStripe\\CountrySpec',
+            'coupon'              => 'ThirtyBeesStripe\\Coupon',
+            'customer'            => 'ThirtyBeesStripe\\Customer',
+            'dispute'             => 'ThirtyBeesStripe\\Dispute',
+            'ephemeral_key'       => 'ThirtyBeesStripe\\EphemeralKey',
+            'list'                => 'ThirtyBeesStripe\\Collection',
+            'login_link'          => 'ThirtyBeesStripe\\LoginLink',
+            'invoice'             => 'ThirtyBeesStripe\\Invoice',
+            'invoiceitem'         => 'ThirtyBeesStripe\\InvoiceItem',
+            'event'               => 'ThirtyBeesStripe\\Event',
+            'file'                => 'ThirtyBeesStripe\\FileUpload',
+            'token'               => 'ThirtyBeesStripe\\Token',
+            'transfer'            => 'ThirtyBeesStripe\\Transfer',
+            'transfer_reversal'   => 'ThirtyBeesStripe\\TransferReversal',
+            'order'               => 'ThirtyBeesStripe\\Order',
+            'order_return'        => 'ThirtyBeesStripe\\OrderReturn',
+            'payout'              => 'ThirtyBeesStripe\\Payout',
+            'plan'                => 'ThirtyBeesStripe\\Plan',
+            'product'             => 'ThirtyBeesStripe\\Product',
+            'recipient'           => 'ThirtyBeesStripe\\Recipient',
+            'recipient_transfer'  => 'ThirtyBeesStripe\\RecipientTransfer',
+            'refund'              => 'ThirtyBeesStripe\\Refund',
+            'sku'                 => 'ThirtyBeesStripe\\SKU',
+            'source'              => 'ThirtyBeesStripe\\Source',
+            'subscription'        => 'ThirtyBeesStripe\\Subscription',
+            'subscription_item'   => 'ThirtyBeesStripe\\SubscriptionItem',
+            'three_d_secure'      => 'ThirtyBeesStripe\\ThreeDSecure',
+            'fee_refund'          => 'ThirtyBeesStripe\\ApplicationFeeRefund',
+            'bitcoin_receiver'    => 'ThirtyBeesStripe\\BitcoinReceiver',
+            'bitcoin_transaction' => 'ThirtyBeesStripe\\BitcoinTransaction',
         );
         if (self::isList($resp)) {
             $mapped = array();
@@ -111,7 +113,7 @@ abstract class Util
             if (isset($resp['object']) && is_string($resp['object']) && isset($types[$resp['object']])) {
                 $class = $types[$resp['object']];
             } else {
-                $class = 'ThirtybeesStripe\\StripeObject';
+                $class = 'ThirtyBeesStripe\\StripeObject';
             }
             return $class::constructFrom($resp, $opts);
         } else {
@@ -172,5 +174,44 @@ abstract class Util
             }
             return ($result == 0);
         }
+    }
+
+    /**
+     * @param array $arr A map of param keys to values.
+     * @param string|null $prefix
+     *
+     * @return string A querystring, essentially.
+     */
+    public static function urlEncode($arr, $prefix = null)
+    {
+        if (!is_array($arr)) {
+            return $arr;
+        }
+
+        $r = array();
+        foreach ($arr as $k => $v) {
+            if (is_null($v)) {
+                continue;
+            }
+
+            if ($prefix) {
+                if ($k !== null && (!is_int($k) || is_array($v))) {
+                    $k = $prefix."[".$k."]";
+                } else {
+                    $k = $prefix."[]";
+                }
+            }
+
+            if (is_array($v)) {
+                $enc = self::urlEncode($v, $k);
+                if ($enc) {
+                    $r[] = $enc;
+                }
+            } else {
+                $r[] = urlencode($k)."=".urlencode($v);
+            }
+        }
+
+        return implode("&", $r);
     }
 }

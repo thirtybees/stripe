@@ -23,9 +23,17 @@
         return;
       }
 
-      function stripeResponseHandler(status, response) {
+      function stripeResponseHandler(result) {
+        if (result.error) {
+          $('#stripe_ideal_payment_link').parent().hide();
+
+          alert('Stripe error: ' + result.error.message);
+
+          return;
+        }
+
         $('#stripe_ideal_payment_link').click(function () {
-          window.location = response.redirect.url;
+          window.location = result.source.redirect.url;
         });
       }
 
@@ -35,9 +43,9 @@
           return;
         }
 
-        Stripe.setPublishableKey('{$stripe_publishable_key|escape:'javascript':'UTF-8'}');
+        var stripe = Stripe('{$stripe_publishable_key|escape:'javascript':'UTF-8'}');
 
-        Stripe.source.create({
+        stripe.createSource({
           type: 'ideal',
           amount: {$stripe_amount|intval},
           currency: '{$stripe_currency|escape:'javascript':'UTF-8'}',
@@ -47,7 +55,8 @@
           redirect: {
             return_url: '{$link->getModuleLink('stripe', 'sourcevalidation', ['stripe-id_cart' => $id_cart, 'type' => 'ideal'], true)|escape:'javascript':'UTF-8'}'
           }
-        }, stripeResponseHandler);
+        })
+          .then(stripeResponseHandler);
       }
 
       initStripeIdeal();

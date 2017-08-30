@@ -17,16 +17,16 @@
  * @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
 
-namespace ThirtybeesStripe\HttpClient;
+namespace ThirtyBeesStripe\HttpClient;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\BadResponseException;
-use ThirtybeesStripe\Error;
+use ThirtyBeesStripe\Error;
 
 /**
  * Class GuzzleClient
  *
- * @package ThirtybeesStripe\HttpClient
+ * @package ThirtyBeesStripe\HttpClient
  *
  * @since   1.0.0
  */
@@ -220,7 +220,7 @@ class GuzzleClient implements ClientInterface
                 }
             }
             throw new Error\ApiConnection(
-                'Could not connect with ThirtybeesStripe',
+                'Could not connect with Stripe',
                 $e->getResponse()->getStatusCode(),
                 (string) $e->getResponse()->getBody(),
                 json_encode((string) $e->getResponse()->getBody()),
@@ -228,7 +228,7 @@ class GuzzleClient implements ClientInterface
             );
         } catch (\Exception $e) {
             var_dump($e);
-            throw new Error\ApiConnection('Could not connect with ThirtybeesStripe');
+            throw new Error\ApiConnection('Could not connect with Stripe');
         }
 
         return array($rbody, $rcode, $rheaders);

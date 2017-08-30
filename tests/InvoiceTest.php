@@ -1,6 +1,6 @@
 <?php
 
-namespace ThirtybeesStripe;
+namespace ThirtyBeesStripe;
 
 class InvoiceTest extends TestCase
 {
@@ -52,5 +52,32 @@ class InvoiceTest extends TestCase
         self::authorizeFromEnv();
         $invoices = Invoice::all();
         $this->assertGreaterThan(0, count($invoices));
+    }
+
+    public function testPay()
+    {
+        $response = array(
+            'id' => 'in_foo',
+            'object' => 'invoice',
+            'paid' => false,
+        );
+        $this->mockRequest(
+            'GET',
+            '/v1/invoices/in_foo',
+            array(),
+            $response
+        );
+
+        $response['paid'] = true;
+        $this->mockRequest(
+            'POST',
+            '/v1/invoices/in_foo/pay',
+            array('source' => 'src_bar'),
+            $response
+        );
+
+        $invoice = Invoice::retrieve('in_foo');
+        $invoice->pay(array('source' => 'src_bar'));
+        $this->assertTrue($invoice->paid);
     }
 }
