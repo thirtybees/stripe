@@ -329,6 +329,14 @@ class Stripe extends PaymentModule
             if (Tools::isSubmit('checktls') && (bool) Tools::getValue('checktls')) {
                 $this->tlsCheck();
             }
+        } elseif ($this->menu == static::MENU_TRANSACTIONS) {
+            if (Tools::isSubmit('submitBulkdelete'.StripeTransaction::$definition['table']) && !empty(Tools::getValue(StripeTransaction::$definition['table'].'Box'))) {
+                if (StripeTransaction::deleteRange(Tools::getValue(StripeTransaction::$definition['table'].'Box'))) {
+                    $this->addConfirmation($this->l('Successfully deleted the selected transactions'));
+                } else {
+                    $this->addError($this->l('Unable to delete the selected transactions'));
+                }
+            }
         }
     }
 
@@ -684,10 +692,11 @@ class Stripe extends PaymentModule
             'delete' => [
                 'text'    => $this->l('Delete selected'),
                 'confirm' => $this->l('Delete selected items?'),
+                'icon'    => 'icon-trash',
             ],
         ];
 
-        $helperList->actions = ['View'];
+        $helperList->actions = ['view', 'delete'];
 
         $helperList->page = $currentPage;
 
@@ -713,14 +722,14 @@ class Stripe extends PaymentModule
 
         $filterSql = $this->getSQLFilter($helperList, $fieldsList);
 
-        $sql = new DbQuery();
-        $sql->select('*');
-        $sql->from(bqSQL(StripeTransaction::$definition['table']), 'st');
-        $sql->orderBy('`'.bqSQL($helperList->orderBy).'` '.pSQL($helperList->orderWay));
-        $sql->where('1 '.$filterSql);
-        $sql->limit($pagination, ($currentPage - 1) * $pagination);
-
-        $results = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
+        $results = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS(
+            (new DbQuery())
+                ->select('*')
+                ->from(bqSQL(StripeTransaction::$definition['table']), 'st')
+                ->orderBy('`'.bqSQL($helperList->orderBy).'` '.pSQL($helperList->orderWay))
+                ->where('1 '.$filterSql)
+                ->limit($pagination, ($currentPage - 1) * $pagination)
+        );
 
         foreach ($results as &$result) {
             // Process results
@@ -793,16 +802,12 @@ class Stripe extends PaymentModule
         $helperList->identifier = StripeTransaction::$definition['primary'];
         $helperList->title = $this->l('Transactions');
         $helperList->token = Tools::getAdminTokenLite('AdminModules');
-        $helperList->currentIndex = AdminController::$currentIndex.'&'.http_build_query(
-                [
-                    'configure' => $this->name,
-                    'menu'      => static::MENU_TRANSACTIONS,
-                ]
-            );
+        $helperList->currentIndex = AdminController::$currentIndex.'&'.http_build_query([
+            'configure' => $this->name,
+            'menu'      => static::MENU_TRANSACTIONS,
+        ]);
 
         $helperList->table = StripeTransaction::$definition['table'];
-
-        $helperList->bulk_actions = false;
 
         return $helperList->generateList($results, $fieldsList);
     }

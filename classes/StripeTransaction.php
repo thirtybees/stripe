@@ -300,4 +300,23 @@ class StripeTransaction extends \ObjectModel
 
         return \Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
     }
+
+    /**
+     * Delete a range
+     *
+     * @param int[] $range
+     *
+     * @return bool
+     */
+    public static function deleteRange($range)
+    {
+        if (!is_array($range) || empty($range)) {
+            return false;
+        }
+
+        return \Db::getInstance()->delete(
+            bqSQL(static::$definition['table']),
+            '`'.bqSQL(static::$definition['primary']).'` IN ('.implode(',', array_map('intval', $range)).')'
+        );
+    }
 }
