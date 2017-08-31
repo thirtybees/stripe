@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 CWD_BASENAME=${PWD##*/}
 
+rm vendor/ -rf
+composer install --no-dev
+composer -o dump-autoload
+
 FILES+=("logo.gif")
 FILES+=("logo.png")
 FILES+=("CONTRIBUTORS.md")
