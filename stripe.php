@@ -341,7 +341,7 @@ class Stripe extends PaymentModule
     }
 
     /**
-     *
+     * @return void
      */
     protected function processRefund()
     {
@@ -349,13 +349,13 @@ class Stripe extends PaymentModule
         if (!$access) {
             $this->context->controller->errors[] = $this->l('Unable to determine employee permissions.');
 
-            return '';
+            return;
         }
 
         if (!$access['edit']) {
             $this->context->controller->errors[] = $this->l('You do not have permission to refund orders.');
 
-            return '';
+            return;
         }
 
         $idOrder = (int) Tools::getValue('stripe_refund_order');
