@@ -38,7 +38,7 @@
       }
 
       function initStripeSofort() {
-        if (typeof Stripe === 'undefined') {
+        if (typeof Stripe === 'undefined' || typeof Stripe.StripeV3 === 'undefined') {
           setTimeout(initStripeSofort, 100);
           return;
         }

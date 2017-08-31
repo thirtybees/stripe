@@ -38,7 +38,7 @@
       }
 
       function initStripeGiropay() {
-        if (typeof Stripe === 'undefined') {
+        if (typeof Stripe === 'undefined' || typeof Stripe.StripeV3 === 'undefined') {
           setTimeout(initStripeGiropay, 100);
 
           return;

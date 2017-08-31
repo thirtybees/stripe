@@ -38,7 +38,7 @@
       }
 
       function initStripeAlipay() {
-        if (typeof Stripe === 'undefined') {
+        if (typeof Stripe === 'undefined' || typeof Stripe.StripeV3 === 'undefined') {
           setTimeout(initStripeAlipay, 100);
           return;
         }

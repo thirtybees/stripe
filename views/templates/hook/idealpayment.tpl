@@ -38,7 +38,7 @@
       }
 
       function initStripeIdeal() {
-        if (typeof Stripe === 'undefined') {
+        if (typeof Stripe === 'undefined' || typeof Stripe.StripeV3 === 'undefined') {
           setTimeout(initStripeIdeal, 100);
           return;
         }

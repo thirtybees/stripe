@@ -38,7 +38,7 @@
       }
 
       function initStripeBancontact() {
-        if (typeof Stripe === 'undefined') {
+        if (typeof Stripe === 'undefined' || typeof Stripe.StripeV3 === 'undefined') {
           setTimeout(initStripeBancontact, 100);
 
           return;
