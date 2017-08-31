@@ -73,7 +73,7 @@
           $form.find('.submit').prop('disabled', true);
           $form.find('.stripe-loader').show();
 
-          {* Request a token from ThirtybeesStripe: *}
+          {* Request a token from Stripe: *}
           var expiry = $('#stripeCardExpiry').val().split('/', 2);
           Stripe.source.create({
             type: 'card',

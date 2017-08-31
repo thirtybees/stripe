@@ -19,7 +19,6 @@
 
 use StripeModule\StripeTransaction;
 use ThirtyBeesStripe\ApiRequestor;
-use ThirtyBeesStripe\Error\InvalidRequest;
 use ThirtyBeesStripe\HttpClient\GuzzleClient;
 
 if (!defined('_TB_VERSION_')) {
@@ -165,7 +164,7 @@ class Stripe extends PaymentModule
 
         $this->tb_versions_compliancy = '~1.0.0';
 
-        ThirtybeesStripe\Stripe::setAppInfo('thirty bees', $this->version, 'https://thirtybees.com/');
+        ThirtyBeesStripe\Stripe::setAppInfo('thirty bees', $this->version, 'https://thirtybees.com/');
     }
 
     /**
