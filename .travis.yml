@@ -18,6 +18,7 @@ cache:
 
 before_install:
   - composer install --prefer-dist --no-interaction --no-progress
+  - composer -o dump-autoload
 
 script:
   - vendor/bin/phpunit -c ./phpunit.no_autoload.xml
