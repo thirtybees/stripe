@@ -47,7 +47,7 @@ class TestCase extends \PHPUnit_Framework_TestCase
     {
         if (!$this->mock) {
             self::authorizeFromEnv();
-            $this->mock = $this->getMock('\Stripe\HttpClient\ClientInterface');
+            $this->mock = $this->getMock('\Stripe\HttpClient\GuzzleClient');
             ApiRequestor::setHttpClient($this->mock);
         }
         return $this->mock;
