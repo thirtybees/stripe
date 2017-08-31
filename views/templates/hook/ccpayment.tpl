@@ -47,8 +47,8 @@
 
       function initStripeCC() {
         if (typeof Stripe === 'undefined' || typeof Card === 'undefined') {
-          console.log('try again');
           setTimeout(initStripeCC, 100);
+
           return;
         }
 
