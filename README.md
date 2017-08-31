@@ -52,7 +52,7 @@ The wiki can be found here: https://github.com/thirtybees/stripe/wiki
 - `TLSv1.2` connectivity (`cURL` or `fsockopen`)
 
 ### Compatibility
-- Thirty Bees `1.0.0` - `1.0.0`
+- Thirty Bees `1.0.x`
 
 ## License
 Academic Free License 3.0
