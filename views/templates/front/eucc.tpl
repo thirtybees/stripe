@@ -47,7 +47,7 @@
             }
 
             function initStripeCC() {
-                if (typeof Stripe === 'undefined' || typeof Card === 'undefined') {
+                if (typeof Stripe === 'undefined' || typeof Stripe.setPublishableKey !== 'function' || typeof Card === 'undefined') {
                     console.log('try again');
                     setTimeout(initStripeCC, 100);
                     return;

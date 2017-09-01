@@ -47,7 +47,7 @@
 <script type="text/javascript">
   (function () {
     function initApplePay() {
-      if (typeof $ === 'undefined' || typeof Stripe === 'undefined' || Stripe.setPublishableKey === 'undefined') {
+      if (typeof $ === 'undefined' || typeof Stripe === 'undefined' || typeof Stripe.setPublishableKey !== 'function') {
         setTimeout(initApplePay, 100);
         return;
       }
