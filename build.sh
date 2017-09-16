@@ -16,6 +16,7 @@ FILES+=("controllers/**")
 FILES+=("sql/**")
 FILES+=("translations/**")
 FILES+=("views/**")
+FILES+=("vendor/**")
 
 MODULE_VERSION="$(sed -ne "s/\\\$this->version *= *['\"]\([^'\"]*\)['\"] *;.*/\1/p" ${CWD_BASENAME}.php)"
 MODULE_VERSION=${MODULE_VERSION//[[:space:]]}
