@@ -39,7 +39,8 @@ class Stripe extends PaymentModule
     const COLLECT_BILLING = 'STRIPE_COLLECT_BILLING';
     const COLLECT_SHIPPING = 'STRIPE_COLLECT_SHIPPING';
     const BITCOIN = 'STRIPE_BITCOIN';
-    const ALIPAY = 'STRIPE_ALIPAY';
+    const ALIPAY = 'STRIPE_ALIPAY'; // Alipay in Stripe checkout
+    const ALIPAY_BLOCK = 'STRIPE_ALIPAY_BLOCK'; // Separate Alipay block
 
     const GO_LIVE = 'STRIPE_GO_LIVE';
     const SECRET_KEY_TEST = 'STRIPE_SECRET_KEY_TEST';
@@ -224,6 +225,7 @@ class Stripe extends PaymentModule
         Configuration::deleteByName(static::GENERATE_CREDIT_SLIP);
         Configuration::deleteByName(static::ZIPCODE);
         Configuration::deleteByName(static::ALIPAY);
+        Configuration::deleteByName(static::ALIPAY_BLOCK);
         Configuration::deleteByName(static::BITCOIN);
         Configuration::deleteByName(static::SHOW_PAYMENT_LOGOS);
         Configuration::deleteByName(static::INCLUDE_STRIPE_BOOTSTRAP);
@@ -468,6 +470,7 @@ class Stripe extends PaymentModule
             static::ZIPCODE                  => (bool) Tools::getValue(static::ZIPCODE),
             static::BITCOIN                  => (bool) Tools::getValue(static::BITCOIN),
             static::ALIPAY                   => (bool) Tools::getValue(static::ALIPAY),
+            static::ALIPAY_BLOCK             => (bool) Tools::getValue(static::ALIPAY_BLOCK),
             static::IDEAL                    => (bool) Tools::getValue(static::IDEAL),
             static::BANCONTACT               => (bool) Tools::getValue(static::BANCONTACT),
             static::GIROPAY                  => (bool) Tools::getValue(static::GIROPAY),
@@ -1060,7 +1063,7 @@ class Stripe extends PaymentModule
                 $this->getStripeCheckoutOptions(),
                 $this->getStripeCreditCardOptions(),
                 $this->getEuropeanPaymentMethodsOptions(),
-                $this->getApplePayOptions(),
+                $this->getOtherPaymentOptions(),
                 $this->getOrderOptions(),
                 $this->getAdvancedOptions()
             )
@@ -1319,24 +1322,33 @@ class Stripe extends PaymentModule
     }
 
     /**
-     * Get available Apple Pay options
+     * Get other payment options
      *
-     * @return array General options
+     * @return array
      *
-     * @since 1.0.0
+     * @since 1.4.0
      */
-    protected function getApplePayOptions()
+    protected function getOtherPaymentOptions()
     {
         return [
             'apple' => [
-                'title'  => $this->l('Apple Pay'),
-                'icon'   => 'icon-mobile-phone',
+                'title'  => $this->l('Other payment methods'),
+                'icon'   => 'icon-credit-card',
                 'fields' => [
                     static::STRIPE_APPLE_PAY => [
                         'title'      => $this->l('Enable Apple Pay'),
                         'type'       => 'bool',
                         'name'       => static::STRIPE_APPLE_PAY,
                         'value'      => Configuration::get(static::STRIPE_APPLE_PAY),
+                        'validation' => 'isBool',
+                        'cast'       => 'intval',
+                        'size'       => 64,
+                    ],
+                    static::ALIPAY_BLOCK => [
+                        'title'      => $this->l('Enable Alipay'),
+                        'type'       => 'bool',
+                        'name'       => static::ALIPAY_BLOCK,
+                        'value'      => Configuration::get(static::ALIPAY_BLOCK),
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                         'size'       => 64,
@@ -1554,6 +1566,7 @@ class Stripe extends PaymentModule
                 'stripe_giropay'                => Configuration::get(static::GIROPAY),
                 'stripe_sofort'                 => Configuration::get(static::SOFORT),
                 'stripe_alipay'                 => (bool) Configuration::get(static::ALIPAY),
+                'stripe_alipay_block'           => (bool) Configuration::get(static::ALIPAY_BLOCK),
                 'stripe_bitcoin'                => (bool) Configuration::get(static::BITCOIN) && Tools::strtolower($currency->iso_code) === 'usd',
                 'stripe_shopname'               => $this->context->shop->name,
                 'stripe_ajax_validation'        => $link->getModuleLink($this->name, 'ajaxvalidation', [], Tools::usingSecureMode()),
@@ -1684,7 +1697,7 @@ class Stripe extends PaymentModule
                 'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'sofort'], Tools::usingSecureMode()),
             ];
         }
-        if (Configuration::get(static::ALIPAY) && in_array($stripeCurrency, static::$methodCurrencies['alipay'])) {
+        if (Configuration::get(static::ALIPAY_BLOCK) && in_array($stripeCurrency, static::$methodCurrencies['alipay'])) {
             $paymentOptions[] = [
                 'cta_text' => $this->l('Alipay'),
                 'logo'     => Media::getMediaPath($this->local_path.'views/img/alipay.png'),
@@ -1748,15 +1761,16 @@ class Stripe extends PaymentModule
         $this->context->controller->addJQuery();
         $this->context->smarty->assign(
             [
-                'baseDir'           => Tools::getHttpHost(true).__PS_BASE_URI__.'modules/stripe/views/',
-                'stripe_checkout'   => (bool) Configuration::get(static::STRIPE_CHECKOUT),
-                'stripe_cc_form'    => (bool) Configuration::get(static::STRIPE_CC_FORM),
-                'stripe_apple_pay'  => (bool) Configuration::get(static::STRIPE_APPLE_PAY),
-                'stripe_ideal'      => (bool) Configuration::get(static::IDEAL),
-                'stripe_bancontact' => (bool) Configuration::get(static::BANCONTACT),
-                'stripe_giropay'    => (bool) Configuration::get(static::GIROPAY),
-                'stripe_sofort'     => (bool) Configuration::get(static::SOFORT),
-                'stripe_alipay'     => (bool) Configuration::get(static::ALIPAY),
+                'baseDir'             => Tools::getHttpHost(true).__PS_BASE_URI__.'modules/stripe/views/',
+                'stripe_checkout'     => (bool) Configuration::get(static::STRIPE_CHECKOUT),
+                'stripe_cc_form'      => (bool) Configuration::get(static::STRIPE_CC_FORM),
+                'stripe_apple_pay'    => (bool) Configuration::get(static::STRIPE_APPLE_PAY),
+                'stripe_ideal'        => (bool) Configuration::get(static::IDEAL),
+                'stripe_bancontact'   => (bool) Configuration::get(static::BANCONTACT),
+                'stripe_giropay'      => (bool) Configuration::get(static::GIROPAY),
+                'stripe_sofort'       => (bool) Configuration::get(static::SOFORT),
+                'stripe_alipay'       => (bool) Configuration::get(static::ALIPAY),
+                'stripe_alipay_block' => (bool) Configuration::get(static::ALIPAY_BLOCK),
             ]
         );
 

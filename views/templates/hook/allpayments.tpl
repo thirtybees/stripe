@@ -30,7 +30,7 @@
 {if ($stripe_sofort && in_array($stripe_country, ['AT', 'DE', 'NL', 'BE', 'ES'])  && in_array($stripe_currency, Stripe::$methodCurrencies['sofort']))}
   {if "{$smarty.current_dir}/sofortpayment.tpl"|file_exists}{include file="./sofortpayment.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/sofortpayment.tpl"}{/if}
 {/if}
-{if ($stripe_alipay && in_array($stripe_currency, Stripe::$methodCurrencies['alipay']))}
+{if ($stripe_alipay_block && in_array($stripe_currency, Stripe::$methodCurrencies['alipay']))}
   {if "{$smarty.current_dir}/alipaypayment.tpl"|file_exists}{include file="./alipaypayment.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/alipaypayment.tpl"}{/if}
 {/if}
 {if ($stripe_apple_pay && in_array($stripe_currency, Stripe::$methodCurrencies['credit_card']))}
