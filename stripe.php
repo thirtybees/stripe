@@ -1558,7 +1558,16 @@ class Stripe extends PaymentModule
                 'stripe_shopname'               => $this->context->shop->name,
                 'stripe_ajax_validation'        => $link->getModuleLink($this->name, 'ajaxvalidation', [], Tools::usingSecureMode()),
                 'stripe_confirmation_page'      => $link->getModuleLink($this->name, 'validation', [], Tools::usingSecureMode()),
-                'stripe_ajax_confirmation_page' => $link->getPageLink('order-confirmation', Tools::usingSecureMode(), '&id_cart='.$cart->id.'&id_module='.$this->id.'&key='.$customer->secure_key),
+                'stripe_ajax_confirmation_page' => $link->getPageLink(
+                    'order-confirmation',
+                    Tools::usingSecureMode(),
+                    $this->context->language->id,
+                    [
+                        'id_cart'   => (int) $cart->id,
+                        'id_module' => (int) $this->id,
+                        'key'       => $customer->secure_key,
+                    ]
+                ),
                 'showPaymentLogos'              => Configuration::get(static::SHOW_PAYMENT_LOGOS),
                 'stripeShopThumb'               => str_replace('http://', 'https://', $this->context->link->getMediaLink(__PS_BASE_URI__.'modules/stripe/views/img/shop'.$this->getShopId().'.jpg')),
                 'stripe_collect_billing'        => Configuration::get(static::COLLECT_BILLING),

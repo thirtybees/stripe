@@ -57,10 +57,12 @@
       Stripe.applePay.checkAvailability(function (available) {
         if (available) {
           $('#stripe-apple-pay-method').show();
-          $('#stripe-apple-pay-button').on('click', function () {
+          $('#stripe-apple-pay-button').click(function (event) {
+            event.preventDefault();
+
             var paymentRequest = {
-              countryCode: '{$stripe_country|escape:'javascript':'UTF-8'}',
-              currencyCode: '{$stripe_currency|escape:'javascript':'UTF-8'}',
+              countryCode: '{$stripe_country|strtoupper|escape:'javascript':'UTF-8'}',
+              currencyCode: '{$stripe_currency|strtoupper|escape:'javascript':'UTF-8'}',
               total: {
                 label: '{$stripe_shopname|escape:'javascript':'UTF-8'}',
                 amount: '{$stripe_amount_string|escape:'javascript':'UTF-8'}'
@@ -82,10 +84,10 @@
                 });
 
               }, function (error) {
-                console.log(error.message);
+                alert(error.message);
               });
 
-            session.begin();
+            session.session.begin();
           });
         }
       });
