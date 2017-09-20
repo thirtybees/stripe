@@ -39,7 +39,7 @@
         <p id="stripe_apple_payment_button" class="payment_module">
             <a id="stripe-apple-pay-button" href="#" class="stripeapplepay" title="Pay with Apple Pay">
                 <img id="stripe-apple-pay-logo" src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/apple_pay_logo_black.png" alt="{l s='Pay with Apple Pay' mod='stripe'}"/>
-                Pay with Apple Pay
+                {l s='Pay with Apple Pay' mod='stripe'}
             </a>
         </p>
     </div>
