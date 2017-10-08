@@ -50,29 +50,32 @@ class StripeHookModuleFrontController extends ModuleFrontController
 
         if (!empty($body) && $data = json_decode($body, true)) {
             // Verify with Stripe
-            \ThirtyBeesStripe\Stripe::setApiKey(Configuration::get(Stripe::SECRET_KEY_TEST));
-            $event = \ThirtyBeesStripe\Event::retrieve($data['id']);
+            try {
+                \ThirtyBeesStripe\Stripe::setApiKey(Configuration::get(Stripe::SECRET_KEY_TEST));
+                $event = \ThirtyBeesStripe\Event::retrieve($data['id']);
+            } catch (\Exception $e) {
+                die('ko');
+            }
             switch ($data['type']) {
                 case 'charge.refunded':
                     $this->processRefund($event);
-                    die('ok');
+
                     break;
                 case 'charge.succeeded':
                     $this->processSucceeded($event);
-                    die('ok');
+
                     break;
                 case 'charge.failed':
                     $this->processFailed($event);
-                    die('ok');
-                    break;
-                default:
-                    die('ok');
+
                     break;
             }
+
+            die('ok');
         }
 
         header('Content-Type: text/plain');
-        die('not processed');
+        die('ko');
     }
 
     /**
