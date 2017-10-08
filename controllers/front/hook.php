@@ -48,7 +48,7 @@ class StripeHookModuleFrontController extends ModuleFrontController
     {
         $body = file_get_contents('php://input');
 
-        if (!empty($body) && $data = Tools::jsonDecode($body, true)) {
+        if (!empty($body) && $data = json_decode($body, true)) {
             // Verify with Stripe
             \ThirtyBeesStripe\Stripe::setApiKey(Configuration::get(Stripe::SECRET_KEY_TEST));
             $event = \ThirtyBeesStripe\Event::retrieve($data['id']);
