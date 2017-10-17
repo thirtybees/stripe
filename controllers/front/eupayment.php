@@ -328,18 +328,18 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
         ThirtyBeesStripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST));
 
         $source = \ThirtyBeesStripe\Source::create([
-            'type' => 'sofort',
-            'amount' => (int)$stripeAmount,
+            'type'     => 'sofort',
+            'amount'   => (int) $stripeAmount,
             'currency' => $currency->iso_code,
-            'owner' => [
+            'owner'    => [
                 'name' => $invoiceAddress->firstname.' '.$invoiceAddress->lastname,
             ],
             'redirect' => [
                 'return_url' => $this->context->link->getModuleLink('stripe', 'sourcevalidation', ['stripe-id_cart' => $cart->id, 'type' => 'sofort'], true),
             ],
-            'sofort' => [
+            'sofort'   => [
                 'country' => Tools::strtoupper($country->iso_code),
-            ]
+            ],
         ]);
 
         Tools::redirect($source->redirect->url);
@@ -362,8 +362,8 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
         ThirtyBeesStripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST));
 
         $source = \ThirtyBeesStripe\Source::create([
-            'type' => 'alipay',
-            'amount' => (int)$stripeAmount,
+            'type'     => 'alipay',
+            'amount'   => (int) $stripeAmount,
             'currency' => $currency->iso_code,
             'redirect' => [
                 'return_url' => $this->context->link->getModuleLink('stripe', 'sourcevalidation', ['stripe-id_cart' => $cart->id, 'type' => 'alipay'], true),
