@@ -15,6 +15,7 @@ FILES+=("classes/**")
 FILES+=("controllers/**")
 FILES+=("sql/**")
 FILES+=("translations/**")
+FILES+=("upgrade/**")
 FILES+=("views/**")
 FILES+=("vendor/**")
 
