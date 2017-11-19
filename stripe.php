@@ -146,7 +146,7 @@ class Stripe extends PaymentModule
     {
         $this->name = 'stripe';
         $this->tab = 'payments_gateways';
-        $this->version = '1.4.3';
+        $this->version = '1.4.4';
         $this->author = 'thirty bees';
         $this->need_instance = 1;
 
@@ -1659,49 +1659,49 @@ class Stripe extends PaymentModule
             $paymentOptions[] = [
                 'cta_text' => $this->l('Pay by Credit Card'),
                 'logo'     => Media::getMediaPath($this->local_path.'views/img/stripebtnlogo.png'),
-                'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'credit_card'], Tools::usingSecureMode()),
+                'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'credit_card'], true),
             ];
         }
         if (Configuration::get(static::STRIPE_CHECKOUT) && in_array($stripeCurrency, static::$methodCurrencies['credit_card'])) {
             $paymentOptions[] = [
                 'cta_text'        => $this->l('Pay by Credit Card'),
                 'logo'            => Media::getMediaPath($this->local_path.'views/img/stripebtnlogo.png'),
-                'action'          => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'stripe_checkout'], Tools::usingSecureMode()),
+                'action'          => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'stripe_checkout'], true),
             ];
         }
         if (Configuration::get(static::IDEAL) && in_array($stripeCurrency, static::$methodCurrencies['ideal'])) {
             $paymentOptions[] = [
                 'cta_text' => $this->l('iDEAL'),
                 'logo'     => Media::getMediaPath($this->local_path.'views/img/ideal.png'),
-                'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'ideal'], Tools::usingSecureMode()),
+                'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'ideal'], true),
             ];
         }
         if (Configuration::get(static::BANCONTACT) && in_array($stripeCurrency, static::$methodCurrencies['bancontact'])) {
             $paymentOptions[] = [
                 'cta_text' => $this->l('Bancontact'),
                 'logo'     => Media::getMediaPath($this->local_path.'views/img/bancontact.png'),
-                'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'bancontact'], Tools::usingSecureMode()),
+                'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'bancontact'], true),
             ];
         }
         if (Configuration::get(static::GIROPAY) && in_array($stripeCurrency, static::$methodCurrencies['giropay'])) {
             $paymentOptions[] = [
                 'cta_text' => $this->l('Giropay'),
                 'logo'     => Media::getMediaPath($this->local_path.'views/img/giropay.png'),
-                'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'giropay'], Tools::usingSecureMode()),
+                'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'giropay'], true),
             ];
         }
         if (Configuration::get(static::SOFORT) && in_array($stripeCurrency, static::$methodCurrencies['sofort'])) {
             $paymentOptions[] = [
                 'cta_text' => $this->l('Sofort Banking'),
                 'logo'     => Media::getMediaPath($this->local_path.'views/img/sofort.png'),
-                'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'sofort'], Tools::usingSecureMode()),
+                'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'sofort'], true),
             ];
         }
         if (Configuration::get(static::ALIPAY_BLOCK) && in_array($stripeCurrency, static::$methodCurrencies['alipay'])) {
             $paymentOptions[] = [
                 'cta_text' => $this->l('Alipay'),
                 'logo'     => Media::getMediaPath($this->local_path.'views/img/alipay.png'),
-                'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'alipay'], Tools::usingSecureMode()),
+                'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'alipay'], true),
             ];
         }
 

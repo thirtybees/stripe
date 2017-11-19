@@ -32,7 +32,6 @@
       {if $stripe_cc_form || $stripe_apple_pay || $stripe_ideal || $stripe_bancontact || $stripe_giropay || $stripe_sofort || $stripe_alipay}
       if (typeof Stripe === 'undefined') {
         $.getScript('https://js.stripe.com/v2/');
-        $.getScript('https://js.stripe.com/v3/');
       }
       {/if}
 
