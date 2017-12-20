@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (C) 2017 thirty bees
+ * Copyright (C) 2017-2018 thirty bees
  *
  * NOTICE OF LICENSE
  *
@@ -13,7 +13,7 @@
  * to license@thirtybees.com so we can send you a copy immediately.
  *
  *  @author    thirty bees <modules@thirtybees.com>
- *  @copyright 2017 thirty bees
+ *  @copyright 2017-2018 thirty bees
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
 
@@ -108,7 +108,7 @@ class StripeValidationModuleFrontController extends ModuleFrontController
         }
 
         try {
-            $defaultCard = \ThirtybeesStripe\Source::retrieve($stripeCustomer->default_source);
+            $defaultCard = \ThirtyBeesStripe\Source::retrieve($stripeCustomer->default_source);
         } catch (Exception $e) {
             $defaultCard = new stdClass();
         }
@@ -140,7 +140,6 @@ class StripeValidationModuleFrontController extends ModuleFrontController
             Tools::redirectLink($source->redirect->url);
         }
 
-        $stripeCharge = new stdClass();
         try {
             $stripeCharge = \ThirtyBeesStripe\Charge::create([
                 'customer' => $stripeCustomer->id,
