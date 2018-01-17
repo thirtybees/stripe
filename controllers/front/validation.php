@@ -81,8 +81,12 @@ class StripeValidationModuleFrontController extends ModuleFrontController
         $currency = new Currency((int) $cart->id_currency);
 
         $stripe = [
-            'secret_key'      => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST),
-            'publishable_key' => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::PUBLISHABLE_KEY_LIVE) : Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
+            'secret_key'      => Configuration::get(Stripe::GO_LIVE)
+                ? Configuration::get(Stripe::SECRET_KEY_LIVE)
+                : Configuration::get(Stripe::SECRET_KEY_TEST),
+            'publishable_key' => Configuration::get(Stripe::GO_LIVE)
+                ? Configuration::get(Stripe::PUBLISHABLE_KEY_LIVE)
+                : Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
         ];
 
         $guzzle = new \ThirtyBeesStripe\HttpClient\GuzzleClient();
@@ -108,9 +112,11 @@ class StripeValidationModuleFrontController extends ModuleFrontController
         }
 
         try {
-            $defaultCard = \ThirtyBeesStripe\Source::retrieve($stripeCustomer->default_source);
+            $source = \ThirtyBeesStripe\Source::retrieve($token);
+            $defaultCard = $source->card;
         } catch (Exception $e) {
             $defaultCard = new stdClass();
+            $defaultCard->three_d_secure = 'not_supported';
         }
 
         /** @var \ThirtyBeesStripe\Card $defaultCard */

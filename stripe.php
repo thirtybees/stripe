@@ -141,12 +141,13 @@ class Stripe extends PaymentModule
      * ThirtyBeesStripe constructor.
      *
      * @since 1.0.0
+     * @throws PrestaShopException
      */
     public function __construct()
     {
         $this->name = 'stripe';
         $this->tab = 'payments_gateways';
-        $this->version = '1.4.5';
+        $this->version = '2.0.0';
         $this->author = 'thirty bees';
         $this->need_instance = 1;
 
@@ -173,6 +174,8 @@ class Stripe extends PaymentModule
      *
      * @return bool Whether the module has been successfully installed
      *
+     * @throws PrestaShopDatabaseException
+     * @throws PrestaShopException
      * @since 1.0.0
      */
     public function install()
@@ -205,6 +208,8 @@ class Stripe extends PaymentModule
      *
      * @return bool Whether the module has been successfully installed
      *
+     * @throws PrestaShopDatabaseException
+     * @throws PrestaShopException
      * @since 1.0.0
      */
     public function uninstall()
@@ -238,6 +243,10 @@ class Stripe extends PaymentModule
      *
      * @return string HTML
      *
+     * @throws Exception
+     * @throws PrestaShopDatabaseException
+     * @throws PrestaShopException
+     * @throws SmartyException
      * @since 1.0.0
      */
     public function getContent()
@@ -317,10 +326,16 @@ class Stripe extends PaymentModule
 
     /**
      * Save form data.
+     *
+     * @throws PrestaShopException
+     * @throws Adapter_Exception
      */
     protected function postProcess()
     {
-        if (Tools::isSubmit('orderstriperefund') && Tools::isSubmit('stripe_refund_order') && Tools::isSubmit('stripe_refund_amount')) {
+        if (Tools::isSubmit('orderstriperefund')
+            && Tools::isSubmit('stripe_refund_order')
+            && Tools::isSubmit('stripe_refund_amount')
+        ) {
             $this->processRefund();
         } elseif ($this->menu == static::MENU_SETTINGS) {
             if (Tools::isSubmit('submitOptionsconfiguration') || Tools::isSubmit('submitOptionsconfiguration')) {
@@ -332,7 +347,9 @@ class Stripe extends PaymentModule
                 $this->tlsCheck();
             }
         } elseif ($this->menu == static::MENU_TRANSACTIONS) {
-            if (Tools::isSubmit('submitBulkdelete'.StripeTransaction::$definition['table']) && !empty(Tools::getValue(StripeTransaction::$definition['table'].'Box'))) {
+            if (Tools::isSubmit('submitBulkdelete'.StripeTransaction::$definition['table'])
+                && !empty(Tools::getValue(StripeTransaction::$definition['table'].'Box'))
+            ) {
                 if (StripeTransaction::deleteRange(Tools::getValue(StripeTransaction::$definition['table'].'Box'))) {
                     $this->addConfirmation($this->l('Successfully deleted the selected transactions'));
                 } else {
@@ -344,6 +361,9 @@ class Stripe extends PaymentModule
 
     /**
      * @return void
+     * @throws Adapter_Exception
+     * @throws PrestaShopDatabaseException
+     * @throws PrestaShopException
      */
     protected function processRefund()
     {
