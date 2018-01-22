@@ -1,6 +1,5 @@
 # Stripe
-![](https://travis-ci.org/thirtybees/stripe.svg?branch=master)  
-![Stripe](views/img/stripebtnlogo.png)
+![Stripe](logo.png)
 
 Accept Payments with Stripe in Thirty Bees.
 
