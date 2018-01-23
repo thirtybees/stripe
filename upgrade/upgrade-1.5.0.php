@@ -21,17 +21,9 @@ if (!defined('_TB_VERSION_')) {
     exit;
 }
 
-function upgrade_module_1_4_3()
+function upgrade_module_1_5_0($module)
 {
-    if (!Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue('
-            SELECT COUNT(*)
-            FROM information_schema.COLUMNS
-            WHERE TABLE_SCHEMA = \''._DB_NAME_.'\'
-            AND TABLE_NAME = \''._DB_PREFIX_.'stripe_transaction\'
-            AND COLUMN_NAME = \'source_type\'')) {
-        Db::getInstance()->execute('ALTER TABLE `'._DB_PREFIX_.'stripe_transaction` ADD `source_type` VARCHAR(255) NULL');
-        Db::getInstance()->update('stripe_transaction', ['source_type' => 'cc']);
-    }
+    $module->registerHook('displayPaymentRequestButton');
 
     return true;
 }
