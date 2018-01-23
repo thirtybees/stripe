@@ -8,7 +8,6 @@
     },
     "autoload": {
         "psr-0": {
-            "ThirtyBeesStripe\\": "classes/stripe-php",
             "StripeModule\\": "classes/"
         }
     }

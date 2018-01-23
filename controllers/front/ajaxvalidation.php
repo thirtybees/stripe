@@ -46,6 +46,7 @@ class StripeAjaxvalidationModuleFrontController extends ModuleFrontController
      *
      * @return bool Whether the info has been successfully processed
      * @throws PrestaShopException
+     * @throws Adapter_Exception
      */
     public function postProcess()
     {
@@ -82,16 +83,20 @@ class StripeAjaxvalidationModuleFrontController extends ModuleFrontController
         $currency = new Currency((int) $cart->id_currency);
 
         $stripe = [
-            'secret_key'      => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST),
-            'publishable_key' => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::PUBLISHABLE_KEY_LIVE) : Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
+            'secret_key'      => Configuration::get(Stripe::GO_LIVE)
+                ? Configuration::get(Stripe::SECRET_KEY_LIVE)
+                : Configuration::get(Stripe::SECRET_KEY_TEST),
+            'publishable_key' => Configuration::get(Stripe::GO_LIVE)
+                ? Configuration::get(Stripe::PUBLISHABLE_KEY_LIVE)
+                : Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
         ];
 
         $guzzle = new \ThirtyBeesStripe\HttpClient\GuzzleClient();
-        \ThirtyBeesStripe\ApiRequestor::setHttpClient($guzzle);
-        \ThirtyBeesStripe\Stripe::setApiKey($stripe['secret_key']);
+        \ThirtyBeesStripe\Stripe\ApiRequestor::setHttpClient($guzzle);
+        \ThirtyBeesStripe\Stripe\Stripe::setApiKey($stripe['secret_key']);
 
         try {
-            $stripeCustomer = \ThirtyBeesStripe\Customer::create(
+            $stripeCustomer = \ThirtyBeesStripe\Stripe\Customer::create(
                 [
                     'email'  => $customer->email,
                     'source' => $token,
@@ -108,7 +113,7 @@ class StripeAjaxvalidationModuleFrontController extends ModuleFrontController
         }
 
         try {
-            $stripeCharge = \ThirtyBeesStripe\Charge::create(
+            $stripeCharge = \ThirtyBeesStripe\Stripe\Charge::create(
                 [
                     'customer' => $stripeCustomer->id,
                     'amount'   => $stripeAmount,
@@ -129,7 +134,17 @@ class StripeAjaxvalidationModuleFrontController extends ModuleFrontController
              */
             $currencyId = (int) Context::getContext()->currency->id;
 
-            $this->module->validateOrder($idCart, $paymentStatus, $cart->getOrderTotal(), 'Apple Pay', $message, [], $currencyId, false, $cart->secure_key);
+            $this->module->validateOrder(
+                $idCart,
+                $paymentStatus,
+                $cart->getOrderTotal(),
+                'Apple Pay',
+                $message,
+                [],
+                $currencyId,
+                false,
+                $cart->secure_key
+            );
 
             /**
              * If the order has been validated we try to retrieve it

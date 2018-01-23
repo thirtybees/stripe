@@ -33,6 +33,9 @@ class StripeSourcevalidationModuleFrontController extends ModuleFrontController
 
     /**
      * StripeSourcevalidationModuleFrontController constructor.
+     *
+     * @throws PrestaShopException
+     * @throws Adapter_Exception
      */
     public function __construct()
     {
@@ -46,6 +49,7 @@ class StripeSourcevalidationModuleFrontController extends ModuleFrontController
      *
      * @return bool Whether the info has been successfully processed
      * @throws PrestaShopException
+     * @throws Adapter_Exception
      */
     public function postProcess()
     {
@@ -92,8 +96,8 @@ class StripeSourcevalidationModuleFrontController extends ModuleFrontController
         ];
 
         $guzzle = new \ThirtyBeesStripe\HttpClient\GuzzleClient();
-        \ThirtyBeesStripe\ApiRequestor::setHttpClient($guzzle);
-        \ThirtyBeesStripe\Stripe::setApiKey($stripe['secret_key']);
+        \ThirtyBeesStripe\Stripe\ApiRequestor::setHttpClient($guzzle);
+        \ThirtyBeesStripe\Stripe\Stripe::setApiKey($stripe['secret_key']);
 
 
         $stripeAmount = $cart->getOrderTotal();
@@ -102,7 +106,7 @@ class StripeSourcevalidationModuleFrontController extends ModuleFrontController
         }
 
         try {
-            $stripeCharge = \ThirtyBeesStripe\Charge::create(
+            $stripeCharge = \ThirtyBeesStripe\Stripe\Charge::create(
                 [
                     'amount'   => $stripeAmount,
                     'currency' => Tools::strtolower($currency->iso_code),

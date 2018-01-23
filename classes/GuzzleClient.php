@@ -21,7 +21,8 @@ namespace ThirtyBeesStripe\HttpClient;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\BadResponseException;
-use ThirtyBeesStripe\Error;
+use ThirtyBeesStripe\Stripe\Error;
+use ThirtyBeesStripe\Stripe\HttpClient\ClientInterface;
 
 /**
  * Class GuzzleClient

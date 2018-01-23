@@ -31,6 +31,9 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
 
     /**
      * StripeEupaymentModuleFrontController constructor.
+     *
+     * @throws PrestaShopException
+     * @throws Adapter_Exception
      */
     public function __construct()
     {
@@ -94,6 +97,8 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
 
     /**
      * Init credit card payment
+     *
+     * @throws PrestaShopException
      */
     protected function initStripeCheckout()
     {
@@ -144,6 +149,8 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
 
     /**
      * Init credit card payment
+     *
+     * @throws PrestaShopException
      */
     protected function initCreditCard()
     {
@@ -211,6 +218,8 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
 
     /**
      * Initialize iDEAL payment
+     *
+     * @throws PrestaShopException
      */
     protected function initIdeal()
     {
@@ -225,9 +234,12 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
 
         $invoiceAddress = new Address((int) $cart->id_address_invoice);
 
-        ThirtyBeesStripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST));
+        ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE)
+            ? Configuration::get(Stripe::SECRET_KEY_LIVE)
+            : Configuration::get(Stripe::SECRET_KEY_TEST)
+        );
 
-        $source = \ThirtyBeesStripe\Source::create([
+        $source = \ThirtyBeesStripe\Stripe\Source::create([
             'type' => 'ideal',
             'amount' => (int)$stripeAmount,
             'currency' => $currency->iso_code,
@@ -235,7 +247,12 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
                 'name' => $invoiceAddress->firstname.' '.$invoiceAddress->lastname,
             ],
             'redirect' => [
-                'return_url' => $this->context->link->getModuleLink('stripe', 'sourcevalidation', ['stripe-id_cart' => $cart->id, 'type' => 'ideal'], true),
+                'return_url' => $this->context->link->getModuleLink(
+                    'stripe',
+                    'sourcevalidation',
+                    ['stripe-id_cart' => $cart->id, 'type' => 'ideal'],
+                    true
+                ),
             ]
         ]);
 
@@ -244,6 +261,8 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
 
     /**
      * Initialize Bancontact payment
+     *
+     * @throws PrestaShopException
      */
     protected function initBancontact()
     {
@@ -258,9 +277,9 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
 
         $invoiceAddress = new Address((int) $cart->id_address_invoice);
 
-        ThirtyBeesStripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST));
+        ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST));
 
-        $source = \ThirtyBeesStripe\Source::create([
+        $source = \ThirtyBeesStripe\Stripe\Source::create([
             'type' => 'bancontact',
             'amount' => (int)$stripeAmount,
             'currency' => $currency->iso_code,
@@ -277,6 +296,8 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
 
     /**
      * Initialize Giropay payment
+     *
+     * @throws PrestaShopException
      */
     protected function initGiropay()
     {
@@ -291,9 +312,12 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
 
         $invoiceAddress = new Address((int) $cart->id_address_invoice);
 
-        ThirtyBeesStripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST));
+        ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE)
+            ? Configuration::get(Stripe::SECRET_KEY_LIVE)
+            : Configuration::get(Stripe::SECRET_KEY_TEST)
+        );
 
-        $source = \ThirtyBeesStripe\Source::create([
+        $source = \ThirtyBeesStripe\Stripe\Source::create([
             'type' => 'giropay',
             'amount' => (int)$stripeAmount,
             'currency' => $currency->iso_code,
@@ -301,7 +325,12 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
                 'name' => $invoiceAddress->firstname.' '.$invoiceAddress->lastname,
             ],
             'redirect' => [
-                'return_url' => $this->context->link->getModuleLink('stripe', 'sourcevalidation', ['stripe-id_cart' => $cart->id, 'type' => 'giropay'], true),
+                'return_url' => $this->context->link->getModuleLink(
+                    'stripe',
+                    'sourcevalidation',
+                    ['stripe-id_cart' => $cart->id, 'type' => 'giropay'],
+                    true
+                ),
             ]
         ]);
 
@@ -310,6 +339,8 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
 
     /**
      * Initialize Sofort Banking payment
+     *
+     * @throws PrestaShopException
      */
     protected function initSofort()
     {
@@ -325,9 +356,12 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
         $invoiceAddress = new Address((int) $cart->id_address_invoice);
         $country = new Country($invoiceAddress->id_country);
 
-        ThirtyBeesStripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST));
+        ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE)
+            ? Configuration::get(Stripe::SECRET_KEY_LIVE)
+            : Configuration::get(Stripe::SECRET_KEY_TEST)
+        );
 
-        $source = \ThirtyBeesStripe\Source::create([
+        $source = \ThirtyBeesStripe\Stripe\Source::create([
             'type'     => 'sofort',
             'amount'   => (int) $stripeAmount,
             'currency' => $currency->iso_code,
@@ -335,7 +369,12 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
                 'name' => $invoiceAddress->firstname.' '.$invoiceAddress->lastname,
             ],
             'redirect' => [
-                'return_url' => $this->context->link->getModuleLink('stripe', 'sourcevalidation', ['stripe-id_cart' => $cart->id, 'type' => 'sofort'], true),
+                'return_url' => $this->context->link->getModuleLink(
+                    'stripe',
+                    'sourcevalidation',
+                    ['stripe-id_cart' => $cart->id, 'type' => 'sofort'],
+                    true
+                ),
             ],
             'sofort'   => [
                 'country' => Tools::strtoupper($country->iso_code),
@@ -347,6 +386,8 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
 
     /**
      * Initialize Alipay payment
+     *
+     * @throws PrestaShopException
      */
     protected function initAlipay()
     {
@@ -359,14 +400,22 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
             $stripeAmount = (int) ($stripeAmount * 100);
         }
 
-        ThirtyBeesStripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST));
+        ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE)
+            ? Configuration::get(Stripe::SECRET_KEY_LIVE)
+            : Configuration::get(Stripe::SECRET_KEY_TEST)
+        );
 
-        $source = \ThirtyBeesStripe\Source::create([
+        $source = \ThirtyBeesStripe\Stripe\Source::create([
             'type'     => 'alipay',
             'amount'   => (int) $stripeAmount,
             'currency' => $currency->iso_code,
             'redirect' => [
-                'return_url' => $this->context->link->getModuleLink('stripe', 'sourcevalidation', ['stripe-id_cart' => $cart->id, 'type' => 'alipay'], true),
+                'return_url' => $this->context->link->getModuleLink(
+                    'stripe',
+                    'sourcevalidation',
+                    ['stripe-id_cart' => $cart->id, 'type' => 'alipay'],
+                    true
+                ),
             ],
         ]);
 

@@ -33,6 +33,9 @@ class StripeValidationModuleFrontController extends ModuleFrontController
 
     /**
      * StripeValidationModuleFrontController constructor.
+     *
+     * @throws PrestaShopException
+     * @throws Adapter_Exception
      */
     public function __construct()
     {
@@ -46,6 +49,7 @@ class StripeValidationModuleFrontController extends ModuleFrontController
      *
      * @return bool Whether the info has been successfully processed
      * @throws PrestaShopException
+     * @throws Adapter_Exception
      */
     public function postProcess()
     {
@@ -90,8 +94,8 @@ class StripeValidationModuleFrontController extends ModuleFrontController
         ];
 
         $guzzle = new \ThirtyBeesStripe\HttpClient\GuzzleClient();
-        \ThirtyBeesStripe\ApiRequestor::setHttpClient($guzzle);
-        \ThirtyBeesStripe\Stripe::setApiKey($stripe['secret_key']);
+        \ThirtyBeesStripe\Stripe\ApiRequestor::setHttpClient($guzzle);
+        \ThirtyBeesStripe\Stripe\Stripe::setApiKey($stripe['secret_key']);
 
         $stripeAmount = $cart->getOrderTotal();
         if (!in_array(Tools::strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
@@ -99,7 +103,7 @@ class StripeValidationModuleFrontController extends ModuleFrontController
         }
 
         try {
-            $stripeCustomer = \ThirtyBeesStripe\Customer::create([
+            $stripeCustomer = \ThirtyBeesStripe\Stripe\Customer::create([
                 'email'  => $customer->email,
                 'source' => $token,
             ]);
@@ -112,17 +116,17 @@ class StripeValidationModuleFrontController extends ModuleFrontController
         }
 
         try {
-            $source = \ThirtyBeesStripe\Source::retrieve($token);
+            $source = \ThirtyBeesStripe\Stripe\Source::retrieve($token);
             $defaultCard = $source->card;
         } catch (Exception $e) {
             $defaultCard = new stdClass();
             $defaultCard->three_d_secure = 'not_supported';
         }
 
-        /** @var \ThirtyBeesStripe\Card $defaultCard */
+        /** @var \ThirtyBeesStripe\Stripe\Card $defaultCard */
         if (Configuration::get(Stripe::THREEDSECURE) && $defaultCard->three_d_secure !== 'not_supported' || $defaultCard->three_d_secure === 'required') {
             try {
-                $source = \ThirtyBeesStripe\Source::create(
+                $source = \ThirtyBeesStripe\Stripe\Source::create(
                     [
                         'amount'         => $stripeAmount,
                         'currency'       => Tools::strtolower($currency->iso_code),
@@ -147,10 +151,10 @@ class StripeValidationModuleFrontController extends ModuleFrontController
         }
 
         try {
-            $stripeCharge = \ThirtyBeesStripe\Charge::create([
+            $stripeCharge = \ThirtyBeesStripe\Stripe\Charge::create([
                 'customer' => $stripeCustomer->id,
-                'amount' => $stripeAmount,
-                'currency' => Tools::strtolower($currency->iso_code),
+                'amount'   => $stripeAmount,
+                'currency' => mb_strtolower($currency->iso_code),
             ]);
         } catch (Exception $e) {
             $error = $e->getMessage();
