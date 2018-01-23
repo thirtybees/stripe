@@ -17,9 +17,9 @@
  * @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
 
+use StripeModule\GuzzleClient;
 use StripeModule\StripeTransaction;
-use ThirtyBeesStripe\ApiRequestor;
-use ThirtyBeesStripe\HttpClient\GuzzleClient;
+use ThirtyBeesStripe\Stripe\ApiRequestor;
 
 if (!defined('_TB_VERSION_')) {
     exit;
@@ -94,6 +94,7 @@ class Stripe extends PaymentModule
         'displayPaymentEU',
         'paymentReturn',
         'displayAdminOrder',
+        'displayPaymentRequestButton',
     ];
 
     /** @var int $menu Current menu */
@@ -398,8 +399,11 @@ class Stripe extends PaymentModule
         $guzzle = new GuzzleClient();
         ApiRequestor::setHttpClient($guzzle);
         try {
-            \ThirtyBeesStripe\Stripe::setApiKey(Configuration::get(static::GO_LIVE) ? Configuration::get(static::SECRET_KEY_LIVE) : Configuration::get(static::SECRET_KEY_TEST));
-            \ThirtyBeesStripe\Refund::create(
+            \ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(static::GO_LIVE)
+                ? Configuration::get(static::SECRET_KEY_LIVE)
+                : Configuration::get(static::SECRET_KEY_TEST)
+            );
+            \ThirtyBeesStripe\Stripe\Refund::create(
                 [
                     'charge'   => $idCharge,
                     'amount'   => $amount,
@@ -474,6 +478,8 @@ class Stripe extends PaymentModule
      * Process General Options
      *
      * @return void
+     * @throws PrestaShopDatabaseException
+     * @throws PrestaShopException
      */
     protected function postProcessGeneralOptions()
     {
@@ -522,6 +528,8 @@ class Stripe extends PaymentModule
      * Process Order Options
      *
      * @return void
+     * @throws PrestaShopDatabaseException
+     * @throws PrestaShopException
      */
     protected function postProcessOrderOptions()
     {
@@ -542,6 +550,8 @@ class Stripe extends PaymentModule
      * Process Advanced Options
      *
      * @return void
+     * @throws PrestaShopDatabaseException
+     * @throws PrestaShopException
      */
     protected function postProcessAdvancedOptions()
     {
@@ -557,6 +567,9 @@ class Stripe extends PaymentModule
      * Process options
      *
      * @param array $options
+     *
+     * @throws PrestaShopDatabaseException
+     * @throws PrestaShopException
      */
     protected function postProcessOptions($options)
     {
@@ -594,6 +607,8 @@ class Stripe extends PaymentModule
      * @param string $key    Configuration key
      * @param mixed  $values Configuration values, can be string or array with id_lang as key
      * @param bool   $html   Contains HTML
+     *
+     * @throws PrestaShopException
      */
     public function updateAllValue($key, $values, $html = false)
     {
@@ -625,14 +640,14 @@ class Stripe extends PaymentModule
      */
     protected function tlsCheck()
     {
-        $guzzle = new \ThirtyBeesStripe\HttpClient\GuzzleClient();
-        \ThirtyBeesStripe\ApiRequestor::setHttpClient($guzzle);
-        \ThirtyBeesStripe\Stripe::setApiKey('sk_test_BQokikJOvBiI2HlWgH4olfQ2');
-        \ThirtyBeesStripe\Stripe::$apiBase = 'https://api-tls12.stripe.com';
+        $guzzle = new GuzzleClient();
+        \ThirtyBeesStripe\Stripe\ApiRequestor::setHttpClient($guzzle);
+        \ThirtyBeesStripe\Stripe\Stripe::setApiKey('sk_test_BQokikJOvBiI2HlWgH4olfQ2');
+        \ThirtyBeesStripe\Stripe\Stripe::$apiBase = 'https://api-tls12.stripe.com';
         try {
-            \ThirtyBeesStripe\Charge::all();
+            \ThirtyBeesStripe\Stripe\Charge::all();
             $this->updateAllValue(static::TLS_OK, static::ENUM_TLS_OK);
-        } catch (\ThirtyBeesStripe\Error\ApiConnection $e) {
+        } catch (\ThirtyBeesStripe\Stripe\Error\ApiConnection $e) {
             $this->updateAllValue(static::TLS_OK, static::ENUM_TLS_ERROR);
         }
     }
@@ -642,7 +657,6 @@ class Stripe extends PaymentModule
      *
      * @return string HTML
      * @throws Exception
-     * @throws SmartyException
      *
      * @since 1.0.0
      */
@@ -665,8 +679,10 @@ class Stripe extends PaymentModule
      * Render the transactions list
      *
      * @return string HTML
+     * @throws Exception
      * @throws PrestaShopDatabaseException
-     *
+     * @throws PrestaShopException
+     * @throws SmartyException
      * @since 1.0.0
      */
     protected function renderTransactionsList()
@@ -886,6 +902,7 @@ class Stripe extends PaymentModule
      * @param array      $fieldsList
      *
      * @return array|string
+     * @throws ReflectionException
      */
     protected function getSQLFilter($helperList, $fieldsList)
     {
@@ -1014,9 +1031,10 @@ class Stripe extends PaymentModule
     }
 
     /**
-     * @param $idOrder
+     * @param int $idOrder
      *
      * @return Currency
+     * @throws PrestaShopException
      */
     protected function getCurrencyIdByOrderId($idOrder)
     {
@@ -1064,6 +1082,11 @@ class Stripe extends PaymentModule
      *
      * @return string HTML
      *
+     * @throws Exception
+     * @throws HTMLPurifier_Exception
+     * @throws PrestaShopDatabaseException
+     * @throws PrestaShopException
+     * @throws SmartyException
      * @since 1.0.0
      */
     protected function renderGeneralOptions()
@@ -1096,6 +1119,7 @@ class Stripe extends PaymentModule
      * @return array General options
      *
      * @since 1.0.0
+     * @throws PrestaShopException
      */
     protected function getGeneralOptions()
     {
@@ -1168,6 +1192,7 @@ class Stripe extends PaymentModule
      * @return array General options
      *
      * @since 1.0.0
+     * @throws PrestaShopException
      */
     protected function getStripeCheckoutOptions()
     {
@@ -1247,6 +1272,7 @@ class Stripe extends PaymentModule
      * @return array General options
      *
      * @since 1.0.0
+     * @throws PrestaShopException
      */
     protected function getStripeCreditCardOptions()
     {
@@ -1292,6 +1318,7 @@ class Stripe extends PaymentModule
      * @return array
      *
      * @since 1.2.0
+     * @throws PrestaShopException
      */
     protected function getEuropeanPaymentMethodsOptions()
     {
@@ -1347,6 +1374,7 @@ class Stripe extends PaymentModule
      * @return array
      *
      * @since 1.4.0
+     * @throws PrestaShopException
      */
     protected function getOtherPaymentOptions()
     {
@@ -1387,6 +1415,8 @@ class Stripe extends PaymentModule
      *
      * @return array Order options
      *
+     * @throws PrestaShopDatabaseException
+     * @throws PrestaShopException
      * @since 1.0.0
      */
     protected function getOrderOptions()
@@ -1529,6 +1559,9 @@ class Stripe extends PaymentModule
      * @param array $params Hook parameters
      *
      * @return string|bool
+     * @throws Exception
+     * @throws PrestaShopException
+     * @throws SmartyException
      */
     public function hookPayment($params)
     {
@@ -1618,6 +1651,8 @@ class Stripe extends PaymentModule
 
     /**
      * Check if shop thumbnail exists
+     *
+     * @throws PrestaShopException
      */
     public function checkShopThumb()
     {
@@ -1658,6 +1693,7 @@ class Stripe extends PaymentModule
      * @param array $params Hook parameters
      *
      * @return array|bool Smarty variables, nothing if should not be shown
+     * @throws PrestaShopException
      */
     public function hookDisplayPaymentEU($params)
     {
@@ -1734,6 +1770,9 @@ class Stripe extends PaymentModule
      * @param array $params Hook parameters
      *
      * @return string Hook HTML
+     * @throws Exception
+     * @throws PrestaShopException
+     * @throws SmartyException
      */
     public function hookPaymentReturn($params)
     {
@@ -1775,6 +1814,9 @@ class Stripe extends PaymentModule
      * @param array $params Hook parameters
      *
      * @return string Hook HTML
+     * @throws Exception
+     * @throws PrestaShopException
+     * @throws SmartyException
      */
     public function hookDisplayPaymentTop($params)
     {
@@ -1857,6 +1899,10 @@ class Stripe extends PaymentModule
      * @param int $idOrder Order ID
      *
      * @return string Transaction list HTML
+     * @throws Exception
+     * @throws PrestaShopDatabaseException
+     * @throws PrestaShopException
+     * @throws SmartyException
      */
     protected function renderAdminOrderTransactionList($idOrder)
     {
@@ -1954,6 +2000,9 @@ class Stripe extends PaymentModule
      * @param Module $module
      *
      * @return void
+     * @throws Adapter_Exception
+     * @throws PrestaShopDatabaseException
+     * @throws PrestaShopException
      */
     public function hookActionModuleInstallAfter($module)
     {
@@ -1988,6 +2037,7 @@ class Stripe extends PaymentModule
      * Detect Back Office settings
      *
      * @return array Array with error message strings
+     * @throws PrestaShopException
      */
     protected function detectBOSettingsErrors()
     {
@@ -2042,6 +2092,8 @@ class Stripe extends PaymentModule
      * @param Cart $cart Cart object
      *
      * @return bool Whether the module should be shown
+     * @throws PrestaShopDatabaseException
+     * @throws PrestaShopException
      */
     protected function checkCurrency(Cart $cart)
     {
