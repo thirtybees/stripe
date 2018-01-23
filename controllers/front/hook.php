@@ -57,6 +57,8 @@ class StripeHookModuleFrontController extends ModuleFrontController
         if (!empty($body) && $data = json_decode($body, true)) {
             // Verify with Stripe
             try {
+                $guzzle = new \StripeModule\GuzzleClient();
+                \ThirtyBeesStripe\Stripe\ApiRequestor::setHttpClient($guzzle);
                 \ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(Stripe::SECRET_KEY_TEST));
                 $event = \ThirtyBeesStripe\Stripe\Event::retrieve($data['id']);
             } catch (\Exception $e) {

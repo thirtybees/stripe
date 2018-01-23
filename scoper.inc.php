@@ -37,12 +37,12 @@ return [
             if (strpos($filePath, __DIR__.'/pre-scoper/stripe/stripe-php/tests/') !== false) {
                 $content = preg_replace(
                     '~'.preg_quote("'Stripe\\", '~').'~',
-                    "'$prefix\\\\\\\\Stripe\\\\\\\\",
+                    "'$prefix\\\\\\\\Stripe\\\\",
                     $content
                 );
                 $content = preg_replace(
                     '~'.preg_quote("\"Stripe\\", '~').'~',
-                    "\"$prefix\\\\\\\\Stripe\\\\\\\\",
+                    "\"$prefix\\\\\\\\Stripe\\\\",
                     $content
                 );
 
@@ -52,12 +52,12 @@ return [
             if (strpos($filePath, __DIR__.'/pre-scoper/stripe/stripe-php/lib/') !== false) {
                 $content = preg_replace(
                     '~'.preg_quote("'Stripe\\", '~').'~',
-                    "'$prefix\\\\\\\\Stripe\\\\\\\\",
+                    "'$prefix\\\\\\\\Stripe\\\\",
                     $content
                 );
                 $content = preg_replace(
                     '~'.preg_quote("\"Stripe\\", '~').'~',
-                    "\"$prefix\\\\\\\\Stripe\\\\\\\\",
+                    "\"$prefix\\\\\\\\Stripe\\\\",
                     $content
                 );
 

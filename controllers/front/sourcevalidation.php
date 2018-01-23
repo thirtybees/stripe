@@ -95,7 +95,7 @@ class StripeSourcevalidationModuleFrontController extends ModuleFrontController
                 : Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
         ];
 
-        $guzzle = new \ThirtyBeesStripe\HttpClient\GuzzleClient();
+        $guzzle = new \StripeModule\GuzzleClient();
         \ThirtyBeesStripe\Stripe\ApiRequestor::setHttpClient($guzzle);
         \ThirtyBeesStripe\Stripe\Stripe::setApiKey($stripe['secret_key']);
 

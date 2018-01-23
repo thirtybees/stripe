@@ -234,6 +234,8 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
 
         $invoiceAddress = new Address((int) $cart->id_address_invoice);
 
+        $guzzle = new \StripeModule\GuzzleClient();
+        \ThirtyBeesStripe\Stripe\ApiRequestor::setHttpClient($guzzle);
         ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE)
             ? Configuration::get(Stripe::SECRET_KEY_LIVE)
             : Configuration::get(Stripe::SECRET_KEY_TEST)
@@ -277,7 +279,12 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
 
         $invoiceAddress = new Address((int) $cart->id_address_invoice);
 
-        ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST));
+        $guzzle = new \StripeModule\GuzzleClient();
+        \ThirtyBeesStripe\Stripe\ApiRequestor::setHttpClient($guzzle);
+        ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE)
+            ? Configuration::get(Stripe::SECRET_KEY_LIVE)
+            : Configuration::get(Stripe::SECRET_KEY_TEST)
+        );
 
         $source = \ThirtyBeesStripe\Stripe\Source::create([
             'type' => 'bancontact',
@@ -312,6 +319,8 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
 
         $invoiceAddress = new Address((int) $cart->id_address_invoice);
 
+        $guzzle = new \StripeModule\GuzzleClient();
+        \ThirtyBeesStripe\Stripe\ApiRequestor::setHttpClient($guzzle);
         ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE)
             ? Configuration::get(Stripe::SECRET_KEY_LIVE)
             : Configuration::get(Stripe::SECRET_KEY_TEST)
@@ -356,6 +365,8 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
         $invoiceAddress = new Address((int) $cart->id_address_invoice);
         $country = new Country($invoiceAddress->id_country);
 
+        $guzzle = new \StripeModule\GuzzleClient();
+        \ThirtyBeesStripe\Stripe\ApiRequestor::setHttpClient($guzzle);
         ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE)
             ? Configuration::get(Stripe::SECRET_KEY_LIVE)
             : Configuration::get(Stripe::SECRET_KEY_TEST)
@@ -400,6 +411,8 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
             $stripeAmount = (int) ($stripeAmount * 100);
         }
 
+        $guzzle = new \StripeModule\GuzzleClient();
+        \ThirtyBeesStripe\Stripe\ApiRequestor::setHttpClient($guzzle);
         ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE)
             ? Configuration::get(Stripe::SECRET_KEY_LIVE)
             : Configuration::get(Stripe::SECRET_KEY_TEST)

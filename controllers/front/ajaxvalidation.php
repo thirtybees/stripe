@@ -33,6 +33,9 @@ class StripeAjaxvalidationModuleFrontController extends ModuleFrontController
 
     /**
      * StripeAjaxvalidationModuleFrontController constructor.
+     *
+     * @throws PrestaShopException
+     * @throws Adapter_Exception
      */
     public function __construct()
     {
@@ -91,7 +94,7 @@ class StripeAjaxvalidationModuleFrontController extends ModuleFrontController
                 : Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
         ];
 
-        $guzzle = new \ThirtyBeesStripe\HttpClient\GuzzleClient();
+        $guzzle = new \StripeModule\GuzzleClient();
         \ThirtyBeesStripe\Stripe\ApiRequestor::setHttpClient($guzzle);
         \ThirtyBeesStripe\Stripe\Stripe::setApiKey($stripe['secret_key']);
 
