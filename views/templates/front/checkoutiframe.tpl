@@ -1,7 +1,6 @@
 <!doctype html>
 <html>
 <head>
-  {if !empty($stripe_input_font_family)}<link rel="stylesheet" href="//fonts.googleapis.com/css?family={$stripe_input_font_family|replace:' ':'+'|escape:'htmlall':'UTF-8'}:300,400,600,700&amp;lang=en" />{/if}
   {if !empty($stripe_checkout_font_family)}<link rel="stylesheet" href="//fonts.googleapis.com/css?family={$stripe_checkout_font_family|replace:' ':'+'|escape:'htmlall':'UTF-8'}:300,400,600,700&amp;lang=en" />{/if}
   {include file="./assets.tpl"}
   <style>
@@ -248,13 +247,20 @@
         }
 
         var stripe = Stripe('{$stripe_publishable_key|escape:'javascript':'UTF-8'}');
-        var elements = stripe.elements();
+        var elements = stripe.elements({
+          fonts: [
+            {
+              cssSrc: 'https://fonts.googleapis.com/css?family={$stripe_input_font_family|replace:' ':'+'|escape:'javascript':'UTF-8'}',
+            },
+          ],
+          locale: 'auto'
+        });
         var style = {
           base: {
             color: '{if !empty($stripe_payment_request_background_color)}{$stripe_payment_request_background_color|escape:'javascript':'UTF-8'}{else}#32325D{/if}',
             fontWeight: 500,
-            fontFamily: '{if !empty($stripe_font_family)}{$stripe_font_family|escape:'javascript':'UTF-8'}, {/if}Open Sans, Segoe UI, sans-serif',
-            fontSize: '{if !empty($stripe_font_size)}{$stripe_font_size|escape:'javascript':'UTF-8'}{else}15px{/if}',
+            fontFamily: '{if !empty($stripe_input_font_family)}{$stripe_input_font_family|escape:'javascript':'UTF-8'}, {/if}Open Sans, Segoe UI, sans-serif',
+            fontSize: '{if !empty($stripe_checkout_font_size)}{$stripe_checkout_font_size|escape:'javascript':'UTF-8'}{else}15px{/if}',
             fontSmoothing: 'antialiased',
 
             '::placeholder': {

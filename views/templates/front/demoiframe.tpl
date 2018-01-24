@@ -1,8 +1,7 @@
 <!doctype html>
 <html>
 <head>
-  {if !empty($stripe_input_font_family)}<link rel="stylesheet" href="//fonts.googleapis.com/css?family={$stripe_input_font_family|replace:' ':'+'|escape:'htmlall':'UTF-8'}:300,400,600,700&amp;lang=en" />{/if}
-  {if !empty($stripe_checkout_font_family)}<link rel="stylesheet" href="//fonts.googleapis.com/css?family={$stripe_checkout_font_family|replace:' ':'+'|escape:'htmlall':'UTF-8'}:300,400,600,700&amp;lang=en" />{/if}
+  {if !empty($stripe_checkout_font_family)}<link rel="stylesheet" href="https://fonts.googleapis.com/css?family={$stripe_checkout_font_family|replace:' ':'+'|escape:'htmlall':'UTF-8'}" />{/if}
   {include file="./assets.tpl"}
   <style>
     body {
@@ -219,7 +218,14 @@
         }
 
         var stripe = Stripe('{$stripe_publishable_key|escape:'javascript':'UTF-8'}');
-        var elements = stripe.elements();
+        var elements = stripe.elements({
+          fonts: [
+            {
+              cssSrc: 'https://fonts.googleapis.com/css?family={$stripe_input_font_family|replace:' ':'+'|escape:'javascript':'UTF-8'}',
+            },
+          ],
+          locale: 'auto'
+        });
         var style = {
           base: {
             color: '{if !empty($stripe_payment_request_background_color)}{$stripe_payment_request_background_color|escape:'javascript':'UTF-8'}{else}#32325D{/if}',
