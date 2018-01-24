@@ -65,6 +65,7 @@ class Stripe extends PaymentModule
     const BANCONTACT = 'STRIPE_BANCONTACT';
     const GIROPAY = 'STRIPE_GIROPAY';
     const SOFORT = 'STRIPE_SOFORT';
+    const P24 = 'STRIPE_P24';
     const THREEDSECURE = 'STRIPE_THREEDSECURE';
 
     const OPTIONS_MODULE_SETTINGS = 1;
@@ -73,6 +74,19 @@ class Stripe extends PaymentModule
     const TLS_LAST_CHECK = 'STRIPE_TLS_LAST_CHECK';
 
     const INCLUDE_STRIPE_BOOTSTRAP = 'STRIPE_INCLUDE_BOOTSTRAP';
+    
+    const INPUT_PLACEHOLDER_COLOR = 'STRIPE_INPUT_PLACEHOLDER_COLOR';
+    const BUTTON_BACKGROUND_COLOR = 'STRIPE_BUTTON_BACKGROUND_COLOR';
+    const BUTTON_FOREGROUND_COLOR = 'STRIPE_BUTTON_FOREGROUND_COLOR';
+    const HIGHLIGHT_COLOR = 'STRIPE_HIGHLIGHT_COLOR';
+    const ERROR_COLOR = 'STRIPE_ERROR_COLOR';
+    const ERROR_GLYPH_COLOR = 'STRIPE_ERROR_GLYPH_COLOR';
+    const INPUT_TEXT_FOREGROUND_COLOR = 'STRIPE_PAYMENT_REQFGC';
+    const INPUT_TEXT_BACKGROUND_COLOR = 'STRIPE_PAYMENT_REQBGC';
+    const INPUT_FONT_FAMILY = 'STRIPE_INPUT_FONT_FAMILY';
+    const CHECKOUT_FONT_FAMILY = 'STRIPE_CHECKOUT_FONT_FAMILY';
+    const CHECKOUT_FONT_SIZE = 'STRIPE_CHECKOUT_FONT_SIZE';
+    const PAYMENT_REQUEST_BUTTON_STYLE = 'STRIPE_PRB_STYLE';
 
     const ENUM_TLS_OK = 1;
     const ENUM_TLS_ERROR = -1;
@@ -157,7 +171,7 @@ class Stripe extends PaymentModule
             'ajaxvalidation',
             'sourcevalidation',
             'eupayment',
-            'elementsiframe',
+            'checkoutiframe',
         ];
 
         $this->is_eu_compatible = 1;
@@ -279,6 +293,26 @@ class Stripe extends PaymentModule
             case static::MENU_TRANSACTIONS:
                 return $output.$this->renderTransactionsPage();
             default:
+                $this->context->controller->addJquery();
+                $this->context->controller->addCSS($this->_path.'views/css/fontselect.css', 'all');
+                $this->context->controller->addJS($this->_path.'views/js/fontselect.js');
+                $this->context->controller->addJS($this->_path.'views/js/designer.js');
+
+                Media::addJsDef([
+                    'stripe_input_placeholder_color'          => Configuration::get(Stripe::INPUT_PLACEHOLDER_COLOR),
+                    'stripe_button_background_color'          => Configuration::get(Stripe::BUTTON_BACKGROUND_COLOR),
+                    'stripe_button_foreground_color'          => Configuration::get(Stripe::BUTTON_FOREGROUND_COLOR),
+                    'stripe_highlight_color'                  => Configuration::get(Stripe::HIGHLIGHT_COLOR),
+                    'stripe_error_color'                      => Configuration::get(Stripe::ERROR_COLOR),
+                    'stripe_error_glyph_color'                => Configuration::get(Stripe::ERROR_GLYPH_COLOR),
+                    'stripe_payment_request_foreground_color' => Configuration::get(Stripe::INPUT_TEXT_FOREGROUND_COLOR),
+                    'stripe_payment_request_background_color' => Configuration::get(Stripe::INPUT_TEXT_BACKGROUND_COLOR),
+                    'stripe_input_font_family'                => Configuration::get(Stripe::INPUT_FONT_FAMILY),
+                    'stripe_checkout_font_family'             => Configuration::get(Stripe::CHECKOUT_FONT_FAMILY),
+                    'stripe_checkout_font_size'               => Configuration::get(Stripe::CHECKOUT_FONT_SIZE),
+                    'stripe_color_url'                        => $this->context->link->getAdminLink('AdminModules', true).'&configure=stripe&ajax=1&action=SaveDesign',
+                ]);
+
                 $this->menu = static::MENU_SETTINGS;
 
                 return $output.$this->renderSettingsPage();
@@ -342,6 +376,7 @@ class Stripe extends PaymentModule
             if (Tools::isSubmit('submitOptionsconfiguration') || Tools::isSubmit('submitOptionsconfiguration')) {
                 $this->postProcessGeneralOptions();
                 $this->postProcessOrderOptions();
+                $this->postProcessDesignOptions();
             }
 
             if (Tools::isSubmit('checktls') && (bool) Tools::getValue('checktls')) {
@@ -499,6 +534,7 @@ class Stripe extends PaymentModule
             static::BANCONTACT               => (bool) Tools::getValue(static::BANCONTACT),
             static::GIROPAY                  => (bool) Tools::getValue(static::GIROPAY),
             static::SOFORT                   => (bool) Tools::getValue(static::SOFORT),
+            static::P24                      => (bool) Tools::getValue(static::P24),
             static::THREEDSECURE             => (bool) Tools::getValue(static::THREEDSECURE),
             static::SHOW_PAYMENT_LOGOS       => (bool) Tools::getValue(static::SHOW_PAYMENT_LOGOS),
             static::COLLECT_BILLING          => (bool) Tools::getValue(static::COLLECT_BILLING),
@@ -530,13 +566,13 @@ class Stripe extends PaymentModule
     protected function postProcessOrderOptions()
     {
         $options = [
-            static::STATUS_VALIDATED => Tools::getValue(static::STATUS_VALIDATED),
-            static::USE_STATUS_REFUND => Tools::getValue(static::USE_STATUS_REFUND),
-            static::STATUS_REFUND => Tools::getValue(static::STATUS_REFUND),
-            static::STATUS_SOFORT => Tools::getValue(static::STATUS_SOFORT),
+            static::STATUS_VALIDATED          => Tools::getValue(static::STATUS_VALIDATED),
+            static::USE_STATUS_REFUND         => Tools::getValue(static::USE_STATUS_REFUND),
+            static::STATUS_REFUND             => Tools::getValue(static::STATUS_REFUND),
+            static::STATUS_SOFORT             => Tools::getValue(static::STATUS_SOFORT),
             static::USE_STATUS_PARTIAL_REFUND => Tools::getValue(static::USE_STATUS_PARTIAL_REFUND),
-            static::STATUS_PARTIAL_REFUND => Tools::getValue(static::STATUS_PARTIAL_REFUND),
-            static::GENERATE_CREDIT_SLIP => (bool) Tools::getValue(static::GENERATE_CREDIT_SLIP),
+            static::STATUS_PARTIAL_REFUND     => Tools::getValue(static::STATUS_PARTIAL_REFUND),
+            static::GENERATE_CREDIT_SLIP      => (bool) Tools::getValue(static::GENERATE_CREDIT_SLIP),
         ];
 
         $this->postProcessOptions($options);
@@ -549,11 +585,22 @@ class Stripe extends PaymentModule
      * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
      */
-    protected function postProcessAdvancedOptions()
+    protected function postProcessDesignOptions()
     {
         $options = [
+            static::INPUT_PLACEHOLDER_COLOR      => Tools::getValue(static::INPUT_PLACEHOLDER_COLOR),
+            static::BUTTON_BACKGROUND_COLOR      => Tools::getValue(static::BUTTON_BACKGROUND_COLOR),
+            static::BUTTON_FOREGROUND_COLOR      => Tools::getValue(static::BUTTON_FOREGROUND_COLOR),
+            static::HIGHLIGHT_COLOR              => Tools::getValue(static::HIGHLIGHT_COLOR),
+            static::ERROR_COLOR                  => Tools::getValue(static::ERROR_COLOR),
+            static::ERROR_GLYPH_COLOR            => Tools::getValue(static::ERROR_GLYPH_COLOR),
+            static::INPUT_TEXT_FOREGROUND_COLOR  => Tools::getValue(static::INPUT_TEXT_FOREGROUND_COLOR),
+            static::INPUT_TEXT_BACKGROUND_COLOR  => Tools::getValue(static::INPUT_TEXT_BACKGROUND_COLOR),
+            static::INPUT_FONT_FAMILY            => Tools::getValue(static::INPUT_FONT_FAMILY),
+            static::CHECKOUT_FONT_FAMILY         => Tools::getValue(static::CHECKOUT_FONT_FAMILY),
+            static::CHECKOUT_FONT_SIZE           => Tools::getValue(static::CHECKOUT_FONT_SIZE),
+            static::PAYMENT_REQUEST_BUTTON_STYLE => Tools::getValue(static::PAYMENT_REQUEST_BUTTON_STYLE),
         ];
-
 
         $this->postProcessOptions($options);
     }
@@ -597,6 +644,33 @@ class Stripe extends PaymentModule
     }
 
     /**
+     * Process temporary colors
+     *
+     * @throws PrestaShopException
+     */
+    public function ajaxProcessSaveDesign()
+    {
+        $colors = json_decode(file_get_contents('php://input'), true);
+
+        Configuration::updateValue(static::INPUT_PLACEHOLDER_COLOR.'_TEMP', $colors['stripe_input_placeholder_color']);
+        Configuration::updateValue(static::BUTTON_BACKGROUND_COLOR.'_TEMP', $colors['stripe_button_background_color']);
+        Configuration::updateValue(static::BUTTON_FOREGROUND_COLOR.'_TEMP', $colors['stripe_button_foreground_color']);
+        Configuration::updateValue(static::HIGHLIGHT_COLOR.'_TEMP', $colors['stripe_highlight_color']);
+        Configuration::updateValue(static::ERROR_COLOR.'_TEMP', $colors['stripe_error_color']);
+        Configuration::updateValue(static::ERROR_GLYPH_COLOR.'_TEMP', $colors['stripe_error_glyph_color']);
+        Configuration::updateValue(static::INPUT_TEXT_FOREGROUND_COLOR.'_TEMP', $colors['stripe_payment_request_foreground_color']);
+        Configuration::updateValue(static::INPUT_TEXT_BACKGROUND_COLOR.'_TEMP', $colors['stripe_payment_request_background_color']);
+        Configuration::updateValue(static::INPUT_FONT_FAMILY.'_TEMP', $colors['stripe_input_font_family']);
+        Configuration::updateValue(static::CHECKOUT_FONT_FAMILY.'_TEMP', $colors['stripe_checkout_font_family']);
+        Configuration::updateValue(static::CHECKOUT_FONT_SIZE.'_TEMP', $colors['stripe_checkout_font_size']);
+        Configuration::updateValue(static::PAYMENT_REQUEST_BUTTON_STYLE.'_TEMP', $colors['stripe_payment_request_style']);
+
+        die(json_decode([
+            'success' => true,
+        ]));
+    }
+
+    /**
      * Update configuration value in ALL contexts
      *
      * @param string $key    Configuration key
@@ -632,6 +706,8 @@ class Stripe extends PaymentModule
 
     /**
      * Check if TLS 1.2 is supported
+     *
+     * @throws PrestaShopException
      */
     protected function tlsCheck()
     {
@@ -642,7 +718,7 @@ class Stripe extends PaymentModule
         try {
             \ThirtyBeesStripe\Stripe\Charge::all();
             $this->updateAllValue(static::TLS_OK, static::ENUM_TLS_OK);
-        } catch (\ThirtyBeesStripe\Stripe\Error\ApiConnection $e) {
+        } catch (\ThirtyBeesStripe\Stripe\Error\Api $e) {
             $this->updateAllValue(static::TLS_OK, static::ENUM_TLS_ERROR);
         }
     }
@@ -1098,12 +1174,12 @@ class Stripe extends PaymentModule
         return $helper->generateOptions(
             array_merge(
                 $this->getGeneralOptions(),
-                $this->getStripeCheckoutOptions(),
                 $this->getStripeCreditCardOptions(),
+                $this->getDesignOptions(),
+                $this->getStripeCheckoutOptions(),
                 $this->getEuropeanPaymentMethodsOptions(),
                 $this->getOtherPaymentOptions(),
-                $this->getOrderOptions(),
-                $this->getAdvancedOptions()
+                $this->getOrderOptions()
             )
         );
     }
@@ -1276,6 +1352,16 @@ class Stripe extends PaymentModule
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                     ],
+                    static::STRIPE_PAYMENT_REQUEST => [
+                        'title'      => $this->l('Enable the payment request button'),
+                        'desc'       => $this->l('This option adds an Apple Pay or Google Pay button to the form'),
+                        'type'       => 'bool',
+                        'name'       => static::STRIPE_PAYMENT_REQUEST,
+                        'value'      => Configuration::get(static::STRIPE_PAYMENT_REQUEST),
+                        'validation' => 'isBool',
+                        'cast'       => 'intval',
+                        'size'       => 64,
+                    ],
                 ],
                 'submit' => [
                     'title' => $this->l('Save'),
@@ -1330,6 +1416,14 @@ class Stripe extends PaymentModule
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                     ],
+                    static::P24     => [
+                        'title'      => $this->l('Accept P24'),
+                        'type'       => 'bool',
+                        'name'       => static::P24,
+                        'value'      => Configuration::get(static::P24),
+                        'validation' => 'isBool',
+                        'cast'       => 'intval',
+                    ],
                 ],
                 'submit' => [
                     'title' => $this->l('Save'),
@@ -1354,15 +1448,6 @@ class Stripe extends PaymentModule
                 'title'  => $this->l('Other payment methods'),
                 'icon'   => 'icon-credit-card',
                 'fields' => [
-                    static::STRIPE_PAYMENT_REQUEST => [
-                        'title'      => $this->l('Enable Apple Pay'),
-                        'type'       => 'bool',
-                        'name'       => static::STRIPE_PAYMENT_REQUEST,
-                        'value'      => Configuration::get(static::STRIPE_PAYMENT_REQUEST),
-                        'validation' => 'isBool',
-                        'cast'       => 'intval',
-                        'size'       => 64,
-                    ],
                     static::ALIPAY_BLOCK           => [
                         'title'      => $this->l('Enable Alipay'),
                         'type'       => 'bool',
@@ -1500,21 +1585,163 @@ class Stripe extends PaymentModule
      * @since 1.0.0
      * @throws PrestaShopException
      */
-    protected function getAdvancedOptions()
+    protected function getDesignOptions()
     {
+        /*
+         *  INPUT_PLACEHOLDER_COLOR
+    BUTTON_BACKGROUND_COLOR
+    BUTTON_FOREGROUND_COLOR
+    HIGHLIGHT_COLOR
+    ERROR_COLOR
+    ERROR_GLYPH_COLOR
+    PAYMENT_REQUEST_FOREGROUND_COLOR
+    PAYMENT_REQUEST_BACKGROUND_COLOR
+    INPUT_FONT_FAMILY
+    CHECKOUT_FONT_FAMILY
+    CHECKOUT_FONT_SIZE
+         */
         return [
             'advanced' => [
-                'title'  => $this->l('Advanced Settings'),
-                'icon'   => 'icon-cogs',
+                'title'  => $this->l('Credit card form design'),
+                'icon'   => 'icon-paint-brush',
                 'fields' => [
-//                    static::INCLUDE_STRIPE_BOOTSTRAP => [
-//                        'title'      => $this->l('Include Bootstrap CSS for the stripe credit card form'),
-//                        'type'       => 'bool',
-//                        'name'       => static::INCLUDE_STRIPE_BOOTSTRAP,
-//                        'value'      => Configuration::get(static::INCLUDE_STRIPE_BOOTSTRAP),
-//                        'validation' => 'isBool',
-//                        'cast'       => 'intval',
-//                    ],
+                    static::INPUT_PLACEHOLDER_COLOR => [
+                        'title'      => $this->l('Input placeholder color'),
+                        'type'       => 'color',
+                        'name'       => static::INPUT_PLACEHOLDER_COLOR,
+                        'validation' => 'isString',
+                        'cast'       => 'strval',
+                        'size'       => '1',
+                        'value'      => Configuration::get(static::INPUT_PLACEHOLDER_COLOR) ?: '#000000',
+                        'auto_value' => false,
+                    ],
+                    static::BUTTON_FOREGROUND_COLOR => [
+                        'title'      => $this->l('Button foreground color'),
+                        'type'       => 'color',
+                        'name'       => static::BUTTON_FOREGROUND_COLOR,
+                        'validation' => 'isString',
+                        'cast'       => 'strval',
+                        'size'       => '1',
+                        'value'      => Configuration::get(static::BUTTON_FOREGROUND_COLOR) ?: '#000000',
+                        'auto_value' => false,
+                    ],
+                    static::BUTTON_BACKGROUND_COLOR => [
+                        'title'      => $this->l('Button background color'),
+                        'type'       => 'color',
+                        'name'       => static::BUTTON_BACKGROUND_COLOR,
+                        'validation' => 'isString',
+                        'cast'       => 'strval',
+                        'size'       => '1',
+                        'value'      => Configuration::get(static::BUTTON_BACKGROUND_COLOR) ?: '#000000',
+                        'auto_value' => false,
+                    ],
+                    static::HIGHLIGHT_COLOR => [
+                        'title'      => $this->l('Highlight color'),
+                        'type'       => 'color',
+                        'name'       => static::HIGHLIGHT_COLOR,
+                        'validation' => 'isString',
+                        'cast'       => 'strval',
+                        'size'       => '1',
+                        'value'      => Configuration::get(static::HIGHLIGHT_COLOR) ?: '#000000',
+                        'auto_value' => false,
+                    ],
+                    static::ERROR_COLOR => [
+                        'title'      => $this->l('Error color'),
+                        'type'       => 'color',
+                        'name'       => static::ERROR_COLOR,
+                        'validation' => 'isString',
+                        'cast'       => 'strval',
+                        'size'       => '1',
+                        'value'      => Configuration::get(static::ERROR_COLOR) ?: '#000000',
+                        'auto_value' => false,
+                    ],
+                    static::ERROR_GLYPH_COLOR                => [
+                        'title'      => $this->l('Error glyph color'),
+                        'type'       => 'color',
+                        'name'       => static::ERROR_GLYPH_COLOR,
+                        'validation' => 'isString',
+                        'cast'       => 'strval',
+                        'size'       => '1',
+                        'value'      => Configuration::get(static::ERROR_GLYPH_COLOR) ?: '#000000',
+                        'auto_value' => false,
+                    ],
+                    static::INPUT_TEXT_FOREGROUND_COLOR => [
+                        'title'      => $this->l('Input text foreground color'),
+                        'type'       => 'color',
+                        'name'       => static::INPUT_TEXT_FOREGROUND_COLOR,
+                        'validation' => 'isString',
+                        'cast'       => 'strval',
+                        'size'       => '1',
+                        'value'      => Configuration::get(static::INPUT_TEXT_FOREGROUND_COLOR) ?: '#000000',
+                        'auto_value' => false,
+                    ],
+                    static::INPUT_TEXT_BACKGROUND_COLOR => [
+                        'title'      => $this->l('Input text background color'),
+                        'type'       => 'color',
+                        'name'       => static::INPUT_TEXT_BACKGROUND_COLOR,
+                        'validation' => 'isString',
+                        'cast'       => 'strval',
+                        'size'       => '1',
+                        'value'      => Configuration::get(static::INPUT_TEXT_BACKGROUND_COLOR) ?: '#000000',
+                        'auto_value' => false,
+                    ],
+                    static::INPUT_FONT_FAMILY           => [
+                        'title'      => $this->l('Input font family'),
+                        'type'       => 'fontselect',
+                        'name'       => static::INPUT_FONT_FAMILY,
+                        'validation' => 'isString',
+                        'cast'       => 'strval',
+                        'size'       => '1',
+                        'value'      => Configuration::get(static::INPUT_FONT_FAMILY) ?: 'Open Sans',
+                        'auto_value' => false,
+                    ],
+                    static::CHECKOUT_FONT_FAMILY => [
+                        'title'      => $this->l('Checkout font family'),
+                        'type'       => 'fontselect',
+                        'name'       => static::CHECKOUT_FONT_FAMILY,
+                        'validation' => 'isString',
+                        'cast'       => 'strval',
+                        'size'       => '1',
+                        'value'      => Configuration::get(static::CHECKOUT_FONT_FAMILY) ?: 'Open Sans',
+                        'auto_value' => false,
+                        'class'      => 'fixed-width-sm',
+                    ],
+                    static::CHECKOUT_FONT_SIZE => [
+                        'title'      => $this->l('Checkout font size'),
+                        'type'       => 'text',
+                        'name'       => static::CHECKOUT_FONT_SIZE ,
+                        'validation' => 'isString',
+                        'cast'       => 'strval',
+                        'size'       => '1',
+                        'value'      => Configuration::get(static::CHECKOUT_FONT_SIZE) ?: '15px',
+                        'auto_value' => false,
+                        'class'      => 'fixed-width-sm',
+                    ],
+                    static::PAYMENT_REQUEST_BUTTON_STYLE => [
+                        'title'      => $this->l('Payment Request Button style'),
+                        'type'       => 'select',
+                        'name'       => static::PAYMENT_REQUEST_BUTTON_STYLE ,
+                        'validation' => 'isString',
+                        'cast'       => 'strval',
+                        'list'    => [
+                                ['id' => 'dark',          'name' => 'Dark'],
+                                ['id' => 'light',         'name' => 'Light'],
+                                ['id' => 'light-outline', 'name' => 'Light outline'],
+                        ],
+                        'identifier' => 'id',
+                        'value'      => Configuration::get(static::PAYMENT_REQUEST_BUTTON_STYLE) ?: '15px',
+                        'auto_value' => false,
+                        'class'      => 'fixed-width-sm',
+                    ],
+                    'STRIPE_PREVIEW' => [
+                        'title'      => $this->l('Preview'),
+                        'type'       => 'democheckout',
+                        'name'       => 'STRIPE_PREVIEW',
+                        'validation' => 'isBool',
+                        'cast'       => 'intval',
+                        'auto_value' => false,
+                        'value'      => false,
+                    ],
                 ],
                 'submit' => [
                     'title' => $this->l('Save'),
@@ -1590,6 +1817,7 @@ class Stripe extends PaymentModule
                 'stripe_bancontact'             => Configuration::get(static::BANCONTACT),
                 'stripe_giropay'                => Configuration::get(static::GIROPAY),
                 'stripe_sofort'                 => Configuration::get(static::SOFORT),
+                'stripe_p24'                    => Configuration::get(static::P24),
                 'stripe_alipay_block'           => (bool) Configuration::get(static::ALIPAY_BLOCK),
                 'stripe_shopname'               => $this->context->shop->name,
                 'stripe_ajax_validation'        => $link->getModuleLink($this->name, 'ajaxvalidation', [], Tools::usingSecureMode()),
@@ -1722,6 +1950,13 @@ class Stripe extends PaymentModule
                 'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'sofort'], true),
             ];
         }
+        if (Configuration::get(static::P24) && in_array($stripeCurrency, static::$methodCurrencies['p24'])) {
+            $paymentOptions[] = [
+                'cta_text' => $this->l('P24'),
+                'logo'     => Media::getMediaPath($this->local_path.'views/img/p24.png'),
+                'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'p24'], true),
+            ];
+        }
         if (Configuration::get(static::ALIPAY_BLOCK) && in_array($stripeCurrency, static::$methodCurrencies['alipay'])) {
             $paymentOptions[] = [
                 'cta_text' => $this->l('Alipay'),
@@ -1800,6 +2035,7 @@ class Stripe extends PaymentModule
                 'stripe_bancontact'   => (bool) Configuration::get(static::BANCONTACT),
                 'stripe_giropay'      => (bool) Configuration::get(static::GIROPAY),
                 'stripe_sofort'       => (bool) Configuration::get(static::SOFORT),
+                'stripe_p24'          => (bool) Configuration::get(static::P24),
                 'stripe_alipay_block' => (bool) Configuration::get(static::ALIPAY_BLOCK),
             ]
         );

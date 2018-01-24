@@ -47,17 +47,17 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
      */
     public function initContent()
     {
-        if (!Module::isEnabled('stripe') || (!Configuration::get(Stripe::STRIPE_CHECKOUT) && !Configuration::get(Stripe::STRIPE_CC_FORM))) {
-            Tools::redirect('index.php?controller=order&step=1');
+        if (!Module::isEnabled('stripe')) {
+            Tools::redirect('index.php?controller=order&step=3');
         }
         $cart = $this->context->cart;
         if (!$cart->id_customer || !$cart->id_address_delivery || !$cart->id_address_invoice || !$this->module->active) {
-            Tools::redirect('index.php?controller=order&step=1');
+            Tools::redirect('index.php?controller=order&step=3');
         }
 
         $customer = new Customer($cart->id_customer);
         if (!Validate::isLoadedObject($customer)) {
-            Tools::redirect('index.php?controller=order&step=1');
+            Tools::redirect('index.php?controller=order&step=3');
         }
 
         parent::initContent();
@@ -80,6 +80,9 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
                 break;
             case 'sofort':
                 $this->initSofort();
+                break;
+            case 'p24':
+                $this->initP24();
                 break;
             case 'alipay':
                 $this->initAlipay();
@@ -191,7 +194,6 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
                 'stripe_zipcode'                => (bool) Configuration::get(Stripe::ZIPCODE),
                 'stripecc_zipcode'              => (bool) Configuration::get(Stripe::ZIPCODE),
                 'stripe_alipay_block'           => (bool) Configuration::get(Stripe::ALIPAY_BLOCK),
-                'ideal'                         => Configuration::get(Stripe::IDEAL),
                 'stripe_shopname'               => $this->context->shop->name,
                 'stripe_ajax_validation'        => $link->getModuleLink($this->module->name, 'ajaxvalidation', [], Tools::usingSecureMode()),
                 'stripe_confirmation_page'      => $link->getModuleLink($this->module->name, 'validation', [], Tools::usingSecureMode()),
@@ -385,6 +387,53 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
             'sofort'   => [
                 'country' => mb_strtoupper($country->iso_code),
             ],
+        ]);
+
+        Tools::redirect($source->redirect->url);
+    }
+
+    /**
+     * Initialize P24 payment
+     *
+     * @throws PrestaShopException
+     */
+    protected function initP24()
+    {
+        /** @var Cart $cart */
+        $customer = $this->context->customer;
+        $cart = $this->context->cart;
+        $currency = new Currency($cart->id_currency);
+
+        $stripeAmount = $cart->getOrderTotal();
+        if (!in_array(mb_strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
+            $stripeAmount = (int) ($stripeAmount * 100);
+        }
+
+        $invoiceAddress = new Address((int) $cart->id_address_invoice);
+
+        $guzzle = new \StripeModule\GuzzleClient();
+        \ThirtyBeesStripe\Stripe\ApiRequestor::setHttpClient($guzzle);
+        ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE)
+            ? Configuration::get(Stripe::SECRET_KEY_LIVE)
+            : Configuration::get(Stripe::SECRET_KEY_TEST)
+        );
+
+        $source = \ThirtyBeesStripe\Stripe\Source::create([
+            'type' => 'p24',
+            'amount' => (int)$stripeAmount,
+            'currency' => $currency->iso_code,
+            'owner' => [
+                'name'  => $invoiceAddress->firstname.' '.$invoiceAddress->lastname,
+                'email' => $customer->email,
+            ],
+            'redirect' => [
+                'return_url' => $this->context->link->getModuleLink(
+                    'stripe',
+                    'sourcevalidation',
+                    ['stripe-id_cart' => $cart->id, 'type' => 'p24'],
+                    true
+                ),
+            ]
         ]);
 
         Tools::redirect($source->redirect->url);

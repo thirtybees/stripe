@@ -30,11 +30,11 @@
 {if ($stripe_sofort && in_array($stripe_country, ['AT', 'DE', 'NL', 'BE', 'ES'])  && in_array($stripe_currency, Stripe::$methodCurrencies['sofort']))}
   {if "{$smarty.current_dir}/sofortpayment.tpl"|file_exists}{include file="./sofortpayment.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/sofortpayment.tpl"}{/if}
 {/if}
+{if ($stripe_p24 && in_array($stripe_country, ['NL'])  && in_array($stripe_currency, Stripe::$methodCurrencies['p24']))}
+  {if "{$smarty.current_dir}/p24.tpl"|file_exists}{include file="./p24.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/p24.tpl"}{/if}
+{/if}
 {if ($stripe_alipay_block && in_array($stripe_currency, Stripe::$methodCurrencies['alipay']))}
   {if "{$smarty.current_dir}/alipaypayment.tpl"|file_exists}{include file="./alipaypayment.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/alipaypayment.tpl"}{/if}
-{/if}
-{if ($stripe_apple_pay && in_array($stripe_currency, Stripe::$methodCurrencies['credit_card']))}
-  {if "{$smarty.current_dir}/applepayment.tpl"|file_exists}{include file="./applepayment.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/applepayment.tpl"}{/if}
 {/if}
 {if ($stripe_cc_form && in_array($stripe_currency, Stripe::$methodCurrencies['credit_card']))}
   {if "{$smarty.current_dir}/ccpayment.tpl"|file_exists}{include file="./ccpayment.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/ccpayment.tpl"}{/if}

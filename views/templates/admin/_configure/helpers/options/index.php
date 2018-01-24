@@ -1,4 +1,5 @@
-{*
+<?php
+/**
  * Copyright (C) 2017-2018 thirty bees
  *
  * NOTICE OF LICENSE
@@ -14,18 +15,14 @@
  *  @author    thirty bees <modules@thirtybees.com>
  *  @copyright 2017-2018 thirty bees
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
-*}
-<p class="payment_module stripe_payment_button">
-    <a id="stripe_sofort_payment_link"
-       href="{$link->getModuleLink('stripe', 'eupayment', ['method' => 'sofort'], true)|escape:'htmlall':'UTF-8'}"
-       title="{l s='Pay with Sofort Banking' mod='stripe'}"
-    >
-        <img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/sofort.png"
-             alt="{l s='Pay with Sofort Banking' mod='stripe'}"
-             width="64"
-             height="64"
-        />
-        {l s='Pay with Sofort Banking' mod='stripe'}
-    </a>
-</p>
+ */
 
+header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+header('Last-Modified: '.gmdate('D, d M Y H:i:s').' GMT');
+
+header('Cache-Control: no-store, no-cache, must-revalidate');
+header('Cache-Control: post-check=0, pre-check=0', false);
+header('Pragma: no-cache');
+
+header('Location: ../');
+exit;

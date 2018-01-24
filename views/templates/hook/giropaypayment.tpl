@@ -16,8 +16,15 @@
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
 <p class="payment_module stripe_payment_button">
-    <a id="stripe_giropay_payment_link" href="{$link->getModuleLink('stripe', 'eupayment', ['method' => 'giropay'], true)|escape:'htmlall':'UTF-8'}" title="{l s='Pay with Giropay' mod='stripe'}">
-        <img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/giropay.png" alt="{l s='Pay with Giropay' mod='stripe'}" width="64" height="64"/>
+    <a id="stripe_giropay_payment_link"
+       href="{$link->getModuleLink('stripe', 'eupayment', ['method' => 'giropay'], true)|escape:'htmlall':'UTF-8'}"
+       title="{l s='Pay with Giropay' mod='stripe'}"
+    >
+        <img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/giropay.png"
+             alt="{l s='Pay with Giropay' mod='stripe'}"
+             width="64"
+             height="64"
+        />
         {l s='Pay with Giropay' mod='stripe'}
     </a>
 </p>

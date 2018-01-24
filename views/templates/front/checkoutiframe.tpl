@@ -1,9 +1,13 @@
 <!doctype html>
 <html>
 <head>
+  {if !empty($stripe_input_font_family)}<link rel="stylesheet" href="//fonts.googleapis.com/css?family={$stripe_input_font_family|replace:' ':'+'|escape:'htmlall':'UTF-8'}:300,400,600,700&amp;lang=en" />{/if}
+  {if !empty($stripe_checkout_font_family)}<link rel="stylesheet" href="//fonts.googleapis.com/css?family={$stripe_checkout_font_family|replace:' ':'+'|escape:'htmlall':'UTF-8'}:300,400,600,700&amp;lang=en" />{/if}
   {include file="./assets.tpl"}
   <style>
     body {
+      font-family: {if !empty($stripe_checkout_font_family)}{$stripe_checkout_font_family|escape:'htmlall':'UTF-8'}, {/if}Inter UI, Open Sans, Segoe UI, sans-serif;
+      font-size: {if !empty($stripe_checkout_font_size)}{$stripe_checkout_font_size|escape:'htmlall':'UTF-8'}{else}15px{/if};
       margin: 0;
       padding: 0;
     }
@@ -13,8 +17,8 @@
     }
 
     .thirtybees.thirtybees-stripe * {
-      font-family: Inter UI, Open Sans, Segoe UI, sans-serif;
-      font-size: 15px;
+      font-family: {if !empty($stripe_checkout_font_family)}{$stripe_checkout_font_family|escape:'htmlall':'UTF-8'}, {/if}Inter UI, Open Sans, Segoe UI, sans-serif;
+      font-size: {if !empty($stripe_checkout_font_size)}{$stripe_checkout_font_size|escape:'htmlall':'UTF-8'}{else}15px{/if};
       font-weight: 500;
     }
 
@@ -88,61 +92,41 @@
     }
 
     .thirtybees.thirtybees-stripe input::-webkit-input-placeholder {
-      color: #9bacc8;
+      color: {if !empty($stripe_input_placeholder_color)}{$stripe_input_placeholder_color|escape:'htmlall':'UTF-8'}{else}#9bacc8{/if};
     }
 
     .thirtybees.thirtybees-stripe input::-moz-placeholder {
-      color: #9bacc8;
+      color: {if !empty($stripe_input_placeholder_color)}{$stripe_input_placeholder_color|escape:'htmlall':'UTF-8'}{else}#9bacc8{/if};
     }
 
     .thirtybees.thirtybees-stripe input:-ms-input-placeholder {
-      color: #9bacc8;
+      color: {if !empty($stripe_input_placeholder_color)}{$stripe_input_placeholder_color|escape:'htmlall':'UTF-8'}{else}#9bacc8{/if};
     }
 
     .thirtybees.thirtybees-stripe button {
       display: block;
       width: 100%;
       height: 37px;
-      background-color: #d782d9;
+      background-color: {if !empty($stripe_button_background_color)}{$stripe_button_background_color|escape:'htmlall':'UTF-8'}{else}#d782d9{/if};
       border-radius: 2px;
-      color: #fff;
+      color: {if !empty($stripe_button_foreground_color)}{$stripe_button_foreground_color|escape:'htmlall':'UTF-8'}{else}#ffffff{/if};
       cursor: pointer;
     }
 
     .thirtybees.thirtybees-stripe button:active {
-      background-color: #b76ac4;
+      background-color: {if !empty($stripe_highlight_color)}{$stripe_highlight_color|escape:'htmlall':'UTF-8'}{else}#b76ac4{/if};
     }
 
     .thirtybees.thirtybees-stripe .error svg .base {
-      fill: #e25950;
+      fill: {if !empty($stripe_error_color)}{$stripe_error_color|escape:'htmlall':'UTF-8'}{else}#e25950{/if};
     }
 
     .thirtybees.thirtybees-stripe .error svg .glyph {
-      fill: #f6f9fc;
+      fill: {if !empty($stripe_error_glyph_color)}{$stripe_error_glyph_color|escape:'htmlall':'UTF-8'}{else}#f6f9fc{/if};
     }
 
     .thirtybees.thirtybees-stripe .error .message {
-      color: #e25950;
-    }
-
-    .thirtybees.thirtybees-stripe .success .icon .border {
-      stroke: #ffc7ee;
-    }
-
-    .thirtybees.thirtybees-stripe .success .icon .checkmark {
-      stroke: #d782d9;
-    }
-
-    .thirtybees.thirtybees-stripe .success .title {
-      color: #32325d;
-    }
-
-    .thirtybees.thirtybees-stripe .success .message {
-      color: #8898aa;
-    }
-
-    .thirtybees.thirtybees-stripe .success .reset path {
-      fill: #d782d9;
+      color: {if !empty($stripe_error_color)}{$stripe_error_color|escape:'htmlall':'UTF-8'}{else}#e25950{/if};
     }
   </style>
 </head>
@@ -223,9 +207,16 @@
 
         function sendHeight() {
           top.postMessage(JSON.stringify({
-            messageOrigin: 'elementsiframe',
+            messageOrigin: 'checkoutiframe',
             subject: 'height',
-            height: document.querySelector('body').offsetHeight + 10,
+            height: document.querySelector('body').offsetHeight + 20,
+          }), '*');
+        }
+
+        function sendPaymentSuccess() {
+          top.postMessage(JSON.stringify({
+            messageOrigin: 'checkoutiframe',
+            subject: 'payment-success',
           }), '*');
         }
 
@@ -251,23 +242,22 @@
           );
         }
 
-        // Custom styling can be passed to options when creating an Element.
         var stripe = Stripe('{$stripe_publishable_key|escape:'javascript':'UTF-8'}');
         var elements = stripe.elements();
         var style = {
           base: {
-            color: '#32325D',
+            color: '{if !empty($stripe_payment_request_background_color)}{$stripe_payment_request_background_color|escape:'javascript':'UTF-8'}{else}#32325D{/if}',
             fontWeight: 500,
-            fontFamily: 'Open Sans, Segoe UI, sans-serif',
-            fontSize: '15px',
+            fontFamily: '{if !empty($stripe_font_family)}{$stripe_font_family|escape:'javascript':'UTF-8'}, {/if}Open Sans, Segoe UI, sans-serif',
+            fontSize: '{if !empty($stripe_font_size)}{$stripe_font_size|escape:'javascript':'UTF-8'}{else}15px{/if}',
             fontSmoothing: 'antialiased',
 
             '::placeholder': {
-              color: '#CFD7DF'
+              color: '{if !empty($stripe_payment_request_foreground_color)}{$stripe_payment_request_foreground_color|escape:'javascript':'UTF-8'}{else}#CFD7DF{/if}'
             }
           },
           invalid: {
-            color: '#E25950'
+            color: '{if !empty($stripe_error_color)}{$stripe_error_color|escape:'javascript':'UTF-8'}{else}#e25950{/if}'
           }
         };
 
@@ -281,12 +271,13 @@
         // Add an instance of the card Element into the `card-element` <div>
         card.mount('#thirtybees-stripe-card');
 
+        {if !empty($stripe_payment_request)}
         /**
          * Payment Request Element
          */
         var paymentRequest = stripe.paymentRequest({
-          country: '{$stripe_country|escape:'javascript':'UTF-8'}',
-          currency: '{$stripe_currency|escape:'javascript':'UTF-8'}',
+          country: '{$stripe_country|escape:'javascript':'UTF-8'}'.toUpperCase(),
+          currency: '{$stripe_currency|escape:'javascript':'UTF-8'}'.toLowerCase(),
           total: {
             amount: {$stripe_amount|escape:'javascript':'UTF-8'},
             label: 'Total'
@@ -302,6 +293,7 @@
             a.search = updateQueryStringParameter(a.search, 'stripe-id_cart', {$id_cart|intval});
 
             result.complete('success');
+            sendPaymentSuccess();
             top.location.href = a.href;
           } else {
             // Otherwise, un-disable inputs.
@@ -314,7 +306,22 @@
           paymentRequest: paymentRequest,
           style: {
             paymentRequestButton: {
-              type: 'buy'
+              type: 'buy',
+              theme: '{if !empty($stripe_payment_request_style)}{$stripe_payment_request_style|escape:'javascript':'UTF-8'}{else}dark{/if}'
+            },
+            base: {
+              color: '{if !empty($stripe_payment_request_background_color)}{$stripe_payment_request_background_color|escape:'javascript':'UTF-8'}{else}#32325D{/if}',
+              fontWeight: 500,
+              fontFamily: '{if !empty($stripe_input_font_family)}{$stripe_input_font_family|escape:'javascript':'UTF-8'}, {/if}Open Sans, Segoe UI, sans-serif',
+              fontSize: '{if !empty($stripe_checkout_font_size)}{$stripe_checkout_font_size|escape:'javascript':'UTF-8'}{else}15px{/if}',
+              fontSmoothing: 'antialiased',
+
+              '::placeholder': {
+                color: '{if !empty($stripe_payment_request_foreground_color)}{$stripe_payment_request_foreground_color|escape:'javascript':'UTF-8'}{else}#CFD7DF{/if}'
+              }
+            },
+            invalid: {
+              color: '{if !empty($stripe_error_color)}{$stripe_error_color|escape:'javascript':'UTF-8'}{else}#e25950{/if}'
             }
           }
         });
@@ -328,6 +335,7 @@
             paymentRequestElement.mount('#thirtybees-paymentRequest');
           }
         });
+        {/if}
 
         form.addEventListener('submit', function(e) {
           e.preventDefault();
@@ -365,6 +373,7 @@
 
               a.search = updateQueryStringParameter(a.search, 'stripe-token', result.token.id);
               a.search = updateQueryStringParameter(a.search, 'stripe-id_cart', {$id_cart|intval});
+              sendPaymentSuccess();
               top.location.href = a.href;
             } else {
               // Otherwise, un-disable inputs.
