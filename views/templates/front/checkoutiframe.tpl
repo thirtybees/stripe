@@ -294,7 +294,7 @@
 
             result.complete('success');
             sendPaymentSuccess();
-            top.location.href = a.href;
+            top.location = a.href;
           } else {
             // Otherwise, un-disable inputs.
             enableInputs();
@@ -374,7 +374,7 @@
               a.search = updateQueryStringParameter(a.search, 'stripe-token', result.token.id);
               a.search = updateQueryStringParameter(a.search, 'stripe-id_cart', {$id_cart|intval});
               sendPaymentSuccess();
-              top.location.href = a.href;
+              top.location = a.href;
             } else {
               // Otherwise, un-disable inputs.
               enableInputs();
