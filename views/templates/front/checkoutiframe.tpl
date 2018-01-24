@@ -341,7 +341,7 @@
           e.preventDefault();
 
           // Show a loading screen...
-          example.classList.add('submitting');
+          example.className += ' submitting';
 
           // Disable all inputs.
           disableInputs();
@@ -365,7 +365,7 @@
           // in the additional customer data we collected in our form.
           stripe.createToken(card, additionalData).then(function(result) {
             // Stop loading!
-            example.classList.remove('submitting');
+            example.className.replace(' submitting', '');
 
             if (result.token) {
               var a = document.createElement('a');
