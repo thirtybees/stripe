@@ -295,12 +295,13 @@
           }
         });
 
-        paymentRequest.on('token', function(result) {
-          if (result.token) {
+        paymentRequest.on('source', function(result) {
+          console.log(result);
+          if (result.source) {
             var a = document.createElement('a');
             a.href = '{$link->getModuleLink('stripe', 'validation', [], true)|escape:'javascript':'UTF-8'}';
 
-            a.search = updateQueryStringParameter(a.search, 'stripe-token', result.token.id);
+            a.search = updateQueryStringParameter(a.search, 'stripe-token', result.source.id);
             a.search = updateQueryStringParameter(a.search, 'stripe-id_cart', {$id_cart|intval});
 
             result.complete('success');
@@ -371,18 +372,18 @@
             address_zip: zip ? zip.value : undefined,
           };
 
-          // Use Stripe.js to create a token. We only need to pass in one Element
-          // from the Element group in order to create a token. We can also pass
+          // Use Stripe.js to create a source. We only need to pass in one Element
+          // from the Element group in order to create a source. We can also pass
           // in the additional customer data we collected in our form.
-          stripe.createToken(card, additionalData).then(function(result) {
+          stripe.createSource(card, additionalData).then(function(result) {
             // Stop loading!
             example.className.replace(' submitting', '');
 
-            if (result.token) {
+            if (result.source) {
               var a = document.createElement('a');
               a.href = '{$link->getModuleLink('stripe', 'validation', [], true)|escape:'javascript':'UTF-8'}';
 
-              a.search = updateQueryStringParameter(a.search, 'stripe-token', result.token.id);
+              a.search = updateQueryStringParameter(a.search, 'stripe-token', result.source.id);
               a.search = updateQueryStringParameter(a.search, 'stripe-id_cart', {$id_cart|intval});
               sendPaymentSuccess();
               top.location = a.href;
