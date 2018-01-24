@@ -128,6 +128,11 @@
     .thirtybees.thirtybees-stripe .error .message {
       color: {if !empty($stripe_error_color)}{$stripe_error_color|escape:'htmlall':'UTF-8'}{else}#e25950{/if};
     }
+    #tb-stripe-elements {
+      width: 1px;
+      min-width: 100%;
+      *width: 100%;
+    }
   </style>
 </head>
 <body>
