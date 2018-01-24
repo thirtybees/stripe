@@ -38,8 +38,6 @@ class Stripe extends PaymentModule
     const ZIPCODE = 'STRIPE_ZIPCODE';
     const COLLECT_BILLING = 'STRIPE_COLLECT_BILLING';
     const COLLECT_SHIPPING = 'STRIPE_COLLECT_SHIPPING';
-    const BITCOIN = 'STRIPE_BITCOIN';
-    const ALIPAY = 'STRIPE_ALIPAY'; // Alipay in Stripe checkout
     const ALIPAY_BLOCK = 'STRIPE_ALIPAY_BLOCK'; // Separate Alipay block
 
     const GO_LIVE = 'STRIPE_GO_LIVE';
@@ -62,8 +60,7 @@ class Stripe extends PaymentModule
 
     const STRIPE_CHECKOUT = 'STRIPE_STRIPE_CHECKOUT';
     const STRIPE_CC_FORM = 'STRIPE_STRIPE_CC_FORM';
-    const STRIPE_CC_ANIMATION = 'STRIPE_STRIPE_CC_ANIMATION';
-    const STRIPE_APPLE_PAY = 'STRIPE_STRIPE_APPLE';
+    const STRIPE_PAYMENT_REQUEST = 'STRIPE_STRIPE_PAYMENT_REQUEST';
     const IDEAL = 'STRIPE_IDEAL';
     const BANCONTACT = 'STRIPE_BANCONTACT';
     const GIROPAY = 'STRIPE_GIROPAY';
@@ -154,7 +151,14 @@ class Stripe extends PaymentModule
 
         $this->bootstrap = true;
 
-        $this->controllers = ['hook', 'validation', 'ajaxvalidation', 'sourcevalidation', 'eupayment'];
+        $this->controllers = [
+            'hook',
+            'validation',
+            'ajaxvalidation',
+            'sourcevalidation',
+            'eupayment',
+            'elementsiframe',
+        ];
 
         $this->is_eu_compatible = 1;
         $this->currencies = true;
@@ -199,7 +203,6 @@ class Stripe extends PaymentModule
         Configuration::updateGlobalValue(static::USE_STATUS_PARTIAL_REFUND, false);
         Configuration::updateGlobalValue(static::STATUS_PARTIAL_REFUND, Configuration::get('PS_OS_REFUND'));
         Configuration::updateGlobalValue(static::GENERATE_CREDIT_SLIP, true);
-        Configuration::updateGlobalValue(static::INCLUDE_STRIPE_BOOTSTRAP, true);
 
         return true;
     }
@@ -230,11 +233,8 @@ class Stripe extends PaymentModule
         Configuration::deleteByName(static::STATUS_REFUND);
         Configuration::deleteByName(static::GENERATE_CREDIT_SLIP);
         Configuration::deleteByName(static::ZIPCODE);
-        Configuration::deleteByName(static::ALIPAY);
         Configuration::deleteByName(static::ALIPAY_BLOCK);
-        Configuration::deleteByName(static::BITCOIN);
         Configuration::deleteByName(static::SHOW_PAYMENT_LOGOS);
-        Configuration::deleteByName(static::INCLUDE_STRIPE_BOOTSTRAP);
 
         return parent::uninstall();
     }
@@ -389,7 +389,7 @@ class Stripe extends PaymentModule
         $currency = new Currency($order->id_currency);
         $orderTotal = $order->getTotalPaid();
 
-        if (!in_array(Tools::strtolower($currency->iso_code), static::$zeroDecimalCurrencies)) {
+        if (!in_array(mb_strtolower($currency->iso_code), static::$zeroDecimalCurrencies)) {
             $amount = (int) ($amount * 100);
             $orderTotal = (int) ($orderTotal * 100);
         }
@@ -494,8 +494,6 @@ class Stripe extends PaymentModule
             static::PUBLISHABLE_KEY_LIVE     => $publishableKeyLive,
             static::GO_LIVE                  => $goLive,
             static::ZIPCODE                  => (bool) Tools::getValue(static::ZIPCODE),
-            static::BITCOIN                  => (bool) Tools::getValue(static::BITCOIN),
-            static::ALIPAY                   => (bool) Tools::getValue(static::ALIPAY),
             static::ALIPAY_BLOCK             => (bool) Tools::getValue(static::ALIPAY_BLOCK),
             static::IDEAL                    => (bool) Tools::getValue(static::IDEAL),
             static::BANCONTACT               => (bool) Tools::getValue(static::BANCONTACT),
@@ -507,9 +505,7 @@ class Stripe extends PaymentModule
             static::COLLECT_SHIPPING         => (bool) Tools::getValue(static::COLLECT_SHIPPING),
             static::STRIPE_CHECKOUT          => (bool) Tools::getValue(static::STRIPE_CHECKOUT),
             static::STRIPE_CC_FORM           => (bool) Tools::getValue(static::STRIPE_CC_FORM),
-            static::STRIPE_CC_ANIMATION      => (bool) Tools::getValue(static::STRIPE_CC_ANIMATION),
-            static::STRIPE_APPLE_PAY         => (bool) Tools::getValue(static::STRIPE_APPLE_PAY),
-            static::INCLUDE_STRIPE_BOOTSTRAP => (bool) Tools::getValue(static::INCLUDE_STRIPE_BOOTSTRAP),
+            static::STRIPE_PAYMENT_REQUEST   => (bool) Tools::getValue(static::STRIPE_PAYMENT_REQUEST),
         ];
 
         if ($goLive
@@ -556,7 +552,6 @@ class Stripe extends PaymentModule
     protected function postProcessAdvancedOptions()
     {
         $options = [
-            static::INCLUDE_STRIPE_BOOTSTRAP => (bool) Tools::getValue(static::INCLUDE_STRIPE_BOOTSTRAP),
         ];
 
 
@@ -751,10 +746,10 @@ class Stripe extends PaymentModule
         }
 
         if (Tools::isSubmit(StripeTransaction::$definition['table'].'Orderway')) {
-            $helperList->orderWay = Tools::strtoupper(Tools::getValue(StripeTransaction::$definition['table'].'Orderway'));
+            $helperList->orderWay = mb_strtoupper(Tools::getValue(StripeTransaction::$definition['table'].'Orderway'));
             $this->context->cookie->{StripeTransaction::$definition['table'].'Orderway'} = Tools::getValue(StripeTransaction::$definition['table'].'Orderway');
         } elseif (!empty($this->context->cookie->{StripeTransaction::$definition['table'].'Orderway'})) {
-            $helperList->orderWay = Tools::strtoupper($this->context->cookie->{StripeTransaction::$definition['table'].'Orderway'});
+            $helperList->orderWay = mb_strtoupper($this->context->cookie->{StripeTransaction::$definition['table'].'Orderway'});
         } else {
             $helperList->orderWay = 'DESC';
         }
@@ -773,7 +768,7 @@ class Stripe extends PaymentModule
         foreach ($results as &$result) {
             // Process results
             $currency = $this->getCurrencyIdByOrderId($result['id_order']);
-            if (!in_array(Tools::strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
+            if (!in_array(mb_strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
                 $result['amount'] = (float) ($result['amount'] / 100);
             }
             $result['card_last_digits'] = str_pad($result['card_last_digits'], 4, '0', STR_PAD_LEFT);
@@ -954,8 +949,8 @@ class Stripe extends PaymentModule
 
         foreach ($filters as $key => $value) {
             /* Extracting filters from $_POST on key filter_ */
-            if ($value != null && !strncmp($key, $prefix.$helperList->list_id.'Filter_', 7 + Tools::strlen($prefix.$helperList->list_id))) {
-                $key = Tools::substr($key, 7 + Tools::strlen($prefix.$helperList->list_id));
+            if ($value != null && !strncmp($key, $prefix.$helperList->list_id.'Filter_', 7 + mb_strlen($prefix.$helperList->list_id))) {
+                $key = mb_substr($key, 7 + mb_strlen($prefix.$helperList->list_id));
                 /* Table alias could be specified using a ! eg. alias!field */
                 $tmpTab = explode('!', $key);
                 $filter = count($tmpTab) > 1 ? $tmpTab[1] : $tmpTab[0];
@@ -1233,22 +1228,6 @@ class Stripe extends PaymentModule
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                     ],
-                    static::BITCOIN            => [
-                        'title'      => $this->l('Accept Bitcoins'),
-                        'type'       => 'bool',
-                        'name'       => static::BITCOIN,
-                        'value'      => Configuration::get(static::BITCOIN),
-                        'validation' => 'isBool',
-                        'cast'       => 'intval',
-                    ],
-                    static::ALIPAY             => [
-                        'title'      => $this->l('Accept Alipay'),
-                        'type'       => 'bool',
-                        'name'       => static::ALIPAY,
-                        'value'      => Configuration::get(static::ALIPAY),
-                        'validation' => 'isBool',
-                        'cast'       => 'intval',
-                    ],
                     static::SHOW_PAYMENT_LOGOS => [
                         'title'      => $this->l('Show payment logos'),
                         'type'       => 'bool',
@@ -1286,14 +1265,6 @@ class Stripe extends PaymentModule
                         'type'       => 'bool',
                         'name'       => static::STRIPE_CC_FORM,
                         'value'      => Configuration::get(static::STRIPE_CC_FORM),
-                        'validation' => 'isBool',
-                        'cast'       => 'intval',
-                    ],
-                    static::STRIPE_CC_ANIMATION => [
-                        'title'      => $this->l('Enable credit card animation'),
-                        'type'       => 'bool',
-                        'name'       => static::STRIPE_CC_ANIMATION,
-                        'value'      => Configuration::get(static::STRIPE_CC_ANIMATION),
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                     ],
@@ -1383,16 +1354,16 @@ class Stripe extends PaymentModule
                 'title'  => $this->l('Other payment methods'),
                 'icon'   => 'icon-credit-card',
                 'fields' => [
-                    static::STRIPE_APPLE_PAY => [
+                    static::STRIPE_PAYMENT_REQUEST => [
                         'title'      => $this->l('Enable Apple Pay'),
                         'type'       => 'bool',
-                        'name'       => static::STRIPE_APPLE_PAY,
-                        'value'      => Configuration::get(static::STRIPE_APPLE_PAY),
+                        'name'       => static::STRIPE_PAYMENT_REQUEST,
+                        'value'      => Configuration::get(static::STRIPE_PAYMENT_REQUEST),
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                         'size'       => 64,
                     ],
-                    static::ALIPAY_BLOCK => [
+                    static::ALIPAY_BLOCK           => [
                         'title'      => $this->l('Enable Alipay'),
                         'type'       => 'bool',
                         'name'       => static::ALIPAY_BLOCK,
@@ -1527,6 +1498,7 @@ class Stripe extends PaymentModule
      * @return array Advanced options
      *
      * @since 1.0.0
+     * @throws PrestaShopException
      */
     protected function getAdvancedOptions()
     {
@@ -1535,14 +1507,14 @@ class Stripe extends PaymentModule
                 'title'  => $this->l('Advanced Settings'),
                 'icon'   => 'icon-cogs',
                 'fields' => [
-                    static::INCLUDE_STRIPE_BOOTSTRAP => [
-                        'title'      => $this->l('Include Bootstrap CSS for the stripe credit card form'),
-                        'type'       => 'bool',
-                        'name'       => static::INCLUDE_STRIPE_BOOTSTRAP,
-                        'value'      => Configuration::get(static::INCLUDE_STRIPE_BOOTSTRAP),
-                        'validation' => 'isBool',
-                        'cast'       => 'intval',
-                    ],
+//                    static::INCLUDE_STRIPE_BOOTSTRAP => [
+//                        'title'      => $this->l('Include Bootstrap CSS for the stripe credit card form'),
+//                        'type'       => 'bool',
+//                        'name'       => static::INCLUDE_STRIPE_BOOTSTRAP,
+//                        'value'      => Configuration::get(static::INCLUDE_STRIPE_BOOTSTRAP),
+//                        'validation' => 'isBool',
+//                        'cast'       => 'intval',
+//                    ],
                 ],
                 'submit' => [
                     'title' => $this->l('Save'),
@@ -1587,7 +1559,7 @@ class Stripe extends PaymentModule
         $link = $this->context->link;
 
         $stripeAmount = $cart->getOrderTotal();
-        if (!in_array(Tools::strtolower($currency->iso_code), static::$zeroDecimalCurrencies)) {
+        if (!in_array(mb_strtolower($currency->iso_code), static::$zeroDecimalCurrencies)) {
             $stripeAmount = (int) ($stripeAmount * 100);
         }
 
@@ -1601,7 +1573,7 @@ class Stripe extends PaymentModule
                 'stripe_name'                   => $invoiceAddress->firstname.' '.$invoiceAddress->lastname,
                 'stripe_email'                  => $stripeEmail,
                 'stripe_currency'               => $stripeCurrency,
-                'stripe_country'                => Tools::strtoupper($country->iso_code),
+                'stripe_country'                => mb_strtoupper($country->iso_code),
                 'stripe_amount'                 => $stripeAmount,
                 'stripe_amount_string'          => (string) $cart->getOrderTotal(),
                 'stripe_amount_formatted'       => Tools::displayPrice($cart->getOrderTotal(), Currency::getCurrencyInstance($cart->id_currency)),
@@ -1614,13 +1586,11 @@ class Stripe extends PaymentModule
                 'stripe_checkout'               => Configuration::get(static::STRIPE_CHECKOUT),
                 'stripe_cc_form'                => Configuration::get(static::STRIPE_CC_FORM),
                 'stripe_ideal'                  => Configuration::get(static::IDEAL),
-                'stripe_apple_pay'              => Configuration::get(static::STRIPE_APPLE_PAY),
+                'stripe_apple_pay'              => Configuration::get(static::STRIPE_PAYMENT_REQUEST),
                 'stripe_bancontact'             => Configuration::get(static::BANCONTACT),
                 'stripe_giropay'                => Configuration::get(static::GIROPAY),
                 'stripe_sofort'                 => Configuration::get(static::SOFORT),
-                'stripe_alipay'                 => (bool) Configuration::get(static::ALIPAY),
                 'stripe_alipay_block'           => (bool) Configuration::get(static::ALIPAY_BLOCK),
-                'stripe_bitcoin'                => (bool) Configuration::get(static::BITCOIN) && Tools::strtolower($currency->iso_code) === 'usd',
                 'stripe_shopname'               => $this->context->shop->name,
                 'stripe_ajax_validation'        => $link->getModuleLink($this->name, 'ajaxvalidation', [], Tools::usingSecureMode()),
                 'stripe_confirmation_page'      => $link->getModuleLink($this->name, 'validation', [], Tools::usingSecureMode()),
@@ -1638,7 +1608,6 @@ class Stripe extends PaymentModule
                 'stripeShopThumb'               => str_replace('http://', 'https://', $this->context->link->getMediaLink(__PS_BASE_URI__.'modules/stripe/views/img/shop'.$this->getShopId().'.jpg')),
                 'stripe_collect_billing'        => Configuration::get(static::COLLECT_BILLING),
                 'stripe_collect_shipping'       => Configuration::get(static::COLLECT_SHIPPING),
-                'stripe_cc_animation'           => Configuration::get(static::STRIPE_CC_ANIMATION),
                 'autoplay'                      => $autoplay,
                 'three_d_secure'                => Configuration::get(static::THREEDSECURE),
                 'local_module_dir'              => _PS_MODULE_DIR_,
@@ -1678,7 +1647,7 @@ class Stripe extends PaymentModule
      */
     public static function getStripeLanguage($locale)
     {
-        $languageIso = Tools::strtolower(Tools::substr($locale, 0, 2));
+        $languageIso = mb_strtolower(mb_substr($locale, 0, 2));
 
         if (in_array($languageIso, static::$stripeLanguages)) {
             return $languageIso;
@@ -1826,12 +1795,11 @@ class Stripe extends PaymentModule
                 'baseDir'             => Tools::getHttpHost(true).__PS_BASE_URI__.'modules/stripe/views/',
                 'stripe_checkout'     => (bool) Configuration::get(static::STRIPE_CHECKOUT),
                 'stripe_cc_form'      => (bool) Configuration::get(static::STRIPE_CC_FORM),
-                'stripe_apple_pay'    => (bool) Configuration::get(static::STRIPE_APPLE_PAY),
+                'stripe_apple_pay'    => (bool) Configuration::get(static::STRIPE_PAYMENT_REQUEST),
                 'stripe_ideal'        => (bool) Configuration::get(static::IDEAL),
                 'stripe_bancontact'   => (bool) Configuration::get(static::BANCONTACT),
                 'stripe_giropay'      => (bool) Configuration::get(static::GIROPAY),
                 'stripe_sofort'       => (bool) Configuration::get(static::SOFORT),
-                'stripe_alipay'       => (bool) Configuration::get(static::ALIPAY),
                 'stripe_alipay_block' => (bool) Configuration::get(static::ALIPAY_BLOCK),
             ]
         );
@@ -1855,14 +1823,13 @@ class Stripe extends PaymentModule
         }
 
         if (StripeTransaction::getTransactionsByOrderId($params['id_order'], true)) {
-            $this->context->controller->addJS($this->_path.'views/js/sweetalert.min.js');
-            $this->context->controller->addCSS($this->_path.'views/css/sweetalert.min.css', 'all');
+            $this->context->controller->addJS($this->_path.'views/js/sweetalert-2.1.0.min.js');
 
             $order = new Order($params['id_order']);
             $orderCurrency = new Currency($order->id_currency);
 
             $totalRefundLeft = $order->getTotalPaid();
-            if (!in_array(Tools::strtolower($orderCurrency->iso_code), Stripe::$zeroDecimalCurrencies)) {
+            if (!in_array(mb_strtolower($orderCurrency->iso_code), Stripe::$zeroDecimalCurrencies)) {
                 $totalRefundLeft = (int) (Tools::ps_round($totalRefundLeft * 100, 0));
             }
 
@@ -1870,7 +1837,7 @@ class Stripe extends PaymentModule
 
             $totalRefundLeft -= $amount;
 
-            if (!in_array(Tools::strtolower($orderCurrency->iso_code), Stripe::$zeroDecimalCurrencies)) {
+            if (!in_array(mb_strtolower($orderCurrency->iso_code), Stripe::$zeroDecimalCurrencies)) {
                 $totalRefundLeft = (float) ($totalRefundLeft / 100);
             }
 
@@ -1911,7 +1878,7 @@ class Stripe extends PaymentModule
         $order = new Order($idOrder);
         $currency = Currency::getCurrencyInstance($order->id_currency);
 
-        if (!in_array(Tools::strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
+        if (!in_array(mb_strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
             foreach ($results as &$result) {
                 // Process results
                 $result['amount'] = (float) ($result['amount'] / 100);

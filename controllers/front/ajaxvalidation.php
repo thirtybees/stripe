@@ -111,7 +111,7 @@ class StripeAjaxvalidationModuleFrontController extends ModuleFrontController
         }
 
         $stripeAmount = $cart->getOrderTotal();
-        if (!in_array(Tools::strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
+        if (!in_array(mb_strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
             $stripeAmount = (int) ($stripeAmount * 100);
         }
 
@@ -120,7 +120,7 @@ class StripeAjaxvalidationModuleFrontController extends ModuleFrontController
                 [
                     'customer' => $stripeCustomer->id,
                     'amount'   => $stripeAmount,
-                    'currency' => Tools::strtolower($currency->iso_code),
+                    'currency' => mb_strtolower($currency->iso_code),
                 ]
             );
         } catch (Exception $e) {

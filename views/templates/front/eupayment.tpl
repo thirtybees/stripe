@@ -26,14 +26,26 @@
     (function () {
       var handler = null;
 
+      function documentReady(fn) {
+        if (document.readyState !== 'loading'){
+          fn();
+        } else if (document.addEventListener) {
+          document.addEventListener('DOMContentLoaded', fn);
+        } else {
+          document.attachEvent('onreadystatechange', function() {
+            if (document.readyState !== 'loading')
+              fn();
+          });
+        }
+      }
+
       function initEuStripe() {
         if (typeof $ === 'undefined') {
           setTimeout(initEuStripe, 100);
           return;
         }
 
-        $(document).ready(function () {
-
+        documentReady(function () {
           function openStripeHandler(e) {
             if (!handler) {
               return;
@@ -43,11 +55,9 @@
             handler.open({
               name: '{$stripe_shopname|escape:'javascript':'UTF-8'}',
               zipCode: {if $stripe_zipcode}true{else}false{/if},
-              bitcoin: {if $stripe_bitcoin}true{else}false{/if},
-              alipay: {if $stripe_alipay}true{else}false{/if},
               currency: '{$stripe_currency|escape:'javascript':'UTF-8'}',
               amount: '{$stripe_amount|escape:'javascript':'UTF-8'}',
-              email: '{$stripe_email|escape:'javascript':'UTf-8'}',
+              email: '{$stripe_email|escape:'javascript':'UTF-8'}',
               billingAddress: {if $stripe_collect_billing}true{else}false{/if},
               shippingAddress: {if $stripe_collect_shipping}true{else}false{/if}
             });
@@ -57,7 +67,7 @@
           }
 
           function initStripe() {
-            if (typeof StripeCheckout === 'undefined' || typeof $ === 'undefined') {
+            if (typeof StripeCheckout === 'undefined') {
               setTimeout(initStripe, 100);
               return;
             }
@@ -67,16 +77,20 @@
               image: '{$stripeShopThumb|escape:'javascript':'UTF-8'}',
               locale: '{$stripe_locale|escape:'javascript':'UTF-8'}',
               token: function (token) {
-                var $form = $('#stripe-form');
+                var form = document.getElementById('stripe-form');
                 {* Insert the token into the form so it gets submitted to the server: *}
-                $form.append($('<input type="hidden" name="stripe-token" />').val(token.id));
+                var input = document.createElement('INPUT');
+                input.type = 'hidden';
+                input.name = 'stripe-token';
+                input.value = token.id;
 
-                {* Submit the form: *}
-                $form.get(0).submit();
+                {* Append the token and submit the form *}
+                form.appendChild(input);
+                form.submit();
               }
             });
 
-            $('#stripe_payment_link').click(openStripeHandler);
+            document.getElementById('stripe_payment_link').addEventListener('click', openStripeHandler);
             {if $autoplay}
             openStripeHandler();
             {/if}

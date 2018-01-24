@@ -12,13 +12,13 @@ Contributions are more than welcome!
 - Process the following payment methods with Stripe: 
   - Credit Card
   - Credit Card (3D Secure)
-  - Apple Pay
-  - Alipay
-  - Bitcoin (USD only)
+  - Apple Pay (PaymentRequest button)
+  - Google Pay (PaymentRequest button)
   - iDEAL
   - Bancontact
   - Giropay
   - Sofort Banking
+  - P24
 - Process refunds received by webhooks:
     - Partial refund
     - Full refund

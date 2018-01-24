@@ -17,48 +17,41 @@
 *}
 <script type="text/javascript">
   (function () {
-    function initStripeAssets() {
-      if (typeof $ === 'undefined') {
-        setTimeout(initStripeAssets, 100);
-        return;
-      }
+    var script;
 
-      {if $stripe_checkout}
-      if (typeof StripeCheckout === 'undefined') {
-        $.getScript('https://checkout.stripe.com/checkout.js');
-      }
-      {/if}
-
-      {if $stripe_cc_form || $stripe_apple_pay || $stripe_ideal || $stripe_bancontact || $stripe_giropay || $stripe_sofort || $stripe_alipay}
-      if (typeof Stripe === 'undefined') {
-        $.getScript('https://js.stripe.com/v2/');
-      }
-      {/if}
-
-      {if $stripe_cc_form}
-      if (typeof Card === 'undefined') {
-        $.getScript('{$module_dir|escape:'javascript':'UTF-8'}views/js/jquery.card.js');
-      }
-      {if (Configuration::get(Stripe::INCLUDE_STRIPE_BOOTSTRAP))}
-      if (!$("link[href='{$module_dir|escape:'javascript':'UTF-8'}views/css/stripe-bootstrap.css']").length) {
-        $('<link href="{$module_dir|escape:'javascript':'UTF-8'}views/css/stripe-bootstrap.css" rel="stylesheet">').appendTo('head');
-      }
-      {/if}
-      if (!$("link[href='{$module_dir|escape:'javascript':'UTF-8'}views/css/creditcard-embedded.css']").length) {
-        $('<link href="{$module_dir|escape:'javascript':'UTF-8'}views/css/creditcard-embedded.css" rel="stylesheet">').appendTo('head');
-      }
-      if (!$("link[href='{$module_dir|escape:'javascript':'UTF-8'}views/css/simplespinner.css']").length) {
-        $('<link href="{$module_dir|escape:'javascript':'UTF-8'}views/css/simplespinner.css" rel="stylesheet">').appendTo('head');
-      }
-      {/if}
-
-      {if $stripe_checkout}
-      if (!$("link[href='{$module_dir|escape:'javascript':'UTF-8'}views/css/front.css']").length) {
-        $('<link href="{$module_dir|escape:'javascript':'UTF-8'}views/css/front.css" rel="stylesheet">').appendTo('head');
-      }
-      {/if}
+    {if $stripe_checkout}
+    if (typeof StripeCheckout === 'undefined') {
+      script = document.createElement('script');
+      script.type = 'text/javascript';
+      script.src = 'https://checkout.stripe.com/checkout.js';
+      document.querySelector('head').appendChild(script);
     }
+    {/if}
 
-    initStripeAssets();
+    {if $stripe_cc_form}
+    if (typeof Stripe === 'undefined') {
+      script = document.createElement('script');
+      script.type = 'text/javascript';
+      script.src = 'https://js.stripe.com/v3/';
+      document.querySelector('head').appendChild(script);
+    }
+    {/if}
+
+    {if $stripe_checkout}
+    var found = false;
+    [].slice.call(document.querySelectorAll('link')).forEach(function (link) {
+      if (link.href === '{$module_dir|escape:'javascript':'UTF-8'}views/css/front.css') {
+        found = true;
+
+        return false;
+      }
+    });
+    if (!found) {
+      var link = document.createElement('link');
+      link.href = '{$module_dir|escape:'javascript':'UTF-8'}views/css/front.css';
+      link.rel = 'stylesheet';
+      document.querySelector('head').appendChild(link);
+    }
+    {/if}
   })();
 </script>

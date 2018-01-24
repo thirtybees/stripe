@@ -101,7 +101,7 @@ class StripeSourcevalidationModuleFrontController extends ModuleFrontController
 
 
         $stripeAmount = $cart->getOrderTotal();
-        if (!in_array(Tools::strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
+        if (!in_array(mb_strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
             $stripeAmount = (int) ($stripeAmount * 100);
         }
 
@@ -109,7 +109,7 @@ class StripeSourcevalidationModuleFrontController extends ModuleFrontController
             $stripeCharge = \ThirtyBeesStripe\Stripe\Charge::create(
                 [
                     'amount'   => $stripeAmount,
-                    'currency' => Tools::strtolower($currency->iso_code),
+                    'currency' => mb_strtolower($currency->iso_code),
                     'source'   => $source,
                 ]
             );

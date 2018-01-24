@@ -24,6 +24,7 @@ if (!defined('_TB_VERSION_')) {
 function upgrade_module_1_5_0($module)
 {
     $module->registerHook('displayPaymentRequestButton');
+    Configuration::deleteByName('STRIPE_STRIPE_CC_ANIMATION');
 
     return true;
 }

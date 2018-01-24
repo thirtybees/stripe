@@ -98,7 +98,7 @@ class StripeValidationModuleFrontController extends ModuleFrontController
         \ThirtyBeesStripe\Stripe\Stripe::setApiKey($stripe['secret_key']);
 
         $stripeAmount = $cart->getOrderTotal();
-        if (!in_array(Tools::strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
+        if (!in_array(mb_strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
             $stripeAmount = (int) ($stripeAmount * 100);
         }
 
@@ -129,7 +129,7 @@ class StripeValidationModuleFrontController extends ModuleFrontController
                 $source = \ThirtyBeesStripe\Stripe\Source::create(
                     [
                         'amount'         => $stripeAmount,
-                        'currency'       => Tools::strtolower($currency->iso_code),
+                        'currency'       => mb_strtolower($currency->iso_code),
                         'type'           => 'three_d_secure',
                         'three_d_secure' => [
                             'card' => $defaultCard->id ?: $token,

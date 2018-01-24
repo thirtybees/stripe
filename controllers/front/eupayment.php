@@ -115,7 +115,7 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
         $link = $this->context->link;
 
         $stripeAmount = $cart->getOrderTotal();
-        if (!in_array(Tools::strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
+        if (!in_array(mb_strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
             $stripeAmount = (int) ($stripeAmount * 100);
         }
 
@@ -132,8 +132,6 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
                 'stripe_publishable_key'   => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::PUBLISHABLE_KEY_LIVE) : Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
                 'stripe_locale'            => Stripe::getStripeLanguage($this->context->language->language_code),
                 'stripe_zipcode'           => (bool) Configuration::get(Stripe::ZIPCODE),
-                'stripe_bitcoin'           => (bool) Configuration::get(Stripe::BITCOIN) && Tools::strtolower($currency->iso_code) === 'usd',
-                'stripe_alipay'            => (bool) Configuration::get(Stripe::ALIPAY),
                 'stripe_alipay_block'      => (bool) Configuration::get(Stripe::ALIPAY_BLOCK),
                 'stripe_shopname'          => $this->context->shop->name,
                 'stripe_collect_billing'   => Configuration::get(Stripe::COLLECT_BILLING),
@@ -167,7 +165,7 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
         $link = $this->context->link;
 
         $stripeAmount = $cart->getOrderTotal();
-        if (!in_array(Tools::strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
+        if (!in_array(mb_strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
             $stripeAmount = (int) ($stripeAmount * 100);
         }
 
@@ -182,7 +180,7 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
                 'stripe_name'                   => $invoiceAddress->firstname.' '.$invoiceAddress->lastname,
                 'stripe_email'                  => $stripeEmail,
                 'stripe_currency'               => $currency->iso_code,
-                'stripe_country'                => Tools::strtoupper($country->iso_code),
+                'stripe_country'                => mb_strtoupper($country->iso_code),
                 'stripe_amount'                 => $stripeAmount,
                 'stripe_amount_string'          => (string) $cart->getOrderTotal(),
                 'stripe_amount_formatted'       => Tools::displayPrice($cart->getOrderTotal(), Currency::getCurrencyInstance($cart->id_currency)),
@@ -192,8 +190,6 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
                 'stripe_locale'                 => Stripe::getStripeLanguage($this->context->language->language_code),
                 'stripe_zipcode'                => (bool) Configuration::get(Stripe::ZIPCODE),
                 'stripecc_zipcode'              => (bool) Configuration::get(Stripe::ZIPCODE),
-                'stripe_bitcoin'                => (bool) Configuration::get(Stripe::BITCOIN) && Tools::strtolower($currency->iso_code) === 'usd',
-                'stripe_alipay'                 => (bool) Configuration::get(Stripe::ALIPAY),
                 'stripe_alipay_block'           => (bool) Configuration::get(Stripe::ALIPAY_BLOCK),
                 'ideal'                         => Configuration::get(Stripe::IDEAL),
                 'stripe_shopname'               => $this->context->shop->name,
@@ -204,10 +200,9 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
                 'stripeShopThumb'               => str_replace('http://', 'https://', $this->context->link->getMediaLink(__PS_BASE_URI__.'modules/stripe/views/img/shop'.$this->module->getShopId().'.jpg')),
                 'stripe_collect_billing'        => Configuration::get(Stripe::COLLECT_BILLING),
                 'stripe_collect_shipping'       => Configuration::get(Stripe::COLLECT_SHIPPING),
-                'stripe_apple_pay'              => Configuration::get(Stripe::STRIPE_APPLE_PAY),
+                'stripe_apple_pay'              => Configuration::get(Stripe::STRIPE_PAYMENT_REQUEST),
                 'stripe_checkout'               => Configuration::get(Stripe::STRIPE_CHECKOUT),
                 'stripe_cc_form'                => Configuration::get(Stripe::STRIPE_CC_FORM),
-                'stripe_cc_animation'           => Configuration::get(Stripe::STRIPE_CC_ANIMATION),
                 'three_d_secure'                => Configuration::get(Stripe::THREEDSECURE),
                 'module_dir'                    => __PS_BASE_URI__.'modules/stripe/',
             ]
@@ -228,7 +223,7 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
         $currency = new Currency($cart->id_currency);
 
         $stripeAmount = $cart->getOrderTotal();
-        if (!in_array(Tools::strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
+        if (!in_array(mb_strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
             $stripeAmount = (int) ($stripeAmount * 100);
         }
 
@@ -273,7 +268,7 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
         $currency = new Currency($cart->id_currency);
 
         $stripeAmount = $cart->getOrderTotal();
-        if (!in_array(Tools::strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
+        if (!in_array(mb_strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
             $stripeAmount = (int) ($stripeAmount * 100);
         }
 
@@ -313,7 +308,7 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
         $currency = new Currency($cart->id_currency);
 
         $stripeAmount = $cart->getOrderTotal();
-        if (!in_array(Tools::strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
+        if (!in_array(mb_strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
             $stripeAmount = (int) ($stripeAmount * 100);
         }
 
@@ -358,7 +353,7 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
         $currency = new Currency($cart->id_currency);
 
         $stripeAmount = $cart->getOrderTotal();
-        if (!in_array(Tools::strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
+        if (!in_array(mb_strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
             $stripeAmount = (int) ($stripeAmount * 100);
         }
 
@@ -388,7 +383,7 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
                 ),
             ],
             'sofort'   => [
-                'country' => Tools::strtoupper($country->iso_code),
+                'country' => mb_strtoupper($country->iso_code),
             ],
         ]);
 
@@ -407,7 +402,7 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
         $currency = new Currency($cart->id_currency);
 
         $stripeAmount = $cart->getOrderTotal();
-        if (!in_array(Tools::strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
+        if (!in_array(mb_strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
             $stripeAmount = (int) ($stripeAmount * 100);
         }
 

@@ -27,8 +27,6 @@
                     {l s='Pay by Credit Card' mod='stripe'}
                     {if $showPaymentLogos}
                         <img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/creditcards.png" alt="{l s='Credit cards' mod='stripe'}"/>
-                        {if $stripe_alipay}<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/alipay.png" alt="{l s='Alipay' mod='stripe'}" />{/if}
-                        {if $stripe_bitcoin}<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/bitcoin.png" alt="{l s='Bitcoin' mod='stripe'}" />{/if}
                     {/if}
                 </a>
             </p>
@@ -63,8 +61,6 @@
         handler.open({
           name: '{$stripe_shopname|escape:'javascript':'UTF-8'}',
           zipCode: {if $stripe_zipcode}true{else}false{/if},
-          bitcoin: {if $stripe_bitcoin}true{else}false{/if},
-          alipay: {if $stripe_alipay}true{else}false{/if},
           currency: '{$stripe_currency|escape:'javascript':'UTF-8'}',
           amount: {$stripe_amount|floatval},
           email: '{$stripe_email|escape:'javascript':'UTf-8'}',
