@@ -159,7 +159,12 @@ class StripeSourcevalidationModuleFrontController extends ModuleFrontController
             if ($idOrder) {
                 // Log transaction
                 $stripeTransaction = new StripeTransaction();
-                $stripeTransaction->card_last_digits = (int) $stripeCharge->source['last4'];
+                if (isset($stripeCharge->source['last4'])) {
+                    $stripeTransaction->card_last_digits = (int) $stripeCharge->source['last4'];
+                } else {
+                    // Often not available with 3D secure or any other source
+                    $stripeTransaction->card_last_digits = 0;
+                }
                 $stripeTransaction->id_charge = $stripeCharge->id;
                 $stripeTransaction->amount = $stripeAmount;
                 $stripeTransaction->id_order = $idOrder;
@@ -207,6 +212,7 @@ class StripeSourcevalidationModuleFrontController extends ModuleFrontController
                 if (isset($stripeCharge->source['last4'])) {
                     $stripeTransaction->card_last_digits = (int) $stripeCharge->source['last4'];
                 } else {
+                    // Often not available with 3D secure or any other source
                     $stripeTransaction->card_last_digits = 0;
                 }
                 $stripeTransaction->id_charge = $stripeCharge->id;
@@ -236,6 +242,7 @@ class StripeSourcevalidationModuleFrontController extends ModuleFrontController
             if (isset($stripeCharge->source['last4'])) {
                 $stripeTransaction->card_last_digits = (int) $stripeCharge->source['last4'];
             } else {
+                // Often not available with 3D secure or any other source
                 $stripeTransaction->card_last_digits = 0;
             }
             $stripeTransaction->id_charge = $stripeCharge->id;
