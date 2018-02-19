@@ -15,6 +15,40 @@
  *  @copyright 2017-2018 thirty bees
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
+<div class="panel">
+  <div class="panel-heading">
+    <i class="icon icon-cc-stripe"></i> <span>{l s='Stripe' mod='stripe'}</span>
+  </div>
+  {$stripe_transaction_list}
+  <br/>
+  <h4>{l s='Refunds' mod='stripe'}</h4>
+  <div class="well well-sm">
+    <div class="form-inline">
+      <div class="form-group">
+        <button id="stripe_full_refund_button" type="button" class="btn btn-default">
+          <i class="icon icon-undo"></i> {l s='Full refund' mod='stripe'}
+        </button>
+      </div>
+      <div class="form-group">
+        <form id="stripe_refund" action="{$stripe_module_refund_action|escape:'htmlall':'UTF-8'}&id_order={$id_order|intval}" method="post">
+          <div class="input-group" style="min-width: 400px;">
+            <div class="input-group-addon">
+              {$stripe_currency_symbol}
+            </div>
+            <input type="hidden" id="stripe_refund_order" name="stripe_refund_order" value="{$id_order|intval}">
+            <input type="text" id="stripe_refund_amount" name="stripe_refund_amount" class="form-control" placeholder="{l s='Remaining: ' mod='stripe'} {$stripe_total_amount|escape:'htmlall':'UTF-8'}">
+            <div class="input-group-btn">
+              <button id="stripe_partial_refund_button" class="btn btn-default" type="button">
+                <i class="icon icon-undo"></i> {l s='Partial Refund' mod='stripe'}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script type="text/javascript">
   (function () {
     var stripe_total_amount = '{$stripe_total_amount|escape:'javascript':'UTF-8'}';
@@ -47,39 +81,3 @@
     });
   }());
 </script>
-
-
-<div class="panel">
-  <div class="panel-heading">
-    <i class="icon icon-credit-card"></i> <span>{l s='Stripe' mod='stripe'}</span>
-  </div>
-  {$stripe_transaction_list}
-  <br/>
-  <h4>{l s='Refunds' mod='stripe'}</h4>
-  <div class="well well-sm">
-    <div class="form-inline">
-      <div class="form-group">
-        <button id="stripe_full_refund_button" type="button" class="btn btn-default">
-          <i class="icon icon-undo"></i> {l s='Full refund' mod='stripe'}
-        </button>
-      </div>
-      <div class="form-group">
-        <form id="stripe_refund" action="{$stripe_module_refund_action|escape:'htmlall':'UTF-8'}&id_order={$id_order|intval}" method="post">
-          <div class="input-group" style="min-width: 400px;">
-            <div class="input-group-addon">
-              {$stripe_currency_symbol}
-            </div>
-            <input type="hidden" id="stripe_refund_order" name="stripe_refund_order" value="{$id_order|intval}">
-            <input type="text" id="stripe_refund_amount" name="stripe_refund_amount" class="form-control" placeholder="{l s='Remaining: ' mod='stripe'} {$stripe_total_amount|escape:'htmlall':'UTF-8'}">
-            <div class="input-group-btn">
-              <button id="stripe_partial_refund_button" class="btn btn-default" type="button">
-                <i class="icon icon-undo"></i> {l s='Partial Refund' mod='stripe'}
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-

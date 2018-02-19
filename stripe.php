@@ -2194,7 +2194,13 @@ class Stripe extends PaymentModule
 
         $helperList->table = 'stripe_transaction';
 
-        return $helperList->generateList($results, $fieldsList);
+        $listHtml = $helperList->generateList($results, $fieldsList);
+
+        $doc = new DOMDocument('1.0', 'UTF-8');
+        $doc->loadHTML(mb_convert_encoding($listHtml, 'HTML-ENTITIES', 'UTF-8'));
+        $node = $doc->getElementsByTagName('table')->item(0);
+
+        return (string) '<h4>'.$this->l('Transactions').'</h4>'.$doc->saveXML($node->parentNode);
     }
 
     /**
