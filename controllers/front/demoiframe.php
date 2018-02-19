@@ -52,6 +52,15 @@ class StripeDemoIframeModuleFrontController extends ModuleFrontController
     }
 
     /**
+     * Prevent displaying the maintenance page
+     *
+     * @return void
+     */
+    protected function displayMaintenancePage()
+    {
+    }
+
+    /**
      * @return bool|void
      *
      * @throws PrestaShopException
