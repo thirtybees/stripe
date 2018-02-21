@@ -296,7 +296,6 @@
         });
 
         paymentRequest.on('source', function(result) {
-          console.log(result);
           if (result.source) {
             var a = document.createElement('a');
             a.href = '{$link->getModuleLink('stripe', 'validation', [], true)|escape:'javascript'}';
