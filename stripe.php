@@ -277,7 +277,6 @@ class Stripe extends PaymentModule
      */
     public function getContent()
     {
-        $this->registerHook('actionAdminOrdersListingFieldsModifier');
         $output = '';
 
         $this->initNavigation();
@@ -699,7 +698,6 @@ class Stripe extends PaymentModule
      *
      * @since 1.6.0
      * @throws PrestaShopException
-     * @throws Adapter_Exception
      */
     protected function processBulkCapture()
     {
@@ -708,11 +706,11 @@ class Stripe extends PaymentModule
         \ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(Stripe::SECRET_KEY_TEST));
         $idOrders = Tools::getValue('orderBox');
         if (!is_array($idOrders)) {
-            $this->addError($this->l('No orders found'));
+            $this->context->controller->errors[] = $this->l('No orders found');
 
             return;
         } elseif (count($idOrders) > 10) {
-            $this->addError($this->l('Currently only a maximum of 10 payments can be captured at a time'));
+            $this->context->controller->errors[] = $this->l('Currently only a maximum of 10 payments can be captured at a time');
 
             return;
         }
@@ -751,7 +749,7 @@ class Stripe extends PaymentModule
             return;
         }
 
-        $this->addConfirmation($this->l('The payments have been successfully captured'));
+        $this->context->controller->confirmations[] = $this->l('The payments have been successfully captured');
     }
 
     /**
@@ -2473,16 +2471,20 @@ class Stripe extends PaymentModule
     }
 
     /**
+     * @param array $params
+     *
      * @return void
      *
      * @throws Adapter_Exception
      * @throws PrestaShopException
      * @since 1.6.0
      */
-    public function hookActionAdminOrdersListingFieldsModifier()
+    public function hookActionAdminOrdersListingFieldsModifier($params)
     {
         static $called = false;
         if (!$called) {
+            $params['fields']['payment']['callback'] = 'displayPaymentText';
+            $params['fields']['payment']['callback_object'] = '\\StripeModule\\StripeReview';
             if (Tools::isSubmit('submitBulkupdateStripeCapture')) {
                 $this->processBulkCapture();
             }

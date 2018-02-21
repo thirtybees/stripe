@@ -173,4 +173,35 @@ class StripeReview extends \ObjectModel
                 ->where('`id_order` = '.(int) $idOrder)
         );
     }
+
+    /**
+     * @param string $paymentText
+     * @param array  $tr
+     *
+     * @return string
+     * @throws \Adapter_Exception
+     * @throws \Exception
+     * @throws \PrestaShopDatabaseException
+     * @throws \PrestaShopException
+     * @throws \ReflectionException
+     * @throws \SmartyException
+     */
+    public static function displayPaymentText($paymentText, $tr)
+    {
+        $review = StripeReview::getByOrderId($tr['id_order']);
+        if ($review->status) {
+            $module = \Module::getInstanceByName('stripe');
+            $reflection = new \ReflectionClass($module);
+
+            \Context::getContext()->smarty->assign([
+                'paymentText' => $paymentText,
+                'tr'          => $tr,
+                'status'      => $review->status,
+            ]);
+
+            return $module->display($reflection->getFileName(), 'views/templates/admin/payment-list-item.tpl');
+        }
+
+        return $paymentText;
+    }
 }
