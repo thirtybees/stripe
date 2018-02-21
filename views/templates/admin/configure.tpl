@@ -16,32 +16,32 @@
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
 <div class="panel">
-	<h3><i class="icon icon-puzzle-piece"></i> {l s='Stripe' mod='stripe'}</h3>
-	<strong>{l s='Accept payments with Stripe' mod='stripe'}</strong>
-	<p>
-		{l s='Thank you for using this module!' mod='stripe'}
-	</p>
-	<strong>{l s='Quick start' mod='stripe'}</strong>
-	<ol>
-		<li>{l s='Visit' mod='stripe'} <a href="https://stripe.com/">https://stripe.com/</a> {l s='and find your API keys.' mod='stripe'}</li>
-		<li>{l s='Enter your keys on this page' mod='stripe'}</li>
-		<li>{l s='Optionally configure the webhooks and repeat this process for every store if you have multistore enabled' mod='stripe'}</li>
-		<li>
-			{l s='You are good to go! Should you find any problems, please check out the' mod='stripe'}
-			<a href="https://github.com/thirtybees/stripe/wiki">wiki</a>
-		</li>
-		<li>
-			{l s='If you have found a bug or the wiki didn\'t solve your problem, please open an issue on GitHub:' mod='stripe'}
-			<a href="https://github.com/thirtybees/stripe/issues">https://github.com/thirtybees/stripe/issues</a>
-		</li>
-	</ol>
+  <h3><i class="icon icon-cc-stripe"></i> {l s='Stripe' mod='stripe'}</h3>
+  <strong>{l s='Accept payments with Stripe' mod='stripe'}</strong>
+  <p>
+    {l s='Thank you for using this module!' mod='stripe'}
+  </p>
+  <strong>{l s='Quick start' mod='stripe'}</strong>
+  <ol>
+    <li>{l s='Visit' mod='stripe'} <a href="https://stripe.com/">https://stripe.com/</a> {l s='and find your API keys.' mod='stripe'}</li>
+    <li>{l s='Enter your keys on this page' mod='stripe'}</li>
+    <li>{l s='Optionally configure the webhooks and repeat this process for every store if you have multistore enabled' mod='stripe'}</li>
+    <li>
+      {l s='You are good to go! Should you find any problems, please check out the' mod='stripe'}
+      <a href="https://github.com/thirtybees/stripe/wiki">wiki</a>
+    </li>
+    <li>
+      {l s='If you have found a bug or the wiki didn\'t solve your problem, please open an issue on GitHub:' mod='stripe'}
+      <a href="https://github.com/thirtybees/stripe/issues">https://github.com/thirtybees/stripe/issues</a>
+    </li>
+  </ol>
 </div>
 
-	<div class="panel">
-		<h3><i class="icon icon-anchor"></i> {l s='Webhooks' mod='stripe'}</h3>
-		<p>{l s='This module supports procesing refunds through webhooks' mod='stripe'}</p>
-		<p>{l s='You can use the following URL:' mod='stripe'}<br/>
-			<a href="{$stripe_webhook_url|escape:'htmlall':'UTF-8'}">{$stripe_webhook_url|escape:'htmlall':'UTF-8'}</a>
-		</p>
-	</div>
+<div class="panel">
+  <h3><i class="icon icon-anchor"></i> {l s='Webhooks' mod='stripe'}</h3>
+  <p>{l s='This module supports procesing refunds through webhooks' mod='stripe'}</p>
+  <p>{l s='You can use the following URL:' mod='stripe'}<br/>
+    <a href="{$stripe_webhook_url|escape:'htmlall'}">{$stripe_webhook_url|escape:'htmlall'}</a>
+  </p>
+</div>
 

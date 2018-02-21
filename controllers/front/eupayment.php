@@ -195,7 +195,6 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
                 'stripecc_zipcode'              => (bool) Configuration::get(Stripe::ZIPCODE),
                 'stripe_alipay_block'           => (bool) Configuration::get(Stripe::ALIPAY_BLOCK),
                 'stripe_shopname'               => $this->context->shop->name,
-                'stripe_ajax_validation'        => $link->getModuleLink($this->module->name, 'ajaxvalidation', [], Tools::usingSecureMode()),
                 'stripe_confirmation_page'      => $link->getModuleLink($this->module->name, 'validation', [], Tools::usingSecureMode()),
                 'stripe_ajax_confirmation_page' => $link->getPageLink('order-confirmation', Tools::usingSecureMode(), '&id_cart='.$cart->id.'&id_module='.$this->module->id.'&key='.$customer->secure_key),
                 'showPaymentLogos'              => Configuration::get(Stripe::SHOW_PAYMENT_LOGOS),

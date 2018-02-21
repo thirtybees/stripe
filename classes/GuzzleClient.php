@@ -19,6 +19,10 @@
 
 namespace StripeModule;
 
+if (!defined('_TB_VERSION_')) {
+    return;
+}
+
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\BadResponseException;
 use ThirtyBeesStripe\Stripe\Error;

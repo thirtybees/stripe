@@ -17,10 +17,10 @@
 *}
 <p class="payment_module stripe_payment_button">
     <a id="stripe_p24_payment_link"
-       href="{$link->getModuleLink('stripe', 'eupayment', ['method' => 'p24'], true)|escape:'htmlall':'UTF-8'}"
+       href="{$link->getModuleLink('stripe', 'eupayment', ['method' => 'p24'], true)|escape:'htmlall'}"
        title="{l s='Pay with P24' mod='stripe'}"
     >
-        <img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/p24.png"
+        <img src="{$module_dir|escape:'htmlall'}/views/img/p24.png"
              alt="{l s='Pay with P24' mod='stripe'}"
              width="167"
              height="64"

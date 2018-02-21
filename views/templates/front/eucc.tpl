@@ -167,12 +167,12 @@
       <circle id="successAnimationCircle" cx="35" cy="35" r="24" stroke="#979797" stroke-width="2" stroke-linecap="round" fill="transparent"/>
       <polyline id="successAnimationCheck" stroke="#979797" stroke-width="2" points="23 34 34 43 47 27" fill="transparent"/>
     </svg>
-    <p style="font-size: 3em; color: white" class="stripe-payment-overlay-text">{l s='Card accepted' mod='stripe'}</p>
+    <p style="font-size: 3em; color: white" class="stripe-payment-overlay-text">{l s='Card verified' mod='stripe'}</p>
     <p style="font-size: 3em; color: white" class="stripe-payment-overlay-text">{l s='Redirecting...' mod='stripe'}</p>
   </div>
 </div>
 <iframe id="stripe-checkout-iframe"
-        src="{$link->getModuleLink('stripe', 'checkoutiframe', [], true)|escape:'htmlall':'UTF-8'}"
+        src="{$link->getModuleLink('stripe', 'checkoutiframe', [], true)|escape:'htmlall'}"
         width="100%"
         frameborder="0"
 ></iframe>

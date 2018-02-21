@@ -40,7 +40,7 @@
     {if $stripe_checkout}
     var found = false;
     [].slice.call(document.querySelectorAll('link')).forEach(function (link) {
-      if (link.href === '{$module_dir|escape:'javascript':'UTF-8'}views/css/front.css') {
+      if (link.href === '{$module_dir|escape:'javascript'}views/css/front.css') {
         found = true;
 
         return false;
@@ -48,7 +48,7 @@
     });
     if (!found) {
       var link = document.createElement('link');
-      link.href = '{$module_dir|escape:'javascript':'UTF-8'}views/css/front.css';
+      link.href = '{$module_dir|escape:'javascript'}views/css/front.css';
       link.rel = 'stylesheet';
       document.querySelector('head').appendChild(link);
     }

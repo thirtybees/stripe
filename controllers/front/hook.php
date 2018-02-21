@@ -17,6 +17,7 @@
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
 
+use StripeModule\StripeReview;
 use StripeModule\StripeTransaction;
 
 if (!defined('_TB_VERSION_')) {
@@ -74,12 +75,21 @@ class StripeHookModuleFrontController extends ModuleFrontController
                 die('ko');
             }
             switch ($data['type']) {
+                case 'review.closed':
+                    $this->processApproved($event);
+
+                    break;
                 case 'charge.refunded':
                     $this->processRefund($event);
 
                     break;
                 case 'charge.succeeded':
                     $this->processSucceeded($event);
+
+                    break;
+                case 'charge.captured':
+                    Logger::addLog(json_encode($event));
+                    $this->processCaptured($event);
 
                     break;
                 case 'charge.failed':
@@ -114,7 +124,7 @@ class StripeHookModuleFrontController extends ModuleFrontController
         }
 
         if (!$idOrder = StripeTransaction::getIdOrderByCharge($charge->id)) {
-            die('ok');
+            die('no id');
         }
 
         $order = new Order($idOrder);
@@ -174,6 +184,90 @@ class StripeHookModuleFrontController extends ModuleFrontController
     }
 
     /**
+     * Process `charge.approved` event
+     *
+     * @param \ThirtyBeesStripe\Stripe\Event $event
+     *
+     * @throws PrestaShopException
+     * @throws Adapter_Exception
+     */
+    protected function processApproved($event)
+    {
+        /** @var \ThirtyBeesStripe\Stripe\Charge $charge */
+        $charge = \ThirtyBeesStripe\Stripe\Charge::retrieve($event->data['object']->charge);
+
+        if (!empty($charge['metadata']['from_back_office'])) {
+            die('not processed');
+        }
+
+        if (!$idOrder = StripeTransaction::getIdOrderByCharge($charge->id)) {
+            die('no id');
+        }
+        $order = new Order($idOrder);
+
+        $review = StripeReview::getByOrderId($idOrder);
+        $review->status = StripeReview::AUTHORIZED;
+        $review->save();
+
+        $transaction = new StripeTransaction();
+        $transaction->id_order = $idOrder;
+        $transaction->id_charge = $charge->id;
+        $transaction->source = StripeTransaction::SOURCE_FRONT_OFFICE;
+        $transaction->type = StripeTransaction::TYPE_AUTHORIZED;
+        $transaction->card_last_digits = (int) StripeTransaction::getLastFourDigitsByChargeId($charge->id);
+        $transaction->amount = (int) $charge->amount;
+        $transaction->save();
+
+        if (Configuration::get(Stripe::USE_STATUS_AUTHORIZED)) {
+            $orderHistory = new OrderHistory();
+            $orderHistory->id_order = $idOrder;
+            $orderHistory->changeIdOrderState((int) Configuration::get(Stripe::STATUS_AUTHORIZED), $idOrder, !$order->hasInvoice());
+            $orderHistory->addWithemail(true);
+        }
+    }
+
+    /**
+     * Process `charge.approved` event
+     *
+     * @param \ThirtyBeesStripe\Stripe\Event $event
+     *
+     * @throws PrestaShopException
+     * @throws Adapter_Exception
+     */
+    protected function processCaptured($event)
+    {
+        /** @var \ThirtyBeesStripe\Stripe\Charge $charge */
+        $charge = $event->data['object'];
+
+        if (!empty($charge['metadata']['from_back_office'])) {
+            die('not processed');
+        }
+
+        if (!$idOrder = StripeTransaction::getIdOrderByCharge($charge->id)) {
+            die('no id');
+        }
+        $order = new Order($idOrder);
+
+        $review = StripeReview::getByOrderId($idOrder);
+        $review->status = StripeReview::CAPTURED;
+        $review->save();
+
+        $transaction = new StripeTransaction();
+        $transaction->id_order = $idOrder;
+        $transaction->id_charge = $charge->id;
+        $transaction->source = StripeTransaction::SOURCE_FRONT_OFFICE;
+        $transaction->type = StripeTransaction::TYPE_CAPTURED;
+        $transaction->card_last_digits = (int) StripeTransaction::getLastFourDigitsByChargeId($charge->id);
+        $transaction->amount = (int) $charge->amount;
+        $transaction->save();
+
+        $orderHistory = new OrderHistory();
+        $orderHistory->id_order = $idOrder;
+        $orderHistory->changeIdOrderState((int) Configuration::get('PS_OS_PAYMENT'), $idOrder, !$order->hasInvoice());
+        $orderHistory->addWithemail(true);
+    }
+
+    /**
      * Process `charge.refund` event
      *
      * @param \ThirtyBeesStripe\Stripe\Event $event
@@ -225,12 +319,12 @@ class StripeHookModuleFrontController extends ModuleFrontController
         if (Configuration::get(Stripe::USE_STATUS_REFUND) && (int) ($amountRefunded - $totalAmount) === 0) {
             // Full refund
             if (Configuration::get(Stripe::GENERATE_CREDIT_SLIP)) {
-                $sql = new DbQuery();
-                $sql->select('od.`id_order_detail`, od.`product_quantity`');
-                $sql->from('order_detail', 'od');
-                $sql->where('od.`id_order` = '.(int) $order->id);
-
-                $fullProductList = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
+                   $fullProductList = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS(
+                    (new DbQuery())
+                        ->select('od.`id_order_detail`, od.`product_quantity`')
+                        ->from('order_detail', 'od')
+                        ->where('od.`id_order` = '.(int) $order->id)
+                );
 
                 if (is_array($fullProductList) && !empty($fullProductList)) {
                     $productList = [];

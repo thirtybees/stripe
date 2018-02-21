@@ -15,17 +15,4 @@
  *  @copyright 2017-2018 thirty bees
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
-<p class="payment_module stripe_payment_button">
-    <a id="stripe_giropay_payment_link"
-       href="{$link->getModuleLink('stripe', 'eupayment', ['method' => 'giropay'], true)|escape:'htmlall'}"
-       title="{l s='Pay with Giropay' mod='stripe'}"
-    >
-        <img src="{$module_dir|escape:'htmlall'}/views/img/giropay.png"
-             alt="{l s='Pay with Giropay' mod='stripe'}"
-             width="64"
-             height="64"
-        />
-        {l s='Pay with Giropay' mod='stripe'}
-    </a>
-</p>
-
+{if isset($tr['type_icon'])}<span class="icon icon-{$tr['type_icon']|escape:'html'}"> </span>{/if} {$tr['type_text']|escape:'html'}

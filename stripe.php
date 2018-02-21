@@ -18,11 +18,12 @@
  */
 
 use StripeModule\GuzzleClient;
+use StripeModule\StripeReview;
 use StripeModule\StripeTransaction;
 use ThirtyBeesStripe\Stripe\ApiRequestor;
 
 if (!defined('_TB_VERSION_')) {
-    exit;
+    return;
 }
 
 require_once __DIR__.'/vendor/autoload.php';
@@ -51,10 +52,15 @@ class Stripe extends PaymentModule
     const STATUS_VALIDATED = 'STRIPE_STAT_VALIDATED';
     const STATUS_PARTIAL_REFUND = 'STRIPE_STAT_PART_REFUND';
     const USE_STATUS_PARTIAL_REFUND = 'STRIPE_USE_STAT_PART_REFUND';
+    const USE_STATUS_AUTHORIZED = 'STRIPE_USE_STAT_AUTHORIZED';
+    const USE_STATUS_IN_REVIEW = 'STRIPE_USE_STAT_IN_REVIEW';
     const STATUS_REFUND = 'STRIPE_STAT_REFUND';
     const STATUS_SOFORT = 'STRIPE_STAT_SOFORT';
+    const STATUS_AUTHORIZED = 'STRIPE_STAT_AUTHORIZED';
+    const STATUS_IN_REVIEW = 'STRIPE_STAT_IN_REVIEW';
     const USE_STATUS_REFUND = 'STRIPE_USE_STAT_REFUND';
     const GENERATE_CREDIT_SLIP = 'STRIPE_CREDIT_SLIP';
+    const MANUAL_CAPTURE = 'STRIPE_MANUAL_CAPTURE';
 
     const SHOW_PAYMENT_LOGOS = 'STRIPE_PAYMENT_LOGOS';
 
@@ -106,6 +112,7 @@ class Stripe extends PaymentModule
         'paymentReturn',
         'displayAdminOrder',
         'displayPaymentRequestButton',
+        'actionAdminOrdersListingFieldsModifier',
     ];
 
     /** @var int $menu Current menu */
@@ -159,7 +166,7 @@ class Stripe extends PaymentModule
     {
         $this->name = 'stripe';
         $this->tab = 'payments_gateways';
-        $this->version = '1.5.0';
+        $this->version = '1.6.0';
         $this->author = 'thirty bees';
         $this->need_instance = 1;
 
@@ -168,7 +175,6 @@ class Stripe extends PaymentModule
         $this->controllers = [
             'hook',
             'validation',
-            'ajaxvalidation',
             'sourcevalidation',
             'eupayment',
             'checkoutiframe',
@@ -210,6 +216,7 @@ class Stripe extends PaymentModule
         }
 
         StripeTransaction::createDatabase();
+        StripeReview::createDatabase();
 
         Configuration::updateGlobalValue(static::STATUS_VALIDATED, Configuration::get('PS_OS_PAYMENT'));
         Configuration::updateGlobalValue(static::USE_STATUS_REFUND, true);
@@ -243,8 +250,12 @@ class Stripe extends PaymentModule
         Configuration::deleteByName(static::GO_LIVE);
         Configuration::deleteByName(static::USE_STATUS_REFUND);
         Configuration::deleteByName(static::USE_STATUS_PARTIAL_REFUND);
+        Configuration::deleteByName(static::USE_STATUS_AUTHORIZED);
+        Configuration::deleteByName(static::USE_STATUS_IN_REVIEW);
         Configuration::deleteByName(static::STATUS_PARTIAL_REFUND);
         Configuration::deleteByName(static::STATUS_REFUND);
+        Configuration::deleteByName(static::STATUS_AUTHORIZED);
+        Configuration::deleteByName(static::STATUS_IN_REVIEW);
         Configuration::deleteByName(static::GENERATE_CREDIT_SLIP);
         Configuration::deleteByName(static::ZIPCODE);
         Configuration::deleteByName(static::ALIPAY_BLOCK);
@@ -266,6 +277,7 @@ class Stripe extends PaymentModule
      */
     public function getContent()
     {
+        $this->registerHook('actionAdminOrdersListingFieldsModifier');
         $output = '';
 
         $this->initNavigation();
@@ -372,6 +384,10 @@ class Stripe extends PaymentModule
             && Tools::isSubmit('stripe_refund_amount')
         ) {
             $this->processRefund();
+        } elseif (Tools::isSubmit('orderstripereview')
+            && Tools::isSubmit('stripe_review_order')
+        ) {
+            $this->processReview();
         } elseif ($this->menu == static::MENU_SETTINGS) {
             if (Tools::isSubmit('submitOptionsconfiguration') || Tools::isSubmit('submitOptionsconfiguration')) {
                 $this->postProcessGeneralOptions();
@@ -403,20 +419,24 @@ class Stripe extends PaymentModule
      */
     protected function processRefund()
     {
+        $idOrder = (int) Tools::getValue('stripe_refund_order');
         $access = Profile::getProfileAccess($this->context->employee->id_profile, Tab::getIdFromClassName('AdminOrders'));
         if (!$access) {
-            $this->context->controller->errors[] = $this->l('Unable to determine employee permissions.');
+            $cookie = new Cookie('stripe');
+            $cookie->error = $this->l('Unable to determine employee permissions.');
+            $cookie->write();
 
-            return;
+            Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&id_order='.$idOrder);
         }
 
         if (!$access['edit']) {
-            $this->context->controller->errors[] = $this->l('You do not have permission to refund orders.');
+            $cookie = new Cookie('stripe');
+            $cookie->error = $this->l('You do not have permission to refund orders.');
+            $cookie->write();
 
-            return;
+            Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&id_order='.$idOrder);
         }
 
-        $idOrder = (int) Tools::getValue('stripe_refund_order');
         $amount = (float) Tools::getValue('stripe_refund_amount');
 
         $idCharge = StripeTransaction::getChargeByIdOrder($idOrder);
@@ -448,20 +468,22 @@ class Stripe extends PaymentModule
                 ]
             );
         } catch (Exception $e) {
-            $this->context->controller->errors[] = sprintf('Invalid Stripe request: %s', $e->getMessage());
+            $cookie = new Cookie('stripe');
+            $cookie->error = sprintf('Invalid Stripe request: %s', $e->getMessage());
+            $cookie->write();
 
-            return;
+            Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&id_order='.$idOrder);
         }
 
         if (Configuration::get(static::USE_STATUS_REFUND) && 0 === (int) ($orderTotal - ($amountRefunded + $amount))) {
             // Full refund
             if (Configuration::get(static::GENERATE_CREDIT_SLIP)) {
-                $sql = new DbQuery();
-                $sql->select('od.`id_order_detail`, od.`product_quantity`');
-                $sql->from('order_detail', 'od');
-                $sql->where('od.`id_order` = '.(int) $order->id);
-
-                $fullProductList = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
+                $fullProductList = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS(
+                    (new DbQuery())
+                        ->select('od.`id_order_detail`, od.`product_quantity`')
+                        ->from('order_detail', 'od')
+                        ->where('od.`id_order` = '.(int) $order->id)
+                );
 
                 if (is_array($fullProductList) && !empty($fullProductList)) {
                     $productList = [];
@@ -488,6 +510,10 @@ class Stripe extends PaymentModule
             $orderHistory->id_order = $order->id;
             $orderHistory->changeIdOrderState((int) Configuration::get(Stripe::STATUS_REFUND), $idOrder, !$order->hasInvoice());
             $orderHistory->addWithemail(true);
+
+            $review = StripeReview::getByOrderId($idOrder);
+            $review->status = StripeReview::RELEASED;
+            $review->save();
         } else {
             $transaction = new StripeTransaction();
             $transaction->card_last_digits = (int) StripeTransaction::getLastFourDigitsByChargeId($idCharge);
@@ -507,6 +533,225 @@ class Stripe extends PaymentModule
         }
 
         Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&stripeRefund=refunded&id_order='.$idOrder);
+    }
+
+    /**
+     * @throws Adapter_Exception
+     * @throws PrestaShopDatabaseException
+     * @throws PrestaShopException
+     */
+    protected function processReview()
+    {
+        $idOrder = (int) Tools::getValue('stripe_review_order');
+        $order = new Order($idOrder);
+        $access = Profile::getProfileAccess($this->context->employee->id_profile, Tab::getIdFromClassName('AdminOrders'));
+        if (!$access) {
+            $cookie = new Cookie('stripe');
+            $cookie->error = $this->l('Unable to determine employee permissions.');
+            $cookie->write();
+
+            Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&id_order='.$idOrder);
+        }
+
+        if (!$access['edit']) {
+            $cookie = new Cookie('stripe');
+            $cookie->error = $this->l('You do not have permission to review payments.');
+            $cookie->write();
+
+            Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&id_order='.$idOrder);
+        }
+
+        $review = StripeReview::getByOrderId($idOrder);
+        if (!Validate::isLoadedObject($review)) {
+            $cookie = new Cookie('stripe');
+            $cookie->error = $this->l('An error occurred while processing the request.');
+            $cookie->write();
+
+            Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&id_order='.$idOrder);
+        }
+
+        if (Tools::getValue('stripe_action') === 'markAsSafe') {
+            $guzzle = new GuzzleClient();
+            ApiRequestor::setHttpClient($guzzle);
+            try {
+                \ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(static::GO_LIVE)
+                    ? Configuration::get(static::SECRET_KEY_LIVE)
+                    : Configuration::get(static::SECRET_KEY_TEST)
+                );
+                $charge = \ThirtyBeesStripe\Stripe\Charge::retrieve($review->id_charge);
+                $charge->metadata = [
+                    'from_back_office' => true,
+                ];
+                $charge->markAsSafe();
+
+                $review->status = StripeReview::AUTHORIZED;
+                $review->save();
+
+                $transaction = new StripeTransaction();
+                $transaction->id_order = $idOrder;
+                $transaction->id_charge = $charge->id;
+                $transaction->source = StripeTransaction::SOURCE_FRONT_OFFICE;
+                $transaction->type = StripeTransaction::TYPE_AUTHORIZED;
+                $transaction->card_last_digits = (int) StripeTransaction::getLastFourDigitsByChargeId($charge->id);
+                $transaction->amount = (int) $charge->amount;
+                $transaction->save();
+
+                $cookie = new Cookie('stripe');
+                $cookie->confirmation = $this->l('The payment has been approved');
+                $cookie->write();
+
+                if (Configuration::get(Stripe::USE_STATUS_AUTHORIZED)) {
+                    $orderHistory = new OrderHistory();
+                    $orderHistory->id_order = $idOrder;
+                    $orderHistory->changeIdOrderState((int) Configuration::get(Stripe::STATUS_AUTHORIZED), $idOrder, !$order->hasInvoice());
+                    $orderHistory->addWithemail(true);
+                }
+            } catch (Exception $e) {
+                $cookie = new Cookie('stripe');
+                $cookie->error = sprintf('Invalid Stripe request: %s', $e->getMessage());
+                $cookie->write();
+            }
+        } elseif (Tools::getValue('stripe_action') === 'capture') {
+            $guzzle = new GuzzleClient();
+            ApiRequestor::setHttpClient($guzzle);
+            try {
+                \ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(static::GO_LIVE)
+                    ? Configuration::get(static::SECRET_KEY_LIVE)
+                    : Configuration::get(static::SECRET_KEY_TEST)
+                );
+                $charge = \ThirtyBeesStripe\Stripe\Charge::retrieve($review->id_charge);
+                $charge->metadata = [
+                    'from_back_office' => true,
+                ];
+                $charge->capture();
+
+                $review->status = StripeReview::CAPTURED;
+                $review->save();
+
+                $transaction = new StripeTransaction();
+                $transaction->id_order = $idOrder;
+                $transaction->id_charge = $charge->id;
+                $transaction->source = StripeTransaction::SOURCE_FRONT_OFFICE;
+                $transaction->type = StripeTransaction::TYPE_CAPTURED;
+                $transaction->card_last_digits = (int) StripeTransaction::getLastFourDigitsByChargeId($charge->id);
+                $transaction->amount = (int) $charge->amount;
+                $transaction->save();
+
+                $orderHistory = new OrderHistory();
+                $orderHistory->id_order = $idOrder;
+                $orderHistory->changeIdOrderState((int) Configuration::get('PS_OS_PAYMENT'), $idOrder, !$order->hasInvoice());
+                $orderHistory->addWithemail(true);
+
+                $cookie = new Cookie('stripe');
+                $cookie->confirmation = $this->l('The payment has been captured');
+                $cookie->write();
+            } catch (Exception $e) {
+                $cookie = new Cookie('stripe');
+                $cookie->error = sprintf('Invalid Stripe request: %s', $e->getMessage());
+                $cookie->write();
+            }
+        } elseif (Tools::getValue('stripe_action') === 'release') {
+            $guzzle = new GuzzleClient();
+            ApiRequestor::setHttpClient($guzzle);
+            try {
+                \ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(static::GO_LIVE)
+                    ? Configuration::get(static::SECRET_KEY_LIVE)
+                    : Configuration::get(static::SECRET_KEY_TEST)
+                );
+                $charge = \ThirtyBeesStripe\Stripe\Charge::retrieve($review->id_charge);
+                $charge->metadata = [
+                    'from_back_office' => true,
+                ];
+                $charge->refund();
+
+                $review->status = StripeReview::RELEASED;
+                $review->save();
+
+                $transaction = new StripeTransaction();
+                $transaction->id_order = $idOrder;
+                $transaction->id_charge = $charge->id;
+                $transaction->source = StripeTransaction::SOURCE_FRONT_OFFICE;
+                $transaction->type = StripeTransaction::TYPE_FULL_REFUND;
+                $transaction->card_last_digits = (int) StripeTransaction::getLastFourDigitsByChargeId($charge->id);
+                $transaction->amount = (int) $charge->amount;
+                $transaction->save();
+
+                $orderHistory = new OrderHistory();
+                $orderHistory->id_order = $idOrder;
+                $orderHistory->changeIdOrderState((int) Configuration::get('PS_OS_CANCEL'), $idOrder, !$order->hasInvoice());
+                $orderHistory->addWithemail(true);
+
+                $cookie = new Cookie('stripe');
+                $cookie->confirmation = $this->l('The payment has been released');
+                $cookie->write();
+            } catch (Exception $e) {
+                $cookie = new Cookie('stripe');
+                $cookie->error = sprintf('Invalid Stripe request: %s', $e->getMessage());
+                $cookie->write();
+            }
+        }
+
+        Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&stripeReview=reviewed&id_order='.$idOrder);
+    }
+
+    /**
+     * @return void
+     *
+     * @since 1.6.0
+     * @throws PrestaShopException
+     * @throws Adapter_Exception
+     */
+    protected function processBulkCapture()
+    {
+        $guzzle = new \StripeModule\GuzzleClient();
+        \ThirtyBeesStripe\Stripe\ApiRequestor::setHttpClient($guzzle);
+        \ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(Stripe::SECRET_KEY_TEST));
+        $idOrders = Tools::getValue('orderBox');
+        if (!is_array($idOrders)) {
+            $this->addError($this->l('No orders found'));
+
+            return;
+        } elseif (count($idOrders) > 10) {
+            $this->addError($this->l('Currently only a maximum of 10 payments can be captured at a time'));
+
+            return;
+        }
+
+        try {
+            foreach ($idOrders as $idOrder) {
+                /** @var \ThirtyBeesStripe\Stripe\Charge $charge */
+                $charge = \ThirtyBeesStripe\Stripe\Charge::retrieve(StripeTransaction::getChargeByIdOrder($idOrder));
+                $charge->metadata = [
+                    'from_back_office' => true,
+                ];
+                $charge->capture();
+                $order = new Order($idOrder);
+
+                $review = StripeReview::getByOrderId($idOrder);
+                $review->status = StripeReview::CAPTURED;
+                $review->save();
+
+                $transaction = new StripeTransaction();
+                $transaction->id_order = $idOrder;
+                $transaction->id_charge = $charge->id;
+                $transaction->source = StripeTransaction::SOURCE_FRONT_OFFICE;
+                $transaction->type = StripeTransaction::TYPE_CAPTURED;
+                $transaction->card_last_digits = (int) StripeTransaction::getLastFourDigitsByChargeId($charge->id);
+                $transaction->amount = (int) $charge->amount;
+                $transaction->save();
+
+                $orderHistory = new OrderHistory();
+                $orderHistory->id_order = $idOrder;
+                $orderHistory->changeIdOrderState((int) Configuration::get('PS_OS_PAYMENT'), $idOrder, !$order->hasInvoice());
+                $orderHistory->addWithemail(true);
+            }
+        } catch (Exception $e) {
+            $this->addError(sprintf($this->l('An error occurred while capturing: %s'), $e->getMessage()));
+
+            return;
+        }
+
+        $this->addConfirmation($this->l('The payments have been successfully captured'));
     }
 
     /**
@@ -572,6 +817,11 @@ class Stripe extends PaymentModule
             static::STATUS_SOFORT             => Tools::getValue(static::STATUS_SOFORT),
             static::USE_STATUS_PARTIAL_REFUND => Tools::getValue(static::USE_STATUS_PARTIAL_REFUND),
             static::STATUS_PARTIAL_REFUND     => Tools::getValue(static::STATUS_PARTIAL_REFUND),
+            static::USE_STATUS_AUTHORIZED     => Tools::getValue(static::USE_STATUS_AUTHORIZED),
+            static::STATUS_AUTHORIZED         => Tools::getValue(static::STATUS_AUTHORIZED),
+            static::USE_STATUS_IN_REVIEW      => Tools::getValue(static::USE_STATUS_IN_REVIEW),
+            static::STATUS_IN_REVIEW          => Tools::getValue(static::STATUS_IN_REVIEW),
+            static::MANUAL_CAPTURE            => Tools::getValue(static::MANUAL_CAPTURE),
             static::GENERATE_CREDIT_SLIP      => (bool) Tools::getValue(static::GENERATE_CREDIT_SLIP),
         ];
 
@@ -665,7 +915,7 @@ class Stripe extends PaymentModule
         Configuration::updateValue(static::CHECKOUT_FONT_SIZE.'_TEMP', $colors['stripe_checkout_font_size']);
         Configuration::updateValue(static::PAYMENT_REQUEST_BUTTON_STYLE.'_TEMP', $colors['stripe_payment_request_style']);
 
-        die(json_decode([
+        die(json_encode([
             'success' => true,
         ]));
     }
@@ -759,13 +1009,45 @@ class Stripe extends PaymentModule
     protected function renderTransactionsList()
     {
         $fieldsList = [
-            'id_stripe_transaction' => ['title' => $this->l('ID'), 'width' => 'auto'],
-            'type_icon'             => ['type' => 'type_icon', 'title' => $this->l('Type'), 'width' => 'auto', 'color' => 'color', 'text' => 'type_text'],
-            'amount'                => ['type' => 'price', 'title' => $this->l('Amount'), 'width' => 'auto'],
-            'card_last_digits'      => ['type' => 'text', 'title' => $this->l('Credit card (last 4 digits)'), 'width' => 'auto'],
-            'source_text'           => ['type' => 'stripe_source', 'title' => $this->l('Source'), 'width' => 'auto'],
-            'source_type'           => ['type' => 'text', 'title' => $this->l('Payment type'), 'width' => 'auto'],
-            'date_upd'              => ['type' => 'datetime', 'title' => $this->l('Date & time'), 'width' => 'auto'],
+            'id_stripe_transaction' => [
+                'title' => $this->l('ID'),
+                'width' => 'auto',
+            ],
+            'type_icon'             => [
+                'type'            => 'text',
+                'title'           => $this->l('Type'),
+                'width'           => 'auto',
+                'color'           => 'color',
+                'text'            => 'type_text',
+                'callback'        => 'displayEventLabel',
+                'callback_object' => StripeTransaction::class,
+            ],
+            'amount'                => [
+                'type'  => 'price',
+                'title' => $this->l('Amount'),
+                'width' => 'auto',
+            ],
+            'card_last_digits' => [
+                'type'            => 'text',
+                'title'           => $this->l('Credit card (last 4 digits)'),
+                'width'           => 'auto',
+                'callback'        => 'displayCardDigits',
+                'callback_object' => StripeTransaction::class,
+            ],
+            'source_text'           => [
+                'type'  => 'text',
+                'title' => $this->l('Source'),
+                'width' => 'auto',
+            ],
+            'source_type'           => [
+                'type'  => 'text',
+                'title' => $this->l('Payment type'),
+                'width' => 'auto',
+            ],
+            'date_upd'              => [
+                'type'  => 'datetime',
+                'title' => $this->l('Date & time'), 'width' => 'auto',
+            ],
         ];
 
         if (Tools::isSubmit('submitResetstripe_transaction')) {
@@ -793,11 +1075,8 @@ class Stripe extends PaymentModule
         $helperList = new HelperList();
         $helperList->id = 1;
         $helperList->shopLinkType = false;
-
         $helperList->list_id = StripeTransaction::$definition['table'];
-
         $helperList->module = $this;
-
         $helperList->bulk_actions = [
             'delete' => [
                 'text'    => $this->l('Delete selected'),
@@ -805,13 +1084,9 @@ class Stripe extends PaymentModule
                 'icon'    => 'icon-trash',
             ],
         ];
-
         $helperList->actions = ['view', 'delete'];
-
         $helperList->page = $currentPage;
-
         $helperList->_defaultOrderBy = StripeTransaction::$definition['primary'];
-
         if (Tools::isSubmit(StripeTransaction::$definition['table'].'Orderby')) {
             $helperList->orderBy = Tools::getValue(StripeTransaction::$definition['table'].'Orderby');
             $this->context->cookie->{StripeTransaction::$definition['table'].'Orderby'} = $helperList->orderBy;
@@ -865,6 +1140,21 @@ class Stripe extends PaymentModule
                     $result['type_icon'] = 'undo';
                     $result['type_text'] = $this->l('Full refund');
                     break;
+                case StripeTransaction::TYPE_AUTHORIZED:
+                    $result['color'] = '#FF8C00';
+                    $result['type_icon'] = 'unlock';
+                    $result['type_text'] = $this->l('Authorized');
+                    break;
+                case StripeTransaction::TYPE_IN_REVIEW:
+                    $result['color'] = '#FF8C00';
+                    $result['type_icon'] = 'search';
+                    $result['type_text'] = $this->l('In review');
+                    break;
+                case StripeTransaction::TYPE_CAPTURED:
+                    $result['color'] = '#32CD32';
+                    $result['type_icon'] = 'lock';
+                    $result['type_text'] = $this->l('Captured');
+                    break;
                 default:
                     $result['color'] = '';
                     break;
@@ -910,7 +1200,7 @@ class Stripe extends PaymentModule
         $helperList->listTotal = count($results);
 
         $helperList->identifier = StripeTransaction::$definition['primary'];
-        $helperList->title = $this->l('Transactions');
+        $helperList->title = $this->l('Transactions & Events');
         $helperList->token = Tools::getAdminTokenLite('AdminModules');
         $helperList->currentIndex = AdminController::$currentIndex.'&'.http_build_query([
             'configure' => $this->name,
@@ -918,6 +1208,7 @@ class Stripe extends PaymentModule
         ]);
 
         $helperList->table = StripeTransaction::$definition['table'];
+        $helperList->tpl_vars['icon'] = 'icon icon-cc-stripe';
 
         return $helperList->generateList($results, $fieldsList);
     }
@@ -1204,6 +1495,7 @@ class Stripe extends PaymentModule
                         'type'        => 'text',
                         'name'        => static::PUBLISHABLE_KEY_TEST,
                         'value'       => Configuration::get(static::PUBLISHABLE_KEY_TEST),
+                        'auto_value'  => false,
                         'validation'  => 'isString',
                         'cast'        => 'strval',
                         'placeholder' => 'pk_test...',
@@ -1214,6 +1506,7 @@ class Stripe extends PaymentModule
                         'type'        => 'text',
                         'name'        => static::SECRET_KEY_TEST,
                         'value'       => Configuration::get(static::SECRET_KEY_TEST),
+                        'auto_value'  => false,
                         'validation'  => 'isString',
                         'cast'        => 'strval',
                         'placeholder' => 'sk_test...',
@@ -1224,6 +1517,7 @@ class Stripe extends PaymentModule
                         'type'        => 'text',
                         'name'        => static::PUBLISHABLE_KEY_TEST,
                         'value'       => Configuration::get(static::PUBLISHABLE_KEY_TEST),
+                        'auto_value'  => false,
                         'validation'  => 'isString',
                         'cast'        => 'strval',
                         'placeholder' => 'pk_live...',
@@ -1234,6 +1528,7 @@ class Stripe extends PaymentModule
                         'type'        => 'text',
                         'name'        => static::SECRET_KEY_TEST,
                         'value'       => Configuration::get(static::SECRET_KEY_TEST),
+                        'auto_value'  => false,
                         'validation'  => 'isString',
                         'cast'        => 'strval',
                         'placeholder' => 'sk_live...',
@@ -1245,6 +1540,7 @@ class Stripe extends PaymentModule
                         'desc'       => $this->l('Enable this options to accept live payments, otherwise the test keys are used, which you can use to test your store.'),
                         'name'       => static::GO_LIVE,
                         'value'      => Configuration::get(static::GO_LIVE),
+                        'auto_value' => false,
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                     ],
@@ -1277,6 +1573,7 @@ class Stripe extends PaymentModule
                         'type'       => 'bool',
                         'name'       => static::STRIPE_CHECKOUT,
                         'value'      => Configuration::get(static::STRIPE_CHECKOUT),
+                        'auto_value' => false,
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                     ],
@@ -1285,6 +1582,7 @@ class Stripe extends PaymentModule
                         'type'       => 'bool',
                         'name'       => static::COLLECT_BILLING,
                         'value'      => Configuration::get(static::COLLECT_BILLING),
+                        'auto_value' => false,
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                     ],
@@ -1293,6 +1591,7 @@ class Stripe extends PaymentModule
                         'type'       => 'bool',
                         'name'       => static::COLLECT_SHIPPING,
                         'value'      => Configuration::get(static::COLLECT_SHIPPING),
+                        'auto_value' => false,
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                     ],
@@ -1301,6 +1600,7 @@ class Stripe extends PaymentModule
                         'type'       => 'bool',
                         'name'       => static::ZIPCODE,
                         'value'      => Configuration::get(static::ZIPCODE),
+                        'auto_value' => false,
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                     ],
@@ -1309,6 +1609,7 @@ class Stripe extends PaymentModule
                         'type'       => 'bool',
                         'name'       => static::SHOW_PAYMENT_LOGOS,
                         'value'      => Configuration::get(static::SHOW_PAYMENT_LOGOS),
+                        'auto_value' => false,
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                     ],
@@ -1341,6 +1642,7 @@ class Stripe extends PaymentModule
                         'type'       => 'bool',
                         'name'       => static::STRIPE_CC_FORM,
                         'value'      => Configuration::get(static::STRIPE_CC_FORM),
+                        'auto_value' => false,
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                     ],
@@ -1349,6 +1651,7 @@ class Stripe extends PaymentModule
                         'type'       => 'bool',
                         'name'       => static::THREEDSECURE,
                         'value'      => Configuration::get(static::THREEDSECURE),
+                        'auto_value' => false,
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                     ],
@@ -1358,6 +1661,7 @@ class Stripe extends PaymentModule
                         'type'       => 'bool',
                         'name'       => static::STRIPE_PAYMENT_REQUEST,
                         'value'      => Configuration::get(static::STRIPE_PAYMENT_REQUEST),
+                        'auto_value' => false,
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                         'size'       => 64,
@@ -1389,6 +1693,7 @@ class Stripe extends PaymentModule
                         'type'       => 'bool',
                         'name'       => static::IDEAL,
                         'value'      => Configuration::get(static::IDEAL),
+                        'auto_value' => false,
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                     ],
@@ -1397,6 +1702,7 @@ class Stripe extends PaymentModule
                         'type'       => 'bool',
                         'name'       => static::BANCONTACT,
                         'value'      => Configuration::get(static::BANCONTACT),
+                        'auto_value' => false,
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                     ],
@@ -1405,6 +1711,7 @@ class Stripe extends PaymentModule
                         'type'       => 'bool',
                         'name'       => static::GIROPAY,
                         'value'      => Configuration::get(static::GIROPAY),
+                        'auto_value' => false,
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                     ],
@@ -1413,6 +1720,7 @@ class Stripe extends PaymentModule
                         'type'       => 'bool',
                         'name'       => static::SOFORT,
                         'value'      => Configuration::get(static::SOFORT),
+                        'auto_value' => false,
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                     ],
@@ -1421,6 +1729,7 @@ class Stripe extends PaymentModule
                         'type'       => 'bool',
                         'name'       => static::P24,
                         'value'      => Configuration::get(static::P24),
+                        'auto_value' => false,
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                     ],
@@ -1453,6 +1762,7 @@ class Stripe extends PaymentModule
                         'type'       => 'bool',
                         'name'       => static::ALIPAY_BLOCK,
                         'value'      => Configuration::get(static::ALIPAY_BLOCK),
+                        'auto_value' => false,
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                         'size'       => 64,
@@ -1478,20 +1788,29 @@ class Stripe extends PaymentModule
     protected function getOrderOptions()
     {
         $orderStatuses = OrderState::getOrderStates($this->context->language->id);
-
         $statusValidated = (int) Configuration::get(static::STATUS_VALIDATED);
         if ($statusValidated < 1) {
             $statusValidated = (int) Configuration::get('PS_OS_PAYMENT');
         }
-
         $statusPartialRefund = (int) Configuration::get(static::STATUS_PARTIAL_REFUND);
         if ($statusPartialRefund < 1) {
             $statusPartialRefund = (int) Configuration::get('PS_OS_REFUND');
         }
-
         $statusRefund = (int) Configuration::get(static::STATUS_REFUND);
         if ($statusRefund < 1) {
             $statusRefund = (int) Configuration::get('PS_OS_REFUND');
+        }
+        $statusSofort = (int) Configuration::get(static::STATUS_SOFORT);
+        if ($statusSofort < 1) {
+            $statusSofort = (int) Configuration::get('PS_OS_PAYMENT');
+        }
+        $statusAuthorized = (int) Configuration::get(static::STATUS_AUTHORIZED);
+        if ($statusAuthorized < 1) {
+            $statusAuthorized = (int) Configuration::get('PS_OS_PAYMENT');
+        }
+        $statusInReview = (int) Configuration::get(static::STATUS_IN_REVIEW);
+        if ($statusInReview < 1) {
+            $statusInReview = (int) Configuration::get('PS_OS_PAYMENT');
         }
 
         return [
@@ -1507,6 +1826,7 @@ class Stripe extends PaymentModule
                         'identifier' => 'id_order_state',
                         'name'       => static::STATUS_VALIDATED,
                         'value'      => $statusValidated,
+                        'auto_value' => false,
                         'validation' => 'isString',
                         'cast'       => 'strval',
                     ],
@@ -1515,6 +1835,7 @@ class Stripe extends PaymentModule
                         'type'       => 'bool',
                         'name'       => static::USE_STATUS_PARTIAL_REFUND,
                         'value'      => Configuration::get(static::USE_STATUS_PARTIAL_REFUND),
+                        'auto_value' => false,
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                     ],
@@ -1526,6 +1847,7 @@ class Stripe extends PaymentModule
                         'identifier' => 'id_order_state',
                         'name'       => static::STATUS_PARTIAL_REFUND,
                         'value'      => $statusPartialRefund,
+                        'auto_value' => false,
                         'validation' => 'isString',
                         'cast'       => 'strval',
                     ],
@@ -1534,6 +1856,7 @@ class Stripe extends PaymentModule
                         'type'       => 'bool',
                         'name'       => static::USE_STATUS_REFUND,
                         'value'      => Configuration::get(static::USE_STATUS_REFUND),
+                        'auto_value' => false,
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                     ],
@@ -1545,17 +1868,7 @@ class Stripe extends PaymentModule
                         'identifier' => 'id_order_state',
                         'name'       => static::PUBLISHABLE_KEY_TEST,
                         'value'      => $statusRefund,
-                        'validation' => 'isString',
-                        'cast'       => 'strval',
-                    ],
-                    static::STATUS_SOFORT             => [
-                        'title'      => $this->l('Sofort status'),
-                        'desc'       => $this->l('Order status to use when a Sofort Banking payment is pending'),
-                        'type'       => 'select',
-                        'list'       => $orderStatuses,
-                        'identifier' => 'id_order_state',
-                        'name'       => static::STATUS_SOFORT,
-                        'value'      => $statusValidated,
+                        'auto_value' => false,
                         'validation' => 'isString',
                         'cast'       => 'strval',
                     ],
@@ -1565,8 +1878,73 @@ class Stripe extends PaymentModule
                         'type'       => 'bool',
                         'name'       => static::GENERATE_CREDIT_SLIP,
                         'value'      => Configuration::get(static::GENERATE_CREDIT_SLIP),
+                        'auto_value' => false,
                         'validation' => 'isBool',
                         'cast'       => 'intval',
+                    ],
+                    static::USE_STATUS_AUTHORIZED     => [
+                        'title'      => $this->l('Use a status for authorized payments'),
+                        'type'       => 'bool',
+                        'name'       => static::USE_STATUS_AUTHORIZED,
+                        'value'      => Configuration::get(static::USE_STATUS_AUTHORIZED),
+                        'auto_value' => false,
+                        'validation' => 'isBool',
+                        'cast'       => 'intval',
+                    ],
+                    static::STATUS_AUTHORIZED         => [
+                        'title'      => $this->l('Status for authorized payments'),
+                        'desc'       => $this->l('Order status to use when the payment has only been authorized'),
+                        'type'       => 'select',
+                        'list'       => $orderStatuses,
+                        'identifier' => 'id_order_state',
+                        'name'       => static::PUBLISHABLE_KEY_TEST,
+                        'value'      => $statusAuthorized,
+                        'auto_value' => false,
+                        'validation' => 'isString',
+                        'cast'       => 'strval',
+                    ],
+                    static::USE_STATUS_IN_REVIEW      => [
+                        'title'      => $this->l('Use "in review" status'),
+                        'type'       => 'bool',
+                        'name'       => static::USE_STATUS_IN_REVIEW,
+                        'value'      => Configuration::get(static::USE_STATUS_IN_REVIEW),
+                        'auto_value' => false,
+                        'validation' => 'isBool',
+                        'cast'       => 'intval',
+                    ],
+                    static::STATUS_IN_REVIEW          => [
+                        'title'      => $this->l('"In review" status'),
+                        'desc'       => $this->l('Order status to use when the payment is in review'),
+                        'type'       => 'select',
+                        'list'       => $orderStatuses,
+                        'identifier' => 'id_order_state',
+                        'name'       => static::STATUS_IN_REVIEW,
+                        'value'      => $statusInReview,
+                        'auto_value' => false,
+                        'validation' => 'isString',
+                        'cast'       => 'strval',
+                    ],
+                    static::MANUAL_CAPTURE            => [
+                        'title'      => $this->l('Manual capture'),
+                        'desc'       => $this->l('Manually capture payments (use authorize only whenever possible)'),
+                        'type'       => 'bool',
+                        'name'       => static::MANUAL_CAPTURE,
+                        'value'      => Configuration::get(static::MANUAL_CAPTURE),
+                        'auto_value' => false,
+                        'validation' => 'isBool',
+                        'cast'       => 'intval',
+                    ],
+                    static::STATUS_SOFORT             => [
+                        'title'      => $this->l('Sofort status'),
+                        'desc'       => $this->l('Order status to use when a Sofort Banking payment is pending'),
+                        'type'       => 'select',
+                        'list'       => $orderStatuses,
+                        'identifier' => 'id_order_state',
+                        'name'       => static::STATUS_SOFORT,
+                        'value'      => $statusSofort,
+                        'auto_value' => false,
+                        'validation' => 'isString',
+                        'cast'       => 'strval',
                     ],
                 ],
                 'submit' => [
@@ -1587,19 +1965,6 @@ class Stripe extends PaymentModule
      */
     protected function getDesignOptions()
     {
-        /*
-         *  INPUT_PLACEHOLDER_COLOR
-    BUTTON_BACKGROUND_COLOR
-    BUTTON_FOREGROUND_COLOR
-    HIGHLIGHT_COLOR
-    ERROR_COLOR
-    ERROR_GLYPH_COLOR
-    PAYMENT_REQUEST_FOREGROUND_COLOR
-    PAYMENT_REQUEST_BACKGROUND_COLOR
-    INPUT_FONT_FAMILY
-    CHECKOUT_FONT_FAMILY
-    CHECKOUT_FONT_SIZE
-         */
         return [
             'advanced' => [
                 'title'  => $this->l('Credit card form design'),
@@ -1820,7 +2185,6 @@ class Stripe extends PaymentModule
                 'stripe_p24'                    => Configuration::get(static::P24),
                 'stripe_alipay_block'           => (bool) Configuration::get(static::ALIPAY_BLOCK),
                 'stripe_shopname'               => $this->context->shop->name,
-                'stripe_ajax_validation'        => $link->getModuleLink($this->name, 'ajaxvalidation', [], Tools::usingSecureMode()),
                 'stripe_confirmation_page'      => $link->getModuleLink($this->name, 'validation', [], Tools::usingSecureMode()),
                 'stripe_ajax_confirmation_page' => $link->getPageLink(
                     'order-confirmation',
@@ -2015,16 +2379,13 @@ class Stripe extends PaymentModule
     /**
      * Hook to the top a payment page
      *
-     * @param array $params Hook parameters
-     *
      * @return string Hook HTML
      * @throws Exception
      * @throws PrestaShopException
      * @throws SmartyException
      */
-    public function hookDisplayPaymentTop($params)
+    public function hookDisplayPaymentTop()
     {
-        $this->context->controller->addJQuery();
         $this->context->smarty->assign(
             [
                 'baseDir'             => Tools::getHttpHost(true).__PS_BASE_URI__.'modules/stripe/views/',
@@ -2054,7 +2415,18 @@ class Stripe extends PaymentModule
      */
     public function hookDisplayAdminOrder($params)
     {
-        if (Tools::getValue('stripeRefund') === 'refunded') {
+        $cookie = new Cookie('stripe');
+        if ($cookie->error) {
+            $this->context->controller->errors[] = $cookie->error;
+        }
+        if ($cookie->confirmation) {
+            $this->context->controller->confirmations[] = $cookie->confirmation;
+        }
+        unset($cookie->error);
+        unset($cookie->confirmation);
+        $cookie->write();
+
+        if (Tools::getValue('stripeRefund') === 'refunded' && empty($this->context->controller->errors)) {
             $this->context->controller->confirmations[] = $this->l('The refund via Stripe has been successfully processed');
         }
 
@@ -2079,11 +2451,15 @@ class Stripe extends PaymentModule
 
             $this->context->smarty->assign(
                 [
+                    'stripe_review'               => StripeReview::getByOrderId($order->id),
                     'stripe_transaction_list'     => $this->renderAdminOrderTransactionList($params['id_order']),
-                    'stripe_currency_symbol'      => $orderCurrency->sign,
+                    'stripe_currency'             => $orderCurrency,
+                    'stripe_status'               => StripeReview::getByOrderId($params['id_order']),
                     'stripe_total_amount'         => $totalRefundLeft,
                     'stripe_module_refund_action' => $this->context->link->getAdminLink('AdminModules', true).
-                        '&configure=stripe&tab_module=payments_gateways&module_name=stripe&orderstriperefund',
+                        "&configure={$this->name}&tab_module={$this->tab}&module_name={$this->name}&orderstriperefund",
+                    'stripe_module_review_action' => $this->context->link->getAdminLink('AdminModules', true).
+                        "&configure={$this->name}&tab_module={$this->tab}&module_name={$this->name}&orderstripereview",
                     'id_order'                    => (int) $order->id,
                     'canViewStripeRefunds'        => $this->context->controller->tabAccess['view'],
                     'canEditStripeRefunds'        => $this->context->controller->tabAccess['edit'],
@@ -2094,6 +2470,27 @@ class Stripe extends PaymentModule
         }
 
         return '';
+    }
+
+    /**
+     * @return void
+     *
+     * @throws Adapter_Exception
+     * @throws PrestaShopException
+     * @since 1.6.0
+     */
+    public function hookActionAdminOrdersListingFieldsModifier()
+    {
+        static $called = false;
+        if (!$called) {
+            if (Tools::isSubmit('submitBulkupdateStripeCapture')) {
+                $this->processBulkCapture();
+            }
+
+            $this->context->controller->addJquery();
+            $this->context->controller->addJS($this->_path.'views/js/list.js');
+            $called = true;
+        }
     }
 
     /**
@@ -2135,8 +2532,44 @@ class Stripe extends PaymentModule
                         $result['type_icon'] = 'undo';
                         $result['type_text'] = $this->l('Full refund');
                         break;
+                    case StripeTransaction::TYPE_AUTHORIZED:
+                        $result['color'] = '#FF8C00';
+                        $result['type_icon'] = 'unlock';
+                        $result['type_text'] = $this->l('Authorized');
+                        break;
+                    case StripeTransaction::TYPE_IN_REVIEW:
+                        $result['color'] = '#FF8C00';
+                        $result['type_icon'] = 'search';
+                        $result['type_text'] = $this->l('In review');
+                        break;
+                    case StripeTransaction::TYPE_CAPTURED:
+                        $result['color'] = '#32CD32';
+                        $result['type_icon'] = 'lock';
+                        $result['type_text'] = $this->l('Captured');
+                        break;
                     default:
                         $result['color'] = '';
+                        break;
+                }
+
+                switch ($result['source_type']) {
+                    case 'ideal':
+                        $result['source_type'] = $this->l('iDEAL');
+                        break;
+                    case 'sofort':
+                        $result['source_type'] = $this->l('Sofort Banking');
+                        break;
+                    case 'bancontact':
+                        $result['source_type'] = $this->l('Bancontact');
+                        break;
+                    case 'giropay':
+                        $result['source_type'] = $this->l('Giropay');
+                        break;
+                    case 'three_d_secure':
+                        $result['source_type'] = $this->l('3D Secure');
+                        break;
+                    default:
+                        $result['source_type'] = $this->l('Credit Card');
                         break;
                 }
 
@@ -2159,29 +2592,57 @@ class Stripe extends PaymentModule
 
         $helperList = new HelperList();
         $helperList->id = 1;
-
         $helperList->list_id = 'stripe_transaction';
         $helperList->shopLinkType = false;
-
         $helperList->no_link = true;
-
         $helperList->_defaultOrderBy = 'date_add';
-
         $helperList->simple_header = true;
-
         $helperList->module = $this;
-
         $fieldsList = [
-            'id_stripe_transaction' => ['title' => $this->l('ID'), 'width' => 'auto'],
-            'type_icon'             => ['type' => 'type_icon', 'title' => $this->l('Type'), 'width' => 'auto', 'color' => 'color', 'text' => 'type_text'],
-            'amount'                => ['type' => 'price', 'title' => $this->l('Amount'), 'width' => 'auto'],
-            'card_last_digits'      => ['type' => 'text', 'title' => $this->l('Credit card (last 4 digits)'), 'width' => 'auto'],
-            'source_text'           => ['type' => 'stripe_source', 'title' => $this->l('Source'), 'width' => 'auto'],
-            'date_upd'              => ['type' => 'datetime', 'title' => $this->l('Date & time'), 'width' => 'auto'],
+            'id_stripe_transaction' => [
+                'type'  => 'text',
+                'title' => $this->l('ID'),
+                'width' => 'auto',
+            ],
+            'type_icon'             => [
+                'type'            => 'text',
+                'title'           => $this->l('Type'),
+                'width'           => 'auto',
+                'color'           => 'color',
+                'text'            => 'type_text',
+                'callback'        => 'displayEventLabel',
+                'callback_object' => '\\StripeModule\\StripeTransaction',
+            ],
+            'amount'                => [
+                'type'  => 'price',
+                'title' => $this->l('Amount'),
+                'width' => 'auto',
+            ],
+            'card_last_digits'      => [
+                'type'            => 'text',
+                'title'           => $this->l('Credit card (last 4 digits)'),
+                'width'           => 'auto',
+                'callback'        => 'displayCardDigits',
+                'callback_object' => '\\StripeModule\\StripeTransaction',
+            ],
+            'source_type' => [
+               'type' => 'text',
+               'title' => $this->l('Method'),
+               'width' => 'auto',
+            ],
+            'source_text'           => [
+                'type'  => 'text',
+                'title' => $this->l('Source'),
+                'width' => 'auto',
+            ],
+            'date_upd'              => [
+                'type'  => 'datetime',
+                'title' => $this->l('Date & time'),
+                'width' => 'auto',
+            ],
         ];
 
         $helperList->identifier = 'id_stripe_transaction';
-        $helperList->title = $this->l('Transactions');
         $helperList->token = Tools::getAdminTokenLite('AdminOrders');
         $helperList->currentIndex = AdminController::$currentIndex.'&'.http_build_query([
             'id_order' => $idOrder,
@@ -2200,7 +2661,7 @@ class Stripe extends PaymentModule
         $doc->loadHTML(mb_convert_encoding($listHtml, 'HTML-ENTITIES', 'UTF-8'));
         $node = $doc->getElementsByTagName('table')->item(0);
 
-        return (string) '<h4>'.$this->l('Transactions').'</h4>'.$doc->saveXML($node->parentNode);
+        return (string) '<h4>'.$this->l('Transactions & Events').'</h4>'.$doc->saveXML($node->parentNode);
     }
 
     /**

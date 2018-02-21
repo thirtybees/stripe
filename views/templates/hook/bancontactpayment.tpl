@@ -17,10 +17,10 @@
 *}
 <p class="payment_module stripe_payment_button">
     <a id="stripe_bancontact_payment_link"
-       href="{$link->getModuleLink('stripe', 'eupayment', ['method' => 'bancontact'], true)|escape:'htmlall':'UTF-8'}"
+       href="{$link->getModuleLink('stripe', 'eupayment', ['method' => 'bancontact'], true)|escape:'htmlall'}"
        title="{l s='Pay with Bancontact' mod='stripe'}"
     >
-        <img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/bancontact.png"
+        <img src="{$module_dir|escape:'htmlall'}/views/img/bancontact.png"
              alt="{l s='Pay with Bancontact' mod='stripe'}"
              width="64"
              height="64"

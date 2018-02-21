@@ -16,8 +16,8 @@
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
 <div class="row">
-  <form id="stripe-form" action="{$stripe_confirmation_page|escape:'htmlall':'UTF-8'}" method="POST">
-    <input type="hidden" name="stripe-id_cart" value="{$id_cart|escape:'htmlall':'UTF-8'}">
+  <form id="stripe-form" action="{$stripe_confirmation_page|escape:'htmlall'}" method="POST">
+    <input type="hidden" name="stripe-id_cart" value="{$id_cart|escape:'htmlall'}">
   </form>
   <a id="stripe_payment_link" href="#" title="{l s='Pay with Stripe' mod='stripe'}" class="btn btn-default">
     {l s='Pay with Stripe' mod='stripe'}
@@ -53,11 +53,11 @@
 
             {* Open Checkout with further options: *}
             handler.open({
-              name: '{$stripe_shopname|escape:'javascript':'UTF-8'}',
+              name: '{$stripe_shopname|escape:'javascript'}',
               zipCode: {if $stripe_zipcode}true{else}false{/if},
-              currency: '{$stripe_currency|escape:'javascript':'UTF-8'}',
-              amount: '{$stripe_amount|escape:'javascript':'UTF-8'}',
-              email: '{$stripe_email|escape:'javascript':'UTF-8'}',
+              currency: '{$stripe_currency|escape:'javascript'}',
+              amount: '{$stripe_amount|escape:'javascript'}',
+              email: '{$stripe_email|escape:'javascript'}',
               billingAddress: {if $stripe_collect_billing}true{else}false{/if},
               shippingAddress: {if $stripe_collect_shipping}true{else}false{/if}
             });
@@ -73,9 +73,9 @@
             }
 
             handler = StripeCheckout.configure({
-              key: '{$stripe_publishable_key|escape:'javascript':'UTF-8'}',
-              image: '{$stripeShopThumb|escape:'javascript':'UTF-8'}',
-              locale: '{$stripe_locale|escape:'javascript':'UTF-8'}',
+              key: '{$stripe_publishable_key|escape:'javascript'}',
+              image: '{$stripeShopThumb|escape:'javascript'}',
+              locale: '{$stripe_locale|escape:'javascript'}',
               token: function (token) {
                 var form = document.getElementById('stripe-form');
                 {* Insert the token into the form so it gets submitted to the server: *}

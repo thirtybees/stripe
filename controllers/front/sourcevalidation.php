@@ -17,6 +17,7 @@
  * @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
 
+use StripeModule\StripeReview;
 use StripeModule\StripeTransaction;
 
 if (!defined('_TB_VERSION_')) {
@@ -55,12 +56,12 @@ class StripeSourcevalidationModuleFrontController extends ModuleFrontController
     {
         $cart = $this->context->cart;
         if ($cart->id_customer == 0 || $cart->id_address_delivery == 0 || $cart->id_address_invoice == 0 || !$this->module->active) {
-            Tools::redirect('index.php?controller=order&step=3');
+            Tools::redirect($this->context->link->getPageLink('order', null, null, ['step' => 3]));
         }
 
         $customer = new Customer($cart->id_customer);
         if (!Validate::isLoadedObject($customer)) {
-            Tools::redirect('index.php?controller=order&step=3');
+            Tools::redirect($this->context->link->getPageLink('order', null, null, ['step' => 3]));
         }
 
         $orderProcess = Configuration::get('PS_ORDER_PROCESS_TYPE') ? 'order-opc' : 'order';
@@ -111,6 +112,10 @@ class StripeSourcevalidationModuleFrontController extends ModuleFrontController
                     'amount'   => $stripeAmount,
                     'currency' => mb_strtolower($currency->iso_code),
                     'source'   => $source,
+                    'capture'  => false,
+                    'metadata' => [
+                        'from_back_office' => true,
+                    ],
                 ]
             );
         } catch (Exception $e) {
@@ -121,8 +126,31 @@ class StripeSourcevalidationModuleFrontController extends ModuleFrontController
             return false;
         }
 
+        $paymentStatus = Configuration::get(Stripe::STATUS_VALIDATED);
+        $stripeReview = new StripeReview();
+        $stripeReview->id_charge = $stripeCharge->id;
+        $stripeReview->status = 0;
+        $stripeReview->test = !Configuration::get(Stripe::GO_LIVE);
         if ($stripeCharge->status === 'succeeded') {
-            $paymentStatus = Configuration::get(Stripe::STATUS_VALIDATED);
+            if (in_array($stripeCharge->source->type, ['card', 'three_d_secure'])) {
+                $stripeReview->status = StripeReview::CAPTURED;
+                if ($stripeCharge->review || Configuration::get(Stripe::MANUAL_CAPTURE)) {
+                    $stripeReview->id_review = $stripeCharge->review;
+                    if (Configuration::get(Stripe::MANUAL_CAPTURE) && Configuration::get(Stripe::USE_STATUS_AUTHORIZED)) {
+                        $paymentStatus = (int) Configuration::get(Stripe::STATUS_AUTHORIZED);
+                    }
+                    if ($stripeCharge->review && Configuration::get(Stripe::USE_STATUS_IN_REVIEW)) {
+                        $paymentStatus = (int) Configuration::get(Stripe::STATUS_IN_REVIEW);
+                    }
+                    $stripeReview->status = $stripeCharge->review ? StripeReview::IN_REVIEW : StripeReview::AUTHORIZED;
+                } else {
+                    $stripeCharge->metadata = [
+                        'from_back_office' => true,
+                    ];
+                    $stripeCharge->capture();
+                }
+            }
+
             $message = null;
 
             /**
@@ -149,7 +177,17 @@ class StripeSourcevalidationModuleFrontController extends ModuleFrontController
                     break;
             }
 
-            $this->module->validateOrder($idCart, $paymentStatus, $cart->getOrderTotal(), $paymentMethod, $message, [], $currencyId, false, $cart->secure_key);
+            $this->module->validateOrder(
+                $idCart,
+                $paymentStatus,
+                $cart->getOrderTotal(),
+                $paymentMethod,
+                $message,
+                [],
+                $currencyId,
+                false,
+                $cart->secure_key
+            );
 
             /**
              * If the order has been validated we try to retrieve it
@@ -168,15 +206,45 @@ class StripeSourcevalidationModuleFrontController extends ModuleFrontController
                 $stripeTransaction->id_charge = $stripeCharge->id;
                 $stripeTransaction->amount = $stripeAmount;
                 $stripeTransaction->id_order = $idOrder;
-                $stripeTransaction->type = StripeTransaction::TYPE_CHARGE;
+                switch ($stripeReview->status) {
+                    case StripeReview::AUTHORIZED:
+                        $stripeTransaction->type = StripeTransaction::TYPE_AUTHORIZED;
+
+                        break;
+                    case StripeReview::IN_REVIEW:
+                        $stripeTransaction->type = StripeTransaction::TYPE_IN_REVIEW;
+
+                        break;
+                    case StripeReview::CAPTURED:
+                        $stripeTransaction->type = StripeTransaction::TYPE_CAPTURED;
+
+                        break;
+                    default:
+                        $stripeTransaction->type = StripeTransaction::TYPE_CHARGE;
+
+                        break;
+                }
                 $stripeTransaction->source = StripeTransaction::SOURCE_FRONT_OFFICE;
                 $stripeTransaction->source_type = $type;
                 $stripeTransaction->add();
 
+                $stripeReview->id_order = $idOrder;
+                $stripeReview->add();
+
                 /**
                  * The order has been placed so we redirect the customer on the confirmation page.
                  */
-                Tools::redirect('index.php?controller=order-confirmation&id_cart='.$cart->id.'&id_module='.$this->module->id.'&id_order='.$idOrder.'&key='.$customer->secure_key);
+                Tools::redirect($this->context->link->getPageLink(
+                    'order-confirmation',
+                    null,
+                    null,
+                    [
+                        'id_cart'   => (int) $cart->id,
+                        'id_module' => (int) $this->module->id,
+                        'id_order'  => (int) $idOrder,
+                        'key'       => Tools::safeOutput($customer->secure_key),
+                    ]
+                ));
             } else {
                 /**
                  * An error occurred and is shown on a new page.
@@ -223,10 +291,23 @@ class StripeSourcevalidationModuleFrontController extends ModuleFrontController
                 $stripeTransaction->source_type = $type;
                 $stripeTransaction->add();
 
+                $stripeReview->id_order = $idOrder;
+                $stripeReview->add();
+
                 /**
                  * The order has been placed so we redirect the customer on the confirmation page.
                  */
-                Tools::redirect('index.php?controller=order-confirmation&id_cart='.$cart->id.'&id_module='.$this->module->id.'&id_order='.$idOrder.'&key='.$customer->secure_key);
+                Tools::redirect($this->context->link->getPageLink(
+                    'order-confirmation',
+                    null,
+                    null,
+                    [
+                        'id_cart'   => $cart->id,
+                        'id_module' => $this->module->id,
+                        'id_order'  => $idOrder,
+                        'key'       => $customer->secure_key,
+                    ]
+                ));
             } else {
                 /**
                  * An error occurred and is shown on a new page.

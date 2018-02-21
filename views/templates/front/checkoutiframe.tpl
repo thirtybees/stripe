@@ -1,12 +1,12 @@
 <!doctype html>
 <html>
 <head>
-  {if !empty($stripe_checkout_font_family)}<link rel="stylesheet" href="//fonts.googleapis.com/css?family={$stripe_checkout_font_family|replace:' ':'+'|escape:'htmlall':'UTF-8'}:300,400,600,700&amp;lang=en" />{/if}
+  {if !empty($stripe_checkout_font_family)}<link rel="stylesheet" href="//fonts.googleapis.com/css?family={$stripe_checkout_font_family|replace:' ':'+'|escape:'htmlall'}:300,400,600,700&amp;lang=en" />{/if}
   {include file="./assets.tpl"}
   <style>
     body {
-      font-family: {if !empty($stripe_checkout_font_family)}{$stripe_checkout_font_family|escape:'htmlall':'UTF-8'}, {/if}Inter UI, Open Sans, Segoe UI, sans-serif;
-      font-size: {if !empty($stripe_checkout_font_size)}{$stripe_checkout_font_size|escape:'htmlall':'UTF-8'}{else}15px{/if};
+      font-family: {if !empty($stripe_checkout_font_family)}{$stripe_checkout_font_family|escape:'htmlall'}, {/if}Inter UI, Open Sans, Segoe UI, sans-serif;
+      font-size: {if !empty($stripe_checkout_font_size)}{$stripe_checkout_font_size|escape:'htmlall'}{else}15px{/if};
       margin: 0;
       padding: 0;
     }
@@ -16,8 +16,8 @@
     }
 
     .thirtybees.thirtybees-stripe * {
-      font-family: {if !empty($stripe_checkout_font_family)}{$stripe_checkout_font_family|escape:'htmlall':'UTF-8'}, {/if}Inter UI, Open Sans, Segoe UI, sans-serif;
-      font-size: {if !empty($stripe_checkout_font_size)}{$stripe_checkout_font_size|escape:'htmlall':'UTF-8'}{else}15px{/if};
+      font-family: {if !empty($stripe_checkout_font_family)}{$stripe_checkout_font_family|escape:'htmlall'}, {/if}Inter UI, Open Sans, Segoe UI, sans-serif;
+      font-size: {if !empty($stripe_checkout_font_size)}{$stripe_checkout_font_size|escape:'htmlall'}{else}15px{/if};
       font-weight: 500;
     }
 
@@ -91,41 +91,41 @@
     }
 
     .thirtybees.thirtybees-stripe input::-webkit-input-placeholder {
-      color: {if !empty($stripe_input_placeholder_color)}{$stripe_input_placeholder_color|escape:'htmlall':'UTF-8'}{else}#9bacc8{/if};
+      color: {if !empty($stripe_input_placeholder_color)}{$stripe_input_placeholder_color|escape:'htmlall'}{else}#9bacc8{/if};
     }
 
     .thirtybees.thirtybees-stripe input::-moz-placeholder {
-      color: {if !empty($stripe_input_placeholder_color)}{$stripe_input_placeholder_color|escape:'htmlall':'UTF-8'}{else}#9bacc8{/if};
+      color: {if !empty($stripe_input_placeholder_color)}{$stripe_input_placeholder_color|escape:'htmlall'}{else}#9bacc8{/if};
     }
 
     .thirtybees.thirtybees-stripe input:-ms-input-placeholder {
-      color: {if !empty($stripe_input_placeholder_color)}{$stripe_input_placeholder_color|escape:'htmlall':'UTF-8'}{else}#9bacc8{/if};
+      color: {if !empty($stripe_input_placeholder_color)}{$stripe_input_placeholder_color|escape:'htmlall'}{else}#9bacc8{/if};
     }
 
     .thirtybees.thirtybees-stripe button {
       display: block;
       width: 100%;
       height: 37px;
-      background-color: {if !empty($stripe_button_background_color)}{$stripe_button_background_color|escape:'htmlall':'UTF-8'}{else}#d782d9{/if};
+      background-color: {if !empty($stripe_button_background_color)}{$stripe_button_background_color|escape:'htmlall'}{else}#d782d9{/if};
       border-radius: 2px;
-      color: {if !empty($stripe_button_foreground_color)}{$stripe_button_foreground_color|escape:'htmlall':'UTF-8'}{else}#ffffff{/if};
+      color: {if !empty($stripe_button_foreground_color)}{$stripe_button_foreground_color|escape:'htmlall'}{else}#ffffff{/if};
       cursor: pointer;
     }
 
     .thirtybees.thirtybees-stripe button:active {
-      background-color: {if !empty($stripe_highlight_color)}{$stripe_highlight_color|escape:'htmlall':'UTF-8'}{else}#b76ac4{/if};
+      background-color: {if !empty($stripe_highlight_color)}{$stripe_highlight_color|escape:'htmlall'}{else}#b76ac4{/if};
     }
 
     .thirtybees.thirtybees-stripe .error svg .base {
-      fill: {if !empty($stripe_error_color)}{$stripe_error_color|escape:'htmlall':'UTF-8'}{else}#e25950{/if};
+      fill: {if !empty($stripe_error_color)}{$stripe_error_color|escape:'htmlall'}{else}#e25950{/if};
     }
 
     .thirtybees.thirtybees-stripe .error svg .glyph {
-      fill: {if !empty($stripe_error_glyph_color)}{$stripe_error_glyph_color|escape:'htmlall':'UTF-8'}{else}#f6f9fc{/if};
+      fill: {if !empty($stripe_error_glyph_color)}{$stripe_error_glyph_color|escape:'htmlall'}{else}#f6f9fc{/if};
     }
 
     .thirtybees.thirtybees-stripe .error .message {
-      color: {if !empty($stripe_error_color)}{$stripe_error_color|escape:'htmlall':'UTF-8'}{else}#e25950{/if};
+      color: {if !empty($stripe_error_color)}{$stripe_error_color|escape:'htmlall'}{else}#e25950{/if};
     }
     #tb-stripe-elements {
       width: 1px;
@@ -246,29 +246,29 @@
           );
         }
 
-        var stripe = Stripe('{$stripe_publishable_key|escape:'javascript':'UTF-8'}');
+        var stripe = Stripe('{$stripe_publishable_key|escape:'javascript'}');
         var elements = stripe.elements({
           fonts: [
             {
-              cssSrc: 'https://fonts.googleapis.com/css?family={$stripe_input_font_family|replace:' ':'+'|escape:'javascript':'UTF-8'}',
+              cssSrc: 'https://fonts.googleapis.com/css?family={$stripe_input_font_family|replace:' ':'+'|escape:'javascript'}',
             },
           ],
           locale: 'auto'
         });
         var style = {
           base: {
-            color: '{if !empty($stripe_payment_request_background_color)}{$stripe_payment_request_background_color|escape:'javascript':'UTF-8'}{else}#32325D{/if}',
+            color: '{if !empty($stripe_payment_request_background_color)}{$stripe_payment_request_background_color|escape:'javascript'}{else}#32325D{/if}',
             fontWeight: 500,
-            fontFamily: '{if !empty($stripe_input_font_family)}{$stripe_input_font_family|escape:'javascript':'UTF-8'}, {/if}Open Sans, Segoe UI, sans-serif',
-            fontSize: '{if !empty($stripe_checkout_font_size)}{$stripe_checkout_font_size|escape:'javascript':'UTF-8'}{else}15px{/if}',
+            fontFamily: '{if !empty($stripe_input_font_family)}{$stripe_input_font_family|escape:'javascript'}, {/if}Open Sans, Segoe UI, sans-serif',
+            fontSize: '{if !empty($stripe_checkout_font_size)}{$stripe_checkout_font_size|escape:'javascript'}{else}15px{/if}',
             fontSmoothing: 'antialiased',
 
             '::placeholder': {
-              color: '{if !empty($stripe_payment_request_foreground_color)}{$stripe_payment_request_foreground_color|escape:'javascript':'UTF-8'}{else}#CFD7DF{/if}'
+              color: '{if !empty($stripe_payment_request_foreground_color)}{$stripe_payment_request_foreground_color|escape:'javascript'}{else}#CFD7DF{/if}'
             }
           },
           invalid: {
-            color: '{if !empty($stripe_error_color)}{$stripe_error_color|escape:'javascript':'UTF-8'}{else}#e25950{/if}'
+            color: '{if !empty($stripe_error_color)}{$stripe_error_color|escape:'javascript'}{else}#e25950{/if}'
           }
         };
 
@@ -287,10 +287,10 @@
          * Payment Request Element
          */
         var paymentRequest = stripe.paymentRequest({
-          country: '{$stripe_country|escape:'javascript':'UTF-8'}'.toUpperCase(),
-          currency: '{$stripe_currency|escape:'javascript':'UTF-8'}'.toLowerCase(),
+          country: '{$stripe_country|escape:'javascript'}'.toUpperCase(),
+          currency: '{$stripe_currency|escape:'javascript'}'.toLowerCase(),
           total: {
-            amount: {$stripe_amount|escape:'javascript':'UTF-8'},
+            amount: {$stripe_amount|escape:'javascript'},
             label: 'Total'
           }
         });
@@ -299,7 +299,7 @@
           console.log(result);
           if (result.source) {
             var a = document.createElement('a');
-            a.href = '{$link->getModuleLink('stripe', 'validation', [], true)|escape:'javascript':'UTF-8'}';
+            a.href = '{$link->getModuleLink('stripe', 'validation', [], true)|escape:'javascript'}';
 
             a.search = updateQueryStringParameter(a.search, 'stripe-token', result.source.id);
             a.search = updateQueryStringParameter(a.search, 'stripe-id_cart', {$id_cart|intval});
@@ -319,21 +319,21 @@
           style: {
             paymentRequestButton: {
               type: 'buy',
-              theme: '{if !empty($stripe_payment_request_style)}{$stripe_payment_request_style|escape:'javascript':'UTF-8'}{else}dark{/if}'
+              theme: '{if !empty($stripe_payment_request_style)}{$stripe_payment_request_style|escape:'javascript'}{else}dark{/if}'
             },
             base: {
-              color: '{if !empty($stripe_payment_request_background_color)}{$stripe_payment_request_background_color|escape:'javascript':'UTF-8'}{else}#32325D{/if}',
+              color: '{if !empty($stripe_payment_request_background_color)}{$stripe_payment_request_background_color|escape:'javascript'}{else}#32325D{/if}',
               fontWeight: 500,
-              fontFamily: '{if !empty($stripe_input_font_family)}{$stripe_input_font_family|escape:'javascript':'UTF-8'}, {/if}Open Sans, Segoe UI, sans-serif',
-              fontSize: '{if !empty($stripe_checkout_font_size)}{$stripe_checkout_font_size|escape:'javascript':'UTF-8'}{else}15px{/if}',
+              fontFamily: '{if !empty($stripe_input_font_family)}{$stripe_input_font_family|escape:'javascript'}, {/if}Open Sans, Segoe UI, sans-serif',
+              fontSize: '{if !empty($stripe_checkout_font_size)}{$stripe_checkout_font_size|escape:'javascript'}{else}15px{/if}',
               fontSmoothing: 'antialiased',
 
               '::placeholder': {
-                color: '{if !empty($stripe_payment_request_foreground_color)}{$stripe_payment_request_foreground_color|escape:'javascript':'UTF-8'}{else}#CFD7DF{/if}'
+                color: '{if !empty($stripe_payment_request_foreground_color)}{$stripe_payment_request_foreground_color|escape:'javascript'}{else}#CFD7DF{/if}'
               }
             },
             invalid: {
-              color: '{if !empty($stripe_error_color)}{$stripe_error_color|escape:'javascript':'UTF-8'}{else}#e25950{/if}'
+              color: '{if !empty($stripe_error_color)}{$stripe_error_color|escape:'javascript'}{else}#e25950{/if}'
             }
           }
         });
@@ -381,7 +381,7 @@
 
             if (result.source) {
               var a = document.createElement('a');
-              a.href = '{$link->getModuleLink('stripe', 'validation', [], true)|escape:'javascript':'UTF-8'}';
+              a.href = '{$link->getModuleLink('stripe', 'validation', [], true)|escape:'javascript'}';
 
               a.search = updateQueryStringParameter(a.search, 'stripe-token', result.source.id);
               a.search = updateQueryStringParameter(a.search, 'stripe-id_cart', {$id_cart|intval});

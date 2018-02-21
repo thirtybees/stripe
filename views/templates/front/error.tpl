@@ -16,7 +16,7 @@
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
 {capture name=path}
-  <a href="{$orderLink|escape:'html':'UTF-8'}">
+  <a href="{$orderLink|escape:'html'}">
     {l s='Order'}
   </a>
   <span class="navigation-pipe">
@@ -30,11 +30,11 @@
   <strong>{l s='An error occurred' mod='stripe'}:</strong>
   <ul>
     {foreach from=$errors item='error'}
-      <li>{$error|escape:'htmlall':'UTF-8'}</li>
+      <li>{$error|escape:'htmlall'}</li>
     {/foreach}
   </ul>
 </div>
 <ul class="footer_links clearfix">
-  <li><a class="btn btn-default button button-small" href="{$orderLink|escape:'html':'UTF-8'}" title="{l s='Back to your shopping cart' mod='stripe'}"><span><i
+  <li><a class="btn btn-default button button-small" href="{$orderLink|escape:'html'}" title="{l s='Back to your shopping cart' mod='stripe'}"><span><i
                 class="icon-chevron-left"></i> {l s='Back to your shopping cart' mod='stripe'}</span></a></li>
 </ul>

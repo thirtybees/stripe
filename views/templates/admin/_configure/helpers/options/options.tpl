@@ -4,19 +4,19 @@
   {if $field['type'] == 'fontselect'}
     <div class="col-lg-9">
       <div class="form-group">
-        <label id="label-{$field['name']|escape:'html':'UTF-8'}"
-               for="{$field['name']|escape:'html':'UTF-8'}"
+        <label id="label-{$field['name']|escape:'html'}"
+               for="{$field['name']|escape:'html'}"
                class="control-label fixed-width-xxl"
                style="margin-left: 5px"
         >
-          <select id="{$field['name']|escape:'html':'UTF-8'}"
-                  name="{$field['name']|escape:'html':'UTF-8'}"
+          <select id="{$field['name']|escape:'html'}"
+                  name="{$field['name']|escape:'html'}"
           >
-            <option value="{$field['value']|escape:'javascript':'UTF-8'}"
-                    label="{$field['value']|escape:'javascript':'UTF-8'}"
+            <option value="{$field['value']|escape:'javascript'}"
+                    label="{$field['value']|escape:'javascript'}"
                     selected="selected"
             >
-              {$field['value']|escape:'javascript':'UTF-8'}
+              {$field['value']|escape:'javascript'}
             </option>
           </select>
       </div>
@@ -43,10 +43,8 @@
             return;
           }
 
-          // window.stripeFontselect = window.stripeFontselect || { };
-          // window.stripeFontselect.checkout =
-            new window.Fontselect('{$field['name']|escape:'html':'UTF-8'}', {
-            {if isset($field['value'])}placeholder: '{$field['value']|escape:'javascript':'UTF-8'}',{/if}
+          new window.Fontselect('{$field['name']|escape:'html'}', {
+            {if isset($field['value'])}placeholder: '{$field['value']|escape:'javascript'}',{/if}
           });
         }
 
