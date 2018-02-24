@@ -1513,8 +1513,8 @@ class Stripe extends PaymentModule
                     static::PUBLISHABLE_KEY_LIVE => [
                         'title'       => $this->l('Publishable key (live)'),
                         'type'        => 'text',
-                        'name'        => static::PUBLISHABLE_KEY_TEST,
-                        'value'       => Configuration::get(static::PUBLISHABLE_KEY_TEST),
+                        'name'        => static::PUBLISHABLE_KEY_LIVE,
+                        'value'       => Configuration::get(static::PUBLISHABLE_KEY_LIVE),
                         'auto_value'  => false,
                         'validation'  => 'isString',
                         'cast'        => 'strval',
@@ -1524,8 +1524,8 @@ class Stripe extends PaymentModule
                     static::SECRET_KEY_LIVE      => [
                         'title'       => $this->l('Secret key (live)'),
                         'type'        => 'text',
-                        'name'        => static::SECRET_KEY_TEST,
-                        'value'       => Configuration::get(static::SECRET_KEY_TEST),
+                        'name'        => static::SECRET_KEY_LIVE,
+                        'value'       => Configuration::get(static::SECRET_KEY_LIVE),
                         'auto_value'  => false,
                         'validation'  => 'isString',
                         'cast'        => 'strval',
