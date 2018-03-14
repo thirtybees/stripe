@@ -1,0 +1,1 @@
+The Stripe module allows your thirty bees site to accept payments from the Stripe payment processing platform. This module supports the latest Stripe API and also ApplePay as well.

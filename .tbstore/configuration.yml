@@ -1,0 +1,13 @@
+module_name: Stripe Module
+compatible_versions: 1.0.0+
+author: thirty bees
+category: payment
+tags:
+  - stripe
+  - apple pay
+  - payment gateway
+description_short: The Stripe module allows your shop to accept payments from Stripe payment gateway.
+description: description.md
+images:
+  - image-1.png
+license: AFL
