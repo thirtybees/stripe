@@ -112,7 +112,6 @@ class StripeSourcevalidationModuleFrontController extends ModuleFrontController
                     'amount'   => $stripeAmount,
                     'currency' => mb_strtolower($currency->iso_code),
                     'source'   => $source,
-                    'capture'  => false,
                     'metadata' => [
                         'from_back_office' => true,
                     ],

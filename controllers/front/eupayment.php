@@ -152,6 +152,7 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
      * Init credit card payment
      *
      * @throws PrestaShopException
+     * @throws Adapter_Exception
      */
     protected function initCreditCard()
     {
@@ -346,6 +347,7 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
      * Initialize Sofort Banking payment
      *
      * @throws PrestaShopException
+     * @throws Adapter_Exception
      */
     protected function initSofort()
     {
