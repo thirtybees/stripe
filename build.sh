@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 CWD_BASENAME=${PWD##*/}
 
-# Cleanup
+# Cleanup before scoping
 rm pre-scoper/ -rf
 rm vendor/ -rf
 rm build/ -rf
@@ -11,12 +11,12 @@ composer install --no-dev --prefer-dist
 mv vendor/ pre-scoper/
 php ./php-scoper.phar add-prefix -p ThirtyBeesStripe -n
 
-# Cleanup
+# Scoping cleanup
 mv build/pre-scoper/ vendor/
 rm pre-scoper/ -rf
 rm build/ -rf
 
-# Dump autoload
+# Dump new autoloader
 composer -o dump-autoload
 
 FILES+=("logo.gif")
