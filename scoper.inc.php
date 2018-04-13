@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 use Isolated\Symfony\Component\Finder\Finder;
 
 return [
@@ -34,35 +32,20 @@ return [
     'patchers' => [
         function ($filePath, $prefix, $content) {
             // Change the content here. vendor = pre-scoper at this time
-            if (strpos($filePath, __DIR__.'/pre-scoper/stripe/stripe-php/tests/') !== false) {
-                $content = preg_replace(
-                    '~'.preg_quote("'Stripe\\", '~').'~',
-                    "'$prefix\\\\\\\\Stripe\\\\",
-                    $content
-                );
-                $content = preg_replace(
-                    '~'.preg_quote("\"Stripe\\", '~').'~',
-                    "\"$prefix\\\\\\\\Stripe\\\\",
-                    $content
-                );
-
-                return $content;
-            }
-
-            if (strpos($filePath, __DIR__.'/pre-scoper/stripe/stripe-php/lib/') !== false) {
-                $content = preg_replace(
-                    '~'.preg_quote("'Stripe\\", '~').'~',
-                    "'$prefix\\\\\\\\Stripe\\\\",
-                    $content
-                );
-                $content = preg_replace(
-                    '~'.preg_quote("\"Stripe\\", '~').'~',
-                    "\"$prefix\\\\\\\\Stripe\\\\",
-                    $content
-                );
-
-                return $content;
-            }
+//            if (strpos($filePath, __DIR__.'/pre-scoper/stripe/stripe-php/lib/') !== false) {
+//                $content = preg_replace(
+//                    '~'.preg_quote("'Stripe\\", '~').'~',
+//                    "'$prefix\\\\\\\\Stripe\\\\",
+//                    $content
+//                );
+//                $content = preg_replace(
+//                    '~'.preg_quote("\"Stripe\\", '~').'~',
+//                    "\"$prefix\\\\\\\\Stripe\\\\",
+//                    $content
+//                );
+//
+//                return $content;
+//            }
 
             return $content;
         },
