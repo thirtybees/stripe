@@ -166,18 +166,19 @@ class Stripe extends PaymentModule
     {
         $this->name = 'stripe';
         $this->tab = 'payments_gateways';
-        $this->version = '1.6.1';
+        $this->version = '1.6.2';
         $this->author = 'thirty bees';
         $this->need_instance = 0;
 
         $this->bootstrap = true;
 
         $this->controllers = [
-            'hook',
-            'validation',
-            'sourcevalidation',
-            'eupayment',
             'checkoutiframe',
+            'demoiframe',
+            'eupayment',
+            'hook',
+            'sourcevalidation',
+            'validation',
         ];
 
         $this->is_eu_compatible = 1;
@@ -188,8 +189,6 @@ class Stripe extends PaymentModule
 
         $this->displayName = $this->l('Stripe');
         $this->description = $this->l('Accept payments with Stripe');
-
-        $this->tb_versions_compliancy = '~1.0.0';
 
         ThirtyBeesStripe\Stripe\Stripe::setAppInfo('thirty bees', $this->version, 'https://thirtybees.com/');
     }
