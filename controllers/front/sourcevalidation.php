@@ -131,25 +131,6 @@ class StripeSourcevalidationModuleFrontController extends ModuleFrontController
         $stripeReview->status = 0;
         $stripeReview->test = !Configuration::get(Stripe::GO_LIVE);
         if ($stripeCharge->status === 'succeeded') {
-            if (in_array($stripeCharge->source->type, ['card', 'three_d_secure'])) {
-                $stripeReview->status = StripeReview::CAPTURED;
-                if ($stripeCharge->review || Configuration::get(Stripe::MANUAL_CAPTURE)) {
-                    $stripeReview->id_review = $stripeCharge->review;
-                    if (Configuration::get(Stripe::MANUAL_CAPTURE) && Configuration::get(Stripe::USE_STATUS_AUTHORIZED)) {
-                        $paymentStatus = (int) Configuration::get(Stripe::STATUS_AUTHORIZED);
-                    }
-                    if ($stripeCharge->review && Configuration::get(Stripe::USE_STATUS_IN_REVIEW)) {
-                        $paymentStatus = (int) Configuration::get(Stripe::STATUS_IN_REVIEW);
-                    }
-                    $stripeReview->status = $stripeCharge->review ? StripeReview::IN_REVIEW : StripeReview::AUTHORIZED;
-                } else {
-                    $stripeCharge->metadata = [
-                        'from_back_office' => true,
-                    ];
-                    $stripeCharge->capture();
-                }
-            }
-
             $message = null;
 
             /**
