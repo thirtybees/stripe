@@ -199,7 +199,11 @@ class StripeValidationModuleFrontController extends ModuleFrontController
                 $stripeCharge->metadata = [
                     'from_back_office' => true,
                 ];
-                $stripeCharge->capture();
+                try {
+                    $stripeCharge->capture();
+                } catch (Exception $e) {
+                    $this->context->controller->errors[] = $e->getMessage();
+                }
             }
 
             $message = null;
