@@ -186,7 +186,7 @@
     </div>
   </div>
 
-  <script type="text/javascript">
+  <script type="text/javascript" data-cookieconsent="necessary">
     (function () {
       function initElements() {
         if (typeof Stripe === 'undefined') {

@@ -40,7 +40,7 @@
     {$paymentText|escape:'html'} <i class="icon icon-search"></i>
   </span>
 {/if}
-<script type="text/javascript">
+<script type="text/javascript" data-cookieconsent="necessary">
   (function () {
     function initTooltip() {
       if (typeof $ === 'undefined') {

@@ -34,7 +34,7 @@
     </div>
 {/if}
 
-<script type="text/javascript">
+<script type="text/javascript" data-cookieconsent="necessary">
   (function () {
     function initStripeCheckout() {
       if (typeof StripeCheckout === 'undefined') {

@@ -22,7 +22,7 @@
   <a id="stripe_payment_link" href="#" title="{l s='Pay with Stripe' mod='stripe'}" class="btn btn-default">
     {l s='Pay with Stripe' mod='stripe'}
   </a>
-  <script type="text/javascript">
+  <script type="text/javascript" data-cookieconsent="necessary">
     (function () {
       var handler = null;
 

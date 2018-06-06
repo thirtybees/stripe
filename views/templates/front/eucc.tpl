@@ -176,7 +176,7 @@
         width="100%"
         frameborder="0"
 ></iframe>
-<script type="text/javascript">
+<script type="text/javascript" data-cookieconsent="necessary">
   (function () {
     window.addEventListener('message', function (event) {
       if (!event.data) {

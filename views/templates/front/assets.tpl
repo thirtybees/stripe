@@ -15,7 +15,7 @@
  *  @copyright 2017-2018 thirty bees
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
-<script type="text/javascript">
+<script type="text/javascript" data-cookieconsent="necessary">
   (function () {
     var script;
 
