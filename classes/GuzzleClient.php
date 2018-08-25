@@ -202,7 +202,10 @@ class GuzzleClient implements ClientInterface
         // sending an empty `Expect:` header.
         array_push($headers, 'Expect: ');
 
-        $guzzle = new Client(['http_errors' => false]);
+        $guzzle = new Client([
+            'verify'      => _PS_TOOL_DIR_.'cacert.pem',
+            'timeout'     => 20,
+        ]);
         try {
             $response = $guzzle->request($method, $absUrl, $options);
             $rbody = $response->getBody();
