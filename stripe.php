@@ -961,7 +961,6 @@ class Stripe extends PaymentModule
         $guzzle = new GuzzleClient();
         \ThirtyBeesStripe\Stripe\ApiRequestor::setHttpClient($guzzle);
         \ThirtyBeesStripe\Stripe\Stripe::setApiKey('sk_test_BQokikJOvBiI2HlWgH4olfQ2');
-        \ThirtyBeesStripe\Stripe\Stripe::$apiBase = 'https://api-tls12.stripe.com';
         try {
             \ThirtyBeesStripe\Stripe\Charge::all();
             $this->updateAllValue(static::TLS_OK, static::ENUM_TLS_OK);
