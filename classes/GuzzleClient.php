@@ -235,8 +235,7 @@ class GuzzleClient implements ClientInterface
                 $headers
             );
         } catch (\Exception $e) {
-            var_dump($e);
-            throw new Error\ApiConnection('Could not connect with Stripe');
+            throw new Error\ApiConnection('Could not connect with Stripe: ' . $e);
         }
 
         return array($rbody, $rcode, $rheaders);
