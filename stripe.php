@@ -1533,7 +1533,7 @@ class Stripe extends PaymentModule
                     static::GO_LIVE    => [
                         'title'      => $this->l('Go live'),
                         'type'       => 'bool',
-                        'desc'       => $this->l('Enable this options to accept live payments, otherwise the test keys are used, which you can use to test your store.'),
+                        'desc'       => $this->l('Enable this option to accept live payments, otherwise the test keys are used, which you can use to test your store.'),
                         'name'       => static::GO_LIVE,
                         'value'      => Configuration::get(static::GO_LIVE),
                         'auto_value' => false,
