@@ -44,6 +44,12 @@ return [
                     $content
                 );
 
+                $content = preg_replace(
+                    '~'.preg_quote("use \\Stripe\\", '~').'~',
+                    "use \\$prefix\\\\Stripe\\\\",
+                    $content
+                );
+
                 return $content;
             }
 
