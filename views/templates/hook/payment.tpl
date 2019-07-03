@@ -17,60 +17,39 @@
 *}
 {if $stripe_checkout}
     <div class="row">
-        <form id="stripe-form" action="{$stripe_confirmation_page|escape:'htmlall'}" method="POST">
-            <input type="hidden" name="stripe-id_cart" value="{$id_cart|escape:'htmlall'}">
-        </form>
         <div class="col-xs-12 col-md-12">
             <p class="payment_module" id="stripe_payment_button">
                 <a id="stripe_payment_link" href="#" title="{l s='Pay by Credit Card' mod='stripe'}">
-                    <img src="{$module_dir|escape:'htmlall'}/views/img/stripebtnlogo.png" alt="{l s='Pay by Credit Card' mod='stripe'}" width="64" height="64"/>
+                    <img src="{$module_dir|escape:'htmlall'}/views/img/stripebtnlogo.png"
+                         alt="{l s='Pay by Credit Card' mod='stripe'}" width="64" height="64"/>
                     {l s='Pay by Credit Card' mod='stripe'}
                     {if $showPaymentLogos}
-                        <img src="{$module_dir|escape:'htmlall'}/views/img/creditcards.png" alt="{l s='Credit cards' mod='stripe'}"/>
+                        <img src="{$module_dir|escape:'htmlall'}/views/img/creditcards.png"
+                             alt="{l s='Credit cards' mod='stripe'}"/>
                     {/if}
                 </a>
             </p>
         </div>
     </div>
+    <script type="text/javascript" data-cookieconsent="necessary">
+        (function () {
+            function initStripe() {
+                if (typeof Stripe === 'undefined') {
+                    return setTimeout(initStripe, 100);
+                }
+
+                var stripe = Stripe('{$stripe_publishable_key|escape:'javascript'}');
+                var element = document.getElementById('stripe_payment_link');
+                element.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    stripe
+                        .redirectToCheckout({ sessionId: '{$stripe_session_id|escape:'javascript' }'})
+                        .then(function(result) {
+                            console.log(result);
+                        });
+                });
+            }
+            initStripe();
+        })();
+    </script>
 {/if}
-
-<script type="text/javascript" data-cookieconsent="necessary">
-  (function () {
-    function initStripeCheckout() {
-      if (typeof StripeCheckout === 'undefined') {
-        setTimeout(initStripeCheckout, 100);
-        return;
-      }
-
-      var handler = StripeCheckout.configure({
-        key: '{$stripe_publishable_key|escape:'javascript'}',
-        image: '{$stripeShopThumb|escape:'javascript'}',
-        locale: 'auto',
-        token: function (token) {
-          var $form = $('#stripe-form');
-            {* Insert the token into the form so it gets submitted to the server: *}
-          $form.append($('<input type="hidden" name="stripe-token" />').val(token.id));
-
-            {* Submit the form: *}
-          $form.get(0).submit();
-        }
-      });
-
-      $('#stripe_payment_link').on('click', function (e) {
-          {* Open Checkout with further options: *}
-        handler.open({
-          name: '{$stripe_shopname|escape:'javascript'}',
-          zipCode: {if $stripe_zipcode}true{else}false{/if},
-          currency: '{$stripe_currency|escape:'javascript'}',
-          amount: {$stripe_amount|floatval},
-          email: '{$stripe_email|escape:'javascript'}',
-          billingAddress: {if $stripe_collect_billing}true{else}false{/if},
-          shippingAddress: {if $stripe_collect_shipping}true{else}false{/if}
-        });
-        e.preventDefault();
-      });
-    }
-
-    initStripeCheckout();
-  })();
-</script>

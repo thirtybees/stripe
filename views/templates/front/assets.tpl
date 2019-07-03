@@ -17,20 +17,9 @@
 *}
 <script type="text/javascript" data-cookieconsent="necessary">
   (function () {
-    var script;
-
-    {if $stripe_checkout}
-    if (typeof StripeCheckout === 'undefined') {
-      script = document.createElement('script');
-      script.type = 'text/javascript';
-      script.src = 'https://checkout.stripe.com/checkout.js';
-      document.querySelector('head').appendChild(script);
-    }
-    {/if}
-
-    {if $stripe_cc_form}
+    {if $stripe_cc_form || $stripe_checkout}
     if (typeof Stripe === 'undefined') {
-      script = document.createElement('script');
+      var script = document.createElement('script');
       script.type = 'text/javascript';
       script.src = 'https://js.stripe.com/v3/';
       document.querySelector('head').appendChild(script);

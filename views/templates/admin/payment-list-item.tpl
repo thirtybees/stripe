@@ -39,7 +39,10 @@
   >
     {$paymentText|escape:'html'} <i class="icon icon-search"></i>
   </span>
+{else}
+  {$paymentText|escape:'html'}
 {/if}
+{if $status == 4 || $status == 1 || $status == 2}
 <script type="text/javascript" data-cookieconsent="necessary">
   (function () {
     function initTooltip() {
@@ -53,3 +56,4 @@
     initTooltip();
   }());
 </script>
+{/if}

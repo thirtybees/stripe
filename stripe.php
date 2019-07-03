@@ -21,6 +21,7 @@ use StripeModule\GuzzleClient;
 use StripeModule\StripeReview;
 use StripeModule\StripeTransaction;
 use StripeModule\StripeApi;
+use StripeModule\Utils;
 use ThirtyBeesStripe\Stripe\ApiRequestor;
 
 if (!defined('_TB_VERSION_')) {
@@ -174,6 +175,7 @@ class Stripe extends PaymentModule
         $this->bootstrap = true;
 
         $this->controllers = [
+            'checkoutcallback',
             'checkoutiframe',
             'demoiframe',
             'eupayment',
@@ -2383,10 +2385,17 @@ class Stripe extends PaymentModule
      */
     public function hookDisplayPaymentTop()
     {
+        $checkout = (bool)Configuration::get(static::STRIPE_CHECKOUT);
+        if ($checkout) {
+            // resolve stripe session for this cart
+            $sessionId = $this->getCheckoutSession();
+            $this->context->smarty->assign('stripe_session_id', $sessionId);
+        }
+
         $this->context->smarty->assign(
             [
                 'baseDir'             => Tools::getHttpHost(true).__PS_BASE_URI__.'modules/stripe/views/',
-                'stripe_checkout'     => (bool) Configuration::get(static::STRIPE_CHECKOUT),
+                'stripe_checkout'     => $checkout,
                 'stripe_cc_form'      => (bool) Configuration::get(static::STRIPE_CC_FORM),
                 'stripe_apple_pay'    => (bool) Configuration::get(static::STRIPE_PAYMENT_REQUEST),
                 'stripe_ideal'        => (bool) Configuration::get(static::IDEAL),
@@ -2849,6 +2858,33 @@ class Stripe extends PaymentModule
             // It will break execution of AdminController
             $this->context->controller->warnings[] = $message;
         }
+    }
+
+    /**
+     * Returns current checkout session id
+     *
+     * This method returns existing session, or creates a new one
+     *
+     * @return string
+     * @throws Adapter_Exception
+     * @throws PrestaShopDatabaseException
+     * @throws PrestaShopException
+     */
+    public function getCheckoutSession()
+    {
+        $cookie = $this->context->cookie;
+        $cart = $this->context->cart;
+        $sessionId = Utils::getSessionFromCookie($cookie, $cart);
+        if (! $sessionId) {
+            $total = Utils::getCartTotal($cart);
+            if ($total) {
+                $sessionId = $this->getStripeApi()->createCheckoutSession($cart);
+                if ($sessionId) {
+                    Utils::saveSessionToCookie($cookie, $cart, $sessionId);
+                }
+            }
+        }
+        return $sessionId;
     }
 
     /**
