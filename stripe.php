@@ -20,6 +20,7 @@
 use StripeModule\GuzzleClient;
 use StripeModule\StripeReview;
 use StripeModule\StripeTransaction;
+use StripeModule\StripeApi;
 use ThirtyBeesStripe\Stripe\ApiRequestor;
 
 if (!defined('_TB_VERSION_')) {
@@ -2848,5 +2849,14 @@ class Stripe extends PaymentModule
             // It will break execution of AdminController
             $this->context->controller->warnings[] = $message;
         }
+    }
+
+    /**
+     * @return StripeApi
+     * @throws PrestaShopException
+     */
+    public function getStripeApi()
+    {
+        return new StripeApi();
     }
 }
