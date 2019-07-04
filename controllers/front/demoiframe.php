@@ -87,8 +87,6 @@ class StripeDemoIframeModuleFrontController extends ModuleFrontController
                 'id_cart'                                 => 1,
                 'stripe_publishable_key'                  => 'pk_test_6pRNASCoBOKtIshFeQd4XMUh',
                 'stripe_locale'                           => Stripe::getStripeLanguage(Context::getContext()->language->language_code),
-                'stripe_zipcode'                          => (bool) Configuration::get(Stripe::ZIPCODE),
-                'stripecc_zipcode'                        => (bool) Configuration::get(Stripe::ZIPCODE),
                 'stripe_checkout'                         => true,
                 'stripe_cc_form'                          => true,
                 'stripe_payment_request'                  => Configuration::get(Stripe::STRIPE_PAYMENT_REQUEST),

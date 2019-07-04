@@ -158,8 +158,6 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
                 'stripe_secret_key'             => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST),
                 'stripe_publishable_key'        => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::PUBLISHABLE_KEY_LIVE) : Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
                 'stripe_locale'                 => Stripe::getStripeLanguage($this->context->language->language_code),
-                'stripe_zipcode'                => (bool) Configuration::get(Stripe::ZIPCODE),
-                'stripecc_zipcode'              => (bool) Configuration::get(Stripe::ZIPCODE),
                 'stripe_alipay_block'           => (bool) Configuration::get(Stripe::ALIPAY_BLOCK),
                 'stripe_shopname'               => $this->context->shop->name,
                 'stripe_confirmation_page'      => $link->getModuleLink($this->module->name, 'validation', [], Tools::usingSecureMode()),

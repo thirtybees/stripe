@@ -38,7 +38,6 @@ class Stripe extends PaymentModule
     const MENU_SETTINGS = 1;
     const MENU_TRANSACTIONS = 2;
 
-    const ZIPCODE = 'STRIPE_ZIPCODE';
     const COLLECT_BILLING = 'STRIPE_COLLECT_BILLING';
     const ALIPAY_BLOCK = 'STRIPE_ALIPAY_BLOCK'; // Separate Alipay block
 
@@ -256,7 +255,6 @@ class Stripe extends PaymentModule
         Configuration::deleteByName(static::STATUS_AUTHORIZED);
         Configuration::deleteByName(static::STATUS_IN_REVIEW);
         Configuration::deleteByName(static::GENERATE_CREDIT_SLIP);
-        Configuration::deleteByName(static::ZIPCODE);
         Configuration::deleteByName(static::ALIPAY_BLOCK);
         Configuration::deleteByName(static::SHOW_PAYMENT_LOGOS);
 
@@ -770,7 +768,6 @@ class Stripe extends PaymentModule
             static::SECRET_KEY_LIVE          => $secretKeyLive,
             static::PUBLISHABLE_KEY_LIVE     => $publishableKeyLive,
             static::GO_LIVE                  => $goLive,
-            static::ZIPCODE                  => (bool) Tools::getValue(static::ZIPCODE),
             static::ALIPAY_BLOCK             => (bool) Tools::getValue(static::ALIPAY_BLOCK),
             static::IDEAL                    => (bool) Tools::getValue(static::IDEAL),
             static::BANCONTACT               => (bool) Tools::getValue(static::BANCONTACT),
@@ -1581,15 +1578,6 @@ class Stripe extends PaymentModule
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                     ],
-                    static::ZIPCODE            => [
-                        'title'      => $this->l('Zipcode / postcode verification'),
-                        'type'       => 'bool',
-                        'name'       => static::ZIPCODE,
-                        'value'      => Configuration::get(static::ZIPCODE),
-                        'auto_value' => false,
-                        'validation' => 'isBool',
-                        'cast'       => 'intval',
-                    ],
                     static::SHOW_PAYMENT_LOGOS => [
                         'title'      => $this->l('Show payment logos'),
                         'type'       => 'bool',
@@ -2157,8 +2145,6 @@ class Stripe extends PaymentModule
                 'stripe_secret_key'             => Configuration::get(static::GO_LIVE) ? Configuration::get(static::SECRET_KEY_LIVE) : Configuration::get(static::SECRET_KEY_TEST),
                 'stripe_publishable_key'        => Configuration::get(static::GO_LIVE) ? Configuration::get(static::PUBLISHABLE_KEY_LIVE) : Configuration::get(static::PUBLISHABLE_KEY_TEST),
                 'stripe_locale'                 => static::getStripeLanguage($this->context->language->language_code),
-                'stripe_zipcode'                => (bool) Configuration::get(static::ZIPCODE),
-                'stripecc_zipcode'              => (bool) Configuration::get(static::ZIPCODE),
                 'stripe_checkout'               => Configuration::get(static::STRIPE_CHECKOUT),
                 'stripe_cc_form'                => Configuration::get(static::STRIPE_CC_FORM),
                 'stripe_ideal'                  => Configuration::get(static::IDEAL),

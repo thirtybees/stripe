@@ -78,8 +78,6 @@ class StripeCheckoutIframeModuleFrontController extends ModuleFrontController
                 'id_cart'                                 => (int) $cart->id,
                 'stripe_publishable_key'                  => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::PUBLISHABLE_KEY_LIVE) : Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
                 'stripe_locale'                           => Stripe::getStripeLanguage($this->context->language->language_code),
-                'stripe_zipcode'                          => (bool) Configuration::get(Stripe::ZIPCODE),
-                'stripecc_zipcode'                        => (bool) Configuration::get(Stripe::ZIPCODE),
                 'stripe_checkout'                         => Configuration::get(Stripe::STRIPE_CHECKOUT),
                 'stripe_cc_form'                          => Configuration::get(Stripe::STRIPE_CC_FORM),
                 'stripe_ideal'                            => Configuration::get(Stripe::IDEAL),
