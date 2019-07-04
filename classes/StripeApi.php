@@ -22,6 +22,7 @@ namespace StripeModule;
 use \Configuration;
 use \Cart;
 use \Context;
+use \Customer;
 
 if (!defined('_TB_VERSION_')) {
     return;
@@ -63,8 +64,9 @@ class StripeApi
      */
     public function createCheckoutSession(Cart $cart)
     {
+        $context = Context::getContext();
         $total = Utils::getCartTotal($cart);
-        $link = Context::getContext()->link;
+        $link = $context->link;
         $sessionData = [
             'payment_method_types' => ['card'],
             'line_items' => [[
@@ -76,6 +78,13 @@ class StripeApi
             'success_url' => $link->getModuleLink('stripe', 'checkoutcallback', [ 'status' => 'success' ]),
             'cancel_url' => $link->getModuleLink('stripe', 'checkoutcallback', [ 'status' => 'cancel' ]),
         ];
+
+        // pre-fill customer email
+        if ($cart->id_customer) {
+            $customer = (int)$context->customer->id === (int)$cart->id_customer ? $context->customer : new Customer($cart->id_customer);
+            $sessionData['customer_email'] = $customer->email;
+        }
+
         $session = \ThirtyBeesStripe\Stripe\Checkout\Session::create($sessionData);
         return $session->id;
     }
