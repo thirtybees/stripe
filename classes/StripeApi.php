@@ -79,6 +79,10 @@ class StripeApi
             'cancel_url' => $link->getModuleLink('stripe', 'checkoutcallback', [ 'status' => 'cancel' ]),
         ];
 
+        if ((bool)Configuration::get(\Stripe::COLLECT_BILLING)) {
+            $sessionData['billing_address_collection'] = 'required';
+        }
+
         // pre-fill customer email
         if ($cart->id_customer) {
             $customer = (int)$context->customer->id === (int)$cart->id_customer ? $context->customer : new Customer($cart->id_customer);
