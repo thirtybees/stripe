@@ -49,8 +49,6 @@ class Stripe extends PaymentModule
     const SECRET_KEY_LIVE = 'STRIPE_SECRET_KEY_LIVE';
     const PUBLISHABLE_KEY_LIVE = 'STRIPE_PUBLISHABLE_KEY_LIVE';
 
-    const SHOP_THUMB = 'STRIPE_SHOP_THUMB';
-
     const STATUS_VALIDATED = 'STRIPE_STAT_VALIDATED';
     const STATUS_PARTIAL_REFUND = 'STRIPE_STAT_PART_REFUND';
     const USE_STATUS_PARTIAL_REFUND = 'STRIPE_USE_STAT_PART_REFUND';
@@ -2138,8 +2136,6 @@ class Stripe extends PaymentModule
         /** @var Cookie $cookie */
         $cookie = $params['cookie'];
 
-        $this->checkShopThumb();
-
         $stripeEmail = $cookie->email;
 
         /** @var Cart $cart */
@@ -2210,26 +2206,6 @@ class Stripe extends PaymentModule
     }
 
     /**
-     * Check if shop thumbnail exists
-     *
-     * @throws PrestaShopException
-     */
-    public function checkShopThumb()
-    {
-        $dbShopThumb = Configuration::get(static::SHOP_THUMB);
-        if (empty($dbShopThumb) || !file_exists(_PS_IMG_.$dbShopThumb)) {
-            ImageManager::resize(
-                _PS_IMG_DIR_.Configuration::get('PS_LOGO'),
-                _PS_MODULE_DIR_.'stripe/views/img/shop'.$this->getShopId().'.jpg',
-                128,
-                128,
-                'jpg',
-                true
-            );
-        }
-    }
-
-    /**
      * Get the Stripe language
      *
      * @param string $locale IETF locale
@@ -2264,8 +2240,6 @@ class Stripe extends PaymentModule
         ) {
             return false;
         }
-
-        $this->checkShopThumb();
 
         $stripeCurrency = strtolower(Context::getContext()->currency->iso_code);
 

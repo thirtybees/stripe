@@ -145,8 +145,6 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
         $country = new Country($invoiceAddress->id_country);
         $customer = new Customer($cart->id_customer);
 
-        $this->module->checkShopThumb();
-
         $this->context->smarty->assign(
             [
                 'stripe_name'                   => $invoiceAddress->firstname.' '.$invoiceAddress->lastname,
