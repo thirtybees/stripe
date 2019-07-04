@@ -171,8 +171,6 @@ class Stripe extends PaymentModule
         $this->bootstrap = true;
 
         $this->controllers = [
-            'checkoutcallback',
-            'checkoutiframe',
             'demoiframe',
             'eupayment',
             'hook',
@@ -2103,39 +2101,23 @@ class Stripe extends PaymentModule
      */
     public function hookPayment($params)
     {
-        if (!$this->active ||
-            (!Configuration::get(static::SECRET_KEY_TEST) && !Configuration::get(static::PUBLISHABLE_KEY_TEST))
-            && (!Configuration::get(static::SECRET_KEY_LIVE) && !Configuration::get(static::PUBLISHABLE_KEY_LIVE))
-        ) {
+        if (! $this->active) {
             return false;
         }
 
-        /** @var Cookie $cookie */
-        $cookie = $params['cookie'];
-
-        $stripeEmail = $cookie->email;
-
-        /** @var Cart $cart */
         $cart = $params['cart'];
-        $currency = new Currency($cart->id_currency);
-        $stripeCurrency = strtolower($currency->iso_code);
-
         $link = $this->context->link;
 
-        $stripeAmount = $cart->getOrderTotal();
-        if (!in_array(mb_strtolower($currency->iso_code), static::$zeroDecimalCurrencies)) {
-            $stripeAmount = (int) ($stripeAmount * 100);
-        }
+        $stripeAmount = Utils::getCartTotal($cart);
+        $stripeCurrency = Utils::getCurrencyCode($cart);
 
         $invoiceAddress = new Address((int) $cart->id_address_invoice);
         $country = new Country($invoiceAddress->id_country);
-        $customer = new Customer($cart->id_customer);
 
         $autoplay = true;
         $this->context->smarty->assign(
             [
                 'stripe_name'                   => $invoiceAddress->firstname.' '.$invoiceAddress->lastname,
-                'stripe_email'                  => $stripeEmail,
                 'stripe_currency'               => $stripeCurrency,
                 'stripe_country'                => mb_strtoupper($country->iso_code),
                 'stripe_amount'                 => $stripeAmount,
@@ -2155,17 +2137,6 @@ class Stripe extends PaymentModule
                 'stripe_p24'                    => Configuration::get(static::P24),
                 'stripe_alipay_block'           => (bool) Configuration::get(static::ALIPAY_BLOCK),
                 'stripe_shopname'               => $this->context->shop->name,
-                'stripe_confirmation_page'      => $link->getModuleLink($this->name, 'validation', [], Tools::usingSecureMode()),
-                'stripe_ajax_confirmation_page' => $link->getPageLink(
-                    'order-confirmation',
-                    Tools::usingSecureMode(),
-                    $this->context->language->id,
-                    [
-                        'id_cart'   => (int) $cart->id,
-                        'id_module' => (int) $this->id,
-                        'key'       => $customer->secure_key,
-                    ]
-                ),
                 'showPaymentLogos'              => Configuration::get(static::SHOW_PAYMENT_LOGOS),
                 'stripeShopThumb'               => str_replace('http://', 'https://', $this->context->link->getMediaLink(__PS_BASE_URI__.'modules/stripe/views/img/shop'.$this->getShopId().'.jpg')),
                 'autoplay'                      => $autoplay,
@@ -2339,18 +2310,47 @@ class Stripe extends PaymentModule
             $this->context->smarty->assign('stripe_session_id', $sessionId);
         }
 
+        $creditCard = (bool)Configuration::get(static::STRIPE_CC_FORM);
+        if ($creditCard) {
+            $this->context->smarty->assign('stripe_client_secret',  $this->getPaymentIntentSecret());
+        }
+
+        $cart = $this->context->cart;
+        $invoiceAddress = new Address((int)$cart->id_address_invoice);
+        $country = new Country($invoiceAddress->id_country);
+
         $this->context->smarty->assign(
             [
-                'baseDir'             => Tools::getHttpHost(true).__PS_BASE_URI__.'modules/stripe/views/',
-                'stripe_checkout'     => $checkout,
-                'stripe_cc_form'      => (bool) Configuration::get(static::STRIPE_CC_FORM),
-                'stripe_apple_pay'    => (bool) Configuration::get(static::STRIPE_PAYMENT_REQUEST),
-                'stripe_ideal'        => (bool) Configuration::get(static::IDEAL),
-                'stripe_bancontact'   => (bool) Configuration::get(static::BANCONTACT),
-                'stripe_giropay'      => (bool) Configuration::get(static::GIROPAY),
-                'stripe_sofort'       => (bool) Configuration::get(static::SOFORT),
-                'stripe_p24'          => (bool) Configuration::get(static::P24),
-                'stripe_alipay_block' => (bool) Configuration::get(static::ALIPAY_BLOCK),
+                'baseDir'                                 => Tools::getHttpHost(true).__PS_BASE_URI__.'modules/stripe/views/',
+                'stripe_checkout'                         => $checkout,
+                'stripe_cc_form'                          => (bool) Configuration::get(static::STRIPE_CC_FORM),
+                'stripe_apple_pay'                        => (bool) Configuration::get(static::STRIPE_PAYMENT_REQUEST),
+                'stripe_ideal'                            => (bool) Configuration::get(static::IDEAL),
+                'stripe_bancontact'                       => (bool) Configuration::get(static::BANCONTACT),
+                'stripe_giropay'                          => (bool) Configuration::get(static::GIROPAY),
+                'stripe_sofort'                           => (bool) Configuration::get(static::SOFORT),
+                'stripe_p24'                              => (bool) Configuration::get(static::P24),
+                'stripe_alipay_block'                     => (bool) Configuration::get(static::ALIPAY_BLOCK),
+                'stripe_currency'                         => Utils::getCurrencyCode($cart),
+                'stripe_country'                          => mb_strtoupper($country->iso_code),
+                'stripe_amount'                           => Utils::getCartTotal($cart),
+                'id_cart'                                 => (int) $cart->id,
+                'stripe_publishable_key'                  => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::PUBLISHABLE_KEY_LIVE) : Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
+                'stripe_payment_request'                  => Configuration::get(Stripe::STRIPE_PAYMENT_REQUEST),
+                'local_module_dir'                        => _PS_MODULE_DIR_,
+                'module_dir'                              => __PS_BASE_URI__.'modules/stripe/',
+                'stripe_input_placeholder_color'          => Configuration::get(Stripe::INPUT_PLACEHOLDER_COLOR),
+                'stripe_button_background_color'          => Configuration::get(Stripe::BUTTON_BACKGROUND_COLOR),
+                'stripe_button_foreground_color'          => Configuration::get(Stripe::BUTTON_FOREGROUND_COLOR),
+                'stripe_highlight_color'                  => Configuration::get(Stripe::HIGHLIGHT_COLOR),
+                'stripe_error_color'                      => Configuration::get(Stripe::ERROR_COLOR),
+                'stripe_error_glyph_color'                => Configuration::get(Stripe::ERROR_GLYPH_COLOR),
+                'stripe_payment_request_foreground_color' => Configuration::get(Stripe::INPUT_TEXT_FOREGROUND_COLOR),
+                'stripe_payment_request_background_color' => Configuration::get(Stripe::INPUT_TEXT_BACKGROUND_COLOR),
+                'stripe_input_font_family'                => Configuration::get(Stripe::INPUT_FONT_FAMILY),
+                'stripe_checkout_font_family'             => Configuration::get(Stripe::CHECKOUT_FONT_FAMILY),
+                'stripe_checkout_font_size'               => Configuration::get(Stripe::CHECKOUT_FONT_SIZE),
+                'stripe_payment_request_style'            => Configuration::get(Stripe::PAYMENT_REQUEST_BUTTON_STYLE),
             ]
         );
 
@@ -2832,6 +2832,34 @@ class Stripe extends PaymentModule
             }
         }
         return $sessionId;
+    }
+
+    /**
+     * Returns current payment intent associated with cart object
+     *
+     * This method returns existing payment intent, or creates a new one
+     *
+     * @return string
+     * @throws Adapter_Exception
+     * @throws PrestaShopDatabaseException
+     * @throws PrestaShopException
+     */
+    public function getPaymentIntentSecret()
+    {
+        $cookie = $this->context->cookie;
+        $cart = $this->context->cart;
+        $paymentIntentSecret = Utils::getPaymentIntentClientSecretFromCookie($cookie, $cart);
+        if (! $paymentIntentSecret) {
+            $total = Utils::getCartTotal($cart);
+            if ($total) {
+                $paymentIntent = $this->getStripeApi()->createPaymentIntent($cart);
+                if ($paymentIntent) {
+                    $paymentIntentSecret = $paymentIntent->client_secret;
+                    Utils::savePaymentIntentToCookie($cookie, $cart, $paymentIntent->id, $paymentIntent->client_secret);
+                }
+            }
+        }
+        return $paymentIntentSecret;
     }
 
     /**

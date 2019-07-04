@@ -21,6 +21,8 @@ if (!defined('_TB_VERSION_')) {
     exit;
 }
 
+use StripeModule\Utils;
+
 /**
  * Class StripeEupaymentModuleFrontController
  */
@@ -124,54 +126,39 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
      */
     protected function initCreditCard()
     {
-        $this->context->controller->addJS('https://checkout.stripe.com/checkout.js');
+        $this->context->controller->addJS('https://js.stripe.com/v3/');
 
-        /** @var Cookie $email */
-        $cookie = $this->context->cookie;
-        $stripeEmail = $cookie->email;
-
-        /** @var Cart $cart */
         $cart = $this->context->cart;
-        $currency = new Currency($cart->id_currency);
-
-        $link = $this->context->link;
-
-        $stripeAmount = $cart->getOrderTotal();
-        if (!in_array(mb_strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
-            $stripeAmount = (int) ($stripeAmount * 100);
-        }
-
+        $stripeAmount = Utils::getCartTotal($cart);
         $invoiceAddress = new Address((int) $cart->id_address_invoice);
         $country = new Country($invoiceAddress->id_country);
-        $customer = new Customer($cart->id_customer);
-
-        $this->context->smarty->assign(
-            [
-                'stripe_name'                   => $invoiceAddress->firstname.' '.$invoiceAddress->lastname,
-                'stripe_email'                  => $stripeEmail,
-                'stripe_currency'               => $currency->iso_code,
-                'stripe_country'                => mb_strtoupper($country->iso_code),
-                'stripe_amount'                 => $stripeAmount,
-                'stripe_amount_string'          => (string) $cart->getOrderTotal(),
-                'stripe_amount_formatted'       => Tools::displayPrice($cart->getOrderTotal(), Currency::getCurrencyInstance($cart->id_currency)),
-                'id_cart'                       => (int) $cart->id,
-                'stripe_secret_key'             => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST),
-                'stripe_publishable_key'        => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::PUBLISHABLE_KEY_LIVE) : Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
-                'stripe_locale'                 => Stripe::getStripeLanguage($this->context->language->language_code),
-                'stripe_alipay_block'           => (bool) Configuration::get(Stripe::ALIPAY_BLOCK),
-                'stripe_shopname'               => $this->context->shop->name,
-                'stripe_confirmation_page'      => $link->getModuleLink($this->module->name, 'validation', [], Tools::usingSecureMode()),
-                'stripe_ajax_confirmation_page' => $link->getPageLink('order-confirmation', Tools::usingSecureMode(), '&id_cart='.$cart->id.'&id_module='.$this->module->id.'&key='.$customer->secure_key),
-                'showPaymentLogos'              => Configuration::get(Stripe::SHOW_PAYMENT_LOGOS),
-                'stripeShopThumb'               => str_replace('http://', 'https://', $this->context->link->getMediaLink(__PS_BASE_URI__.'modules/stripe/views/img/shop'.$this->module->getShopId().'.jpg')),
-                'stripe_apple_pay'              => Configuration::get(Stripe::STRIPE_PAYMENT_REQUEST),
-                'stripe_checkout'               => Configuration::get(Stripe::STRIPE_CHECKOUT),
-                'stripe_cc_form'                => Configuration::get(Stripe::STRIPE_CC_FORM),
-                'three_d_secure'                => Configuration::get(Stripe::THREEDSECURE),
-                'module_dir'                    => __PS_BASE_URI__.'modules/stripe/',
-            ]
-        );
-
+        $this->context->smarty->assign([
+            'stripe_client_secret'                    => $this->module->getPaymentIntentSecret(),
+            'stripe_name'                             => $invoiceAddress->firstname.' '.$invoiceAddress->lastname,
+            'stripe_currency'                         => Utils::getCurrencyCode($cart),
+            'stripe_country'                          => mb_strtoupper($country->iso_code),
+            'stripe_amount'                           => $stripeAmount,
+            'id_cart'                                 => (int) $cart->id,
+            'stripe_publishable_key'                  => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::PUBLISHABLE_KEY_LIVE) : Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
+            'stripe_locale'                           => Stripe::getStripeLanguage($this->context->language->language_code),
+            'stripe_shopname'                         => $this->context->shop->name,
+            'showPaymentLogos'                        => Configuration::get(Stripe::SHOW_PAYMENT_LOGOS),
+            'stripeShopThumb'                         => str_replace('http://', 'https://', $this->context->link->getMediaLink(__PS_BASE_URI__.'modules/stripe/views/img/shop'.$this->module->getShopId().'.jpg')),
+            'stripe_apple_pay'                        => Configuration::get(Stripe::STRIPE_PAYMENT_REQUEST),
+            'module_dir'                              => __PS_BASE_URI__.'modules/stripe/',
+            'stripe_input_placeholder_color'          => Configuration::get(Stripe::INPUT_PLACEHOLDER_COLOR),
+            'stripe_button_background_color'          => Configuration::get(Stripe::BUTTON_BACKGROUND_COLOR),
+            'stripe_button_foreground_color'          => Configuration::get(Stripe::BUTTON_FOREGROUND_COLOR),
+            'stripe_highlight_color'                  => Configuration::get(Stripe::HIGHLIGHT_COLOR),
+            'stripe_error_color'                      => Configuration::get(Stripe::ERROR_COLOR),
+            'stripe_error_glyph_color'                => Configuration::get(Stripe::ERROR_GLYPH_COLOR),
+            'stripe_payment_request_foreground_color' => Configuration::get(Stripe::INPUT_TEXT_FOREGROUND_COLOR),
+            'stripe_payment_request_background_color' => Configuration::get(Stripe::INPUT_TEXT_BACKGROUND_COLOR),
+            'stripe_input_font_family'                => Configuration::get(Stripe::INPUT_FONT_FAMILY),
+            'stripe_checkout_font_family'             => Configuration::get(Stripe::CHECKOUT_FONT_FAMILY),
+            'stripe_checkout_font_size'               => Configuration::get(Stripe::CHECKOUT_FONT_SIZE),
+            'stripe_payment_request_style'            => Configuration::get(Stripe::PAYMENT_REQUEST_BUTTON_STYLE),
+        ]);
         $this->setTemplate('eucc.tpl');
     }
 

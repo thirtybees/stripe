@@ -67,6 +67,7 @@ class StripeApi
         $context = Context::getContext();
         $total = Utils::getCartTotal($cart);
         $link = $context->link;
+        $validationLink = $link->getModuleLink('stripe', 'validation', ['type' => 'checkout']);
         $sessionData = [
             'payment_method_types' => ['card'],
             'line_items' => [[
@@ -75,8 +76,8 @@ class StripeApi
                 'quantity' => 1,
                 'name' => sprintf('Purchase from %s', Configuration::get('PS_SHOP_NAME')),
             ]],
-            'success_url' => $link->getModuleLink('stripe', 'checkoutcallback', [ 'status' => 'success' ]),
-            'cancel_url' => $link->getModuleLink('stripe', 'checkoutcallback', [ 'status' => 'cancel' ]),
+            'success_url' => $validationLink,
+            'cancel_url' => $validationLink,
         ];
 
         if ((bool)Configuration::get(\Stripe::COLLECT_BILLING)) {
@@ -115,4 +116,22 @@ class StripeApi
         return \ThirtyBeesStripe\Stripe\PaymentIntent::retrieve($id);
     }
 
+    /**
+     * Create payment intent
+     * @param Cart $cart
+     *
+     * @return \ThirtyBeesStripe\Stripe\PaymentIntent
+     * @throws \Adapter_Exception
+     * @throws \PrestaShopDatabaseException
+     * @throws \PrestaShopException
+     */
+    public function createPaymentIntent(Cart $cart)
+    {
+        $paymentIntentData = [
+            'payment_method_types' => ['card'],
+            'amount' => Utils::getCartTotal($cart),
+            'currency' => Utils::getCurrencyCode($cart),
+        ];
+        return \ThirtyBeesStripe\Stripe\PaymentIntent::create($paymentIntentData);
+    }
 }

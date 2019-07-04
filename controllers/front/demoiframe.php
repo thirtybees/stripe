@@ -79,7 +79,6 @@ class StripeDemoIframeModuleFrontController extends ModuleFrontController
         $this->context->smarty->assign(
             [
                 'stripe_name'                             => 'Demo demo',
-                'stripe_email'                            => 'demo@demo.com',
                 'stripe_currency'                         => 'USD',
                 'stripe_country'                          => 'US',
                 'stripe_amount'                           => 1000,
@@ -91,7 +90,6 @@ class StripeDemoIframeModuleFrontController extends ModuleFrontController
                 'stripe_cc_form'                          => true,
                 'stripe_payment_request'                  => Configuration::get(Stripe::STRIPE_PAYMENT_REQUEST),
                 'stripe_shopname'                         => $this->context->shop->name,
-                'stripe_confirmation_page'                => '',
                 'local_module_dir'                        => _PS_MODULE_DIR_,
                 'module_dir'                              => __PS_BASE_URI__.'modules/stripe/',
                 'stripe_input_placeholder_color'          => Configuration::get(Stripe::INPUT_PLACEHOLDER_COLOR.'_TEMP'),

@@ -1,202 +1,404 @@
-{*
- * Copyright (C) 2017-2018 thirty bees
- *
- * NOTICE OF LICENSE
- *
- * This source file is subject to the Academic Free License (AFL 3.0)
- * that is bundled with this package in the file LICENSE.md
- * It is also available through the world-wide-web at this URL:
- * http://opensource.org/licenses/afl-3.0.php
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to license@thirtybees.com so we can send you a copy immediately.
- *
- *  @author    thirty bees <modules@thirtybees.com>
- *  @copyright 2017-2018 thirty bees
- *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
-*}
+{* <link rel="stylesheet" href="//fonts.googleapis.com/css?family={$stripe_checkout_font_family|replace:' ':'+'|escape:'htmlall'}:300,400,600,700&amp;lang=en" /> *}
+
 <style>
-  #stripe-payment-overlay {
-    position: fixed; /* Sit on top of the page content */
-    display: none; /* Hidden by default */
-    width: 100%; /* Full width (cover the whole page) */
-    height: 100%; /* Full height (cover the whole page) */
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0,0,0,0.5); /* Black background with opacity */
-    z-index: 100000; /* Specify a stack order in case you're using a different order for other elements */
+    .thirtybees.thirtybees-stripe {
+        background-color: transparent;
+    }
 
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-box-pack: center;
-    -ms-flex-pack: center;
-    justify-content: center;
-  }
-  @-webkit-keyframes scaleAnimation {
-    0% {
-      opacity: 0;
-      -webkit-transform: scale(1.5);
-      transform: scale(1.5);
+    .thirtybees.thirtybees-stripe * {
+        font-family: {if !empty($stripe_checkout_font_family)}{$stripe_checkout_font_family|escape:'htmlall'}, {/if} Inter UI, Open Sans, Segoe UI, sans-serif;
+        font-size: {if !empty($stripe_checkout_font_size)}{$stripe_checkout_font_size|escape:'htmlall'}{else}15px{/if};
+        font-weight: 500;
     }
-    100% {
-      opacity: 1;
-      -webkit-transform: scale(1);
-      transform: scale(1);
-    }
-  }
 
-  @keyframes scaleAnimation {
-    0% {
-      opacity: 0;
-      -webkit-transform: scale(1.5);
-      transform: scale(1.5);
+    .thirtybees.thirtybees-stripe form {
+        max-width: 496px !important;
+        padding: 0 15px;
     }
-    100% {
-      opacity: 1;
-      -webkit-transform: scale(1);
-      transform: scale(1);
-    }
-  }
-  @-webkit-keyframes drawCircle {
-    0% {
-      stroke-dashoffset: 151px;
-    }
-    100% {
-      stroke-dashoffset: 0;
-    }
-  }
-  @keyframes drawCircle {
-    0% {
-      stroke-dashoffset: 151px;
-    }
-    100% {
-      stroke-dashoffset: 0;
-    }
-  }
-  @-webkit-keyframes drawCheck {
-    0% {
-      stroke-dashoffset: 36px;
-    }
-    100% {
-      stroke-dashoffset: 0;
-    }
-  }
-  @keyframes drawCheck {
-    0% {
-      stroke-dashoffset: 36px;
-    }
-    100% {
-      stroke-dashoffset: 0;
-    }
-  }
-  @-webkit-keyframes fadeOut {
-    0% {
-      opacity: 1;
-    }
-    100% {
-      opacity: 0;
-    }
-  }
-  @keyframes fadeOut {
-    0% {
-      opacity: 1;
-    }
-    100% {
-      opacity: 0;
-    }
-  }
-  @-webkit-keyframes fadeIn {
-    0% {
-      opacity: 0;
-    }
-    100% {
-      opacity: 1;
-    }
-  }
-  @keyframes fadeIn {
-    0% {
-      opacity: 0;
-    }
-    100% {
-      opacity: 1;
-    }
-  }
-  #successAnimationCircle {
-    stroke-dasharray: 151px 151px;
-    stroke: #fff;
-  }
 
-  #successAnimationCheck {
-    stroke-dasharray: 36px 36px;
-    stroke: #fff;
-  }
+    .thirtybees.thirtybees-stripe form > * + * {
+        margin-top: 20px;
+    }
 
-  #successAnimationResult {
-    fill: #fff;
-    opacity: 0;
-  }
+    .thirtybees.thirtybees-stripe .tb-container {
+        background-color: #fff;
+        box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
+        border-radius: 4px;
+        padding: 3px;
+    }
 
-  #successAnimation.animated {
-    -webkit-animation: 1s ease-out 0s 1 both scaleAnimation;
-    animation: 1s ease-out 0s 1 both scaleAnimation;
-  }
-  #successAnimation.animated #successAnimationCircle {
-    -webkit-animation: 1s cubic-bezier(0.77, 0, 0.175, 1) 0s 1 both drawCircle, 0.3s linear 0.9s 1 both fadeOut;
-    animation: 1s cubic-bezier(0.77, 0, 0.175, 1) 0s 1 both drawCircle, 0.3s linear 0.9s 1 both fadeOut;
-  }
-  #successAnimation.animated #successAnimationCheck {
-    -webkit-animation: 1s cubic-bezier(0.77, 0, 0.175, 1) 0s 1 both drawCheck, 0.3s linear 0.9s 1 both fadeOut;
-    animation: 1s cubic-bezier(0.77, 0, 0.175, 1) 0s 1 both drawCheck, 0.3s linear 0.9s 1 both fadeOut;
-  }
-  #successAnimation.animated #successAnimationResult, .stripe-payment-overlay-text {
-    -webkit-animation: 0.3s linear 0.9s both fadeIn;
-    animation: 0.3s linear 0.9s both fadeIn;
-  }
+    .thirtybees.thirtybees-stripe fieldset {
+        border-style: none;
+        padding: 5px;
+        margin-left: -5px;
+        margin-right: -5px;
+        background: rgba(18, 91, 152, 0.05);
+        border-radius: 8px;
+    }
+
+    .thirtybees.thirtybees-stripe fieldset legend {
+        float: left;
+        width: 100%;
+        text-align: center;
+        font-size: 13px;
+        color: #8898aa;
+        padding: 3px 10px 7px;
+    }
+
+    .thirtybees.thirtybees-stripe .card-only {
+        display: block;
+    }
+
+    .thirtybees.thirtybees-stripe .payment-request-available {
+        display: none;
+    }
+
+    .thirtybees.thirtybees-stripe fieldset legend + * {
+        clear: both;
+    }
+
+    .thirtybees.thirtybees-stripe input, .thirtybees.thirtybees-stripe button {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        outline: none;
+        border-style: none;
+        color: #fff;
+    }
+
+    .thirtybees.thirtybees-stripe input:-webkit-autofill {
+        transition: background-color 100000000s;
+        -webkit-animation: 1ms void-animation-out;
+    }
+
+    .thirtybees.thirtybees-stripe #thirtybees-stripe-card {
+        padding: 10px;
+        margin-bottom: 2px;
+    }
+
+    .thirtybees.thirtybees-stripe input {
+        -webkit-animation: 1ms void-animation-out;
+    }
+
+    .thirtybees.thirtybees-stripe input::-webkit-input-placeholder {
+        color: {if !empty($stripe_input_placeholder_color)}{$stripe_input_placeholder_color|escape:'htmlall'}{else}#9bacc8{/if};
+    }
+
+    .thirtybees.thirtybees-stripe input::-moz-placeholder {
+        color: {if !empty($stripe_input_placeholder_color)}{$stripe_input_placeholder_color|escape:'htmlall'}{else}#9bacc8{/if};
+    }
+
+    .thirtybees.thirtybees-stripe input:-ms-input-placeholder {
+        color: {if !empty($stripe_input_placeholder_color)}{$stripe_input_placeholder_color|escape:'htmlall'}{else}#9bacc8{/if};
+    }
+
+    .thirtybees.thirtybees-stripe button {
+        display: block;
+        width: 100%;
+        height: 37px;
+        background-color: {if !empty($stripe_button_background_color)}{$stripe_button_background_color|escape:'htmlall'}{else}#d782d9{/if};
+        border-radius: 2px;
+        color: {if !empty($stripe_button_foreground_color)}{$stripe_button_foreground_color|escape:'htmlall'}{else}#ffffff{/if};
+        cursor: pointer;
+    }
+
+    .thirtybees.thirtybees-stripe button:active {
+        background-color: {if !empty($stripe_highlight_color)}{$stripe_highlight_color|escape:'htmlall'}{else}#b76ac4{/if};
+    }
+
+    .thirtybees.thirtybees-stripe .error svg .base {
+        fill: {if !empty($stripe_error_color)}{$stripe_error_color|escape:'htmlall'}{else}#e25950{/if};
+    }
+
+    .thirtybees.thirtybees-stripe .error svg .glyph {
+        fill: {if !empty($stripe_error_glyph_color)}{$stripe_error_glyph_color|escape:'htmlall'}{else}#f6f9fc{/if};
+    }
+
+    .thirtybees.thirtybees-stripe .error .message {
+        color: {if !empty($stripe_error_color)}{$stripe_error_color|escape:'htmlall'}{else}#e25950{/if};
+    }
 </style>
-<div id="stripe-payment-overlay" style="display: none">
-  <div style="text-align: center">
-    <svg id="successAnimation" class="animated" xmlns="http://www.w3.org/2000/svg" width="210" height="210" viewBox="0 0 70 70">
-      <path id="successAnimationResult" fill="#D8D8D8"
-            d="M35,60 C21.1928813,60 10,48.8071187 10,35 C10,21.1928813 21.1928813,10 35,10 C48.8071187,10 60,21.1928813 60,35 C60,48.8071187 48.8071187,60 35,60 Z M23.6332378,33.2260427 L22.3667622,34.7739573 L34.1433655,44.40936 L47.776114,27.6305926 L46.223886,26.3694074 L33.8566345,41.59064 L23.6332378,33.2260427 Z"/>
-      <circle id="successAnimationCircle" cx="35" cy="35" r="24" stroke="#979797" stroke-width="2" stroke-linecap="round" fill="transparent"/>
-      <polyline id="successAnimationCheck" stroke="#979797" stroke-width="2" points="23 34 34 43 47 27" fill="transparent"/>
-    </svg>
-    <p style="font-size: 3em; color: white" class="stripe-payment-overlay-text">{l s='Card verified' mod='stripe'}</p>
-    <p style="font-size: 3em; color: white" class="stripe-payment-overlay-text">{l s='Redirecting...' mod='stripe'}</p>
-  </div>
+
+<div id="tb-stripe-elements">
+    <div class="cell thirtybees thirtybees-stripe">
+        <form>
+            <div id="thirtybees-paymentRequest">
+                <!--Stripe paymentRequestButton Element inserted here-->
+            </div>
+            <fieldset>
+                <legend class="card-only" data-tid="elements_thirtybees.form.pay_with_card">
+                    {l s='Pay with card' mod='stripe'}
+                </legend>
+                <legend class="payment-request-available" data-tid="elements_thirtybees.form.enter_card_manually">
+                    {l s='Or enter card details' mod='stripe'}
+                </legend>
+                <div class="tb-container">
+                    <div id="thirtybees-stripe-card"></div>
+                    <button type="submit"
+                            data-tid="elements_thirtybees.form.donate_button">{l s='Pay' mod='stripe'}</button>
+                </div>
+            </fieldset>
+            <div id="error-text" class="error" role="alert" style="display: none">
+                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 17 17">
+                    <path class="base"
+                          fill="#000"
+                          d="M8.5,17 C3.80557963,17 0,13.1944204 0,8.5 C0,3.80557963 3.80557963,0 8.5,0 C13.1944204,0 17,3.80557963 17,8.5 C17,13.1944204 13.1944204,17 8.5,17 Z"
+                    ></path>
+                    <path class="glyph"
+                          fill="#FFF"
+                          d="M8.5,7.29791847 L6.12604076,4.92395924 C5.79409512,4.59201359 5.25590488,4.59201359 4.92395924,4.92395924 C4.59201359,5.25590488 4.59201359,5.79409512 4.92395924,6.12604076 L7.29791847,8.5 L4.92395924,10.8739592 C4.59201359,11.2059049 4.59201359,11.7440951 4.92395924,12.0760408 C5.25590488,12.4079864 5.79409512,12.4079864 6.12604076,12.0760408 L8.5,9.70208153 L10.8739592,12.0760408 C11.2059049,12.4079864 11.7440951,12.4079864 12.0760408,12.0760408 C12.4079864,11.7440951 12.4079864,11.2059049 12.0760408,10.8739592 L9.70208153,8.5 L12.0760408,6.12604076 C12.4079864,5.79409512 12.4079864,5.25590488 12.0760408,4.92395924 C11.7440951,4.59201359 11.2059049,4.59201359 10.8739592,4.92395924 L8.5,7.29791847 L8.5,7.29791847 Z"
+                    ></path>
+                </svg>
+                <span class="message"></span>
+            </div>
+            <div id="submit-text" style="display: none">
+                <span>{l s='Submitting...' mod='stripe'}</span>&nbsp;
+                <svg version="1.1"
+                     id="Layer_1"
+                     xmlns="http://www.w3.org/2000/svg"
+                     xmlns:xlink="http://www.w3.org/1999/xlink"
+                     x="0px"
+                     y="0px"
+                     width="12"
+                     height="15"
+                     viewBox="0 0 24 30"
+                     style="enable-background:new 0 0 50 50;"
+                     xml:space="preserve"
+                >
+                    <rect x="0" y="9.16667" width="4" height="11.6667" fill="#000" opacity="0.2">
+                        <animate attributeName="opacity" attributeType="XML" values="0.2; 1; .2" begin="0s" dur="0.6s"
+                                 repeatCount="indefinite"></animate>
+                        <animate attributeName="height" attributeType="XML" values="10; 20; 10" begin="0s" dur="0.6s"
+                                 repeatCount="indefinite"></animate>
+                        <animate attributeName="y" attributeType="XML" values="10; 5; 10" begin="0s" dur="0.6s"
+                                 repeatCount="indefinite"></animate>
+                    </rect>
+                    <rect x="8" y="6.66667" width="4" height="16.6667" fill="#000" opacity="0.2">
+                        <animate attributeName="opacity" attributeType="XML" values="0.2; 1; .2" begin="0.15s"
+                                 dur="0.6s" repeatCount="indefinite"></animate>
+                        <animate attributeName="height" attributeType="XML" values="10; 20; 10" begin="0.15s" dur="0.6s"
+                                 repeatCount="indefinite"></animate>
+                        <animate attributeName="y" attributeType="XML" values="10; 5; 10" begin="0.15s" dur="0.6s"
+                                 repeatCount="indefinite"></animate>
+                    </rect>
+                    <rect x="16" y="5.83333" width="4" height="18.3333" fill="#000" opacity="0.2">
+                        <animate attributeName="opacity" attributeType="XML" values="0.2; 1; .2" begin="0.3s" dur="0.6s"
+                                 repeatCount="indefinite"></animate>
+                        <animate attributeName="height" attributeType="XML" values="10; 20; 10" begin="0.3s" dur="0.6s"
+                                 repeatCount="indefinite"></animate>
+                        <animate attributeName="y" attributeType="XML" values="10; 5; 10" begin="0.3s" dur="0.6s"
+                                 repeatCount="indefinite"></animate>
+                    </rect>
+                </svg>
+            </div>
+            <div id="success-text" class="success" style="display: none">
+                <div class="icon">
+                    <svg width="17" height="17" viewBox="0 0 84 84" version="1.1" xmlns="http://www.w3.org/2000/svg"
+                         xmlns:xlink="http://www.w3.org/1999/xlink">
+                        <circle class="border" cx="42" cy="42" r="40" stroke-linecap="round" stroke-width="4"
+                                stroke="#000" fill="none"></circle>
+                        <path class="checkmark" stroke-linecap="round" stroke-linejoin="round"
+                              d="M23.375 42.5488281 36.8840688 56.0578969 64.891932 28.0500338" stroke-width="4"
+                              stroke="#000" fill="none"></path>
+                    </svg>
+                </div>
+                <h3 class="title"
+                    data-tid="elements_thirtybees.success.title">{l s='Payment successful' mod='stripe'}</h3>
+                <p class="message"><span data-tid="elements_thirtybees.success.message"></p>
+                <a class="reset" href="#">
+                    <svg width="32px" height="32px" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg"
+                         xmlns:xlink="http://www.w3.org/1999/xlink">
+                        <path fill="#000000"
+                              d="M15,7.05492878 C10.5000495,7.55237307 7,11.3674463 7,16 C7,20.9705627 11.0294373,25 16,25 C20.9705627,25 25,20.9705627 25,16 C25,15.3627484 24.4834055,14.8461538 23.8461538,14.8461538 C23.2089022,14.8461538 22.6923077,15.3627484 22.6923077,16 C22.6923077,19.6960595 19.6960595,22.6923077 16,22.6923077 C12.3039405,22.6923077 9.30769231,19.6960595 9.30769231,16 C9.30769231,12.3039405 12.3039405,9.30769231 16,9.30769231 L16,12.0841673 C16,12.1800431 16.0275652,12.2738974 16.0794108,12.354546 C16.2287368,12.5868311 16.5380938,12.6540826 16.7703788,12.5047565 L22.3457501,8.92058924 L22.3457501,8.92058924 C22.4060014,8.88185624 22.4572275,8.83063012 22.4959605,8.7703788 C22.6452866,8.53809377 22.5780351,8.22873685 22.3457501,8.07941076 L22.3457501,8.07941076 L16.7703788,4.49524351 C16.6897301,4.44339794 16.5958758,4.41583275 16.5,4.41583275 C16.2238576,4.41583275 16,4.63969037 16,4.91583275 L16,7 L15,7 L15,7.05492878 Z M16,32 C7.163444,32 0,24.836556 0,16 C0,7.163444 7.163444,0 16,0 C24.836556,0 32,7.163444 32,16 C32,24.836556 24.836556,32 16,32 Z"
+                        ></path>
+                    </svg>
+                </a>
+            </div>
+        </form>
+    </div>
 </div>
-<iframe id="stripe-checkout-iframe"
-        src="{$link->getModuleLink('stripe', 'checkoutiframe', [], true)|escape:'htmlall'}"
-        width="100%"
-        frameborder="0"
-></iframe>
+
 <script type="text/javascript" data-cookieconsent="necessary">
-  (function () {
-    window.addEventListener('message', function (event) {
-      if (!event.data) {
-        return;
-      }
+    (function () {
+        function initElements() {
+            if (typeof Stripe === 'undefined') {
+                setTimeout(initElements, 10);
 
-      try {
-        var data = JSON.parse(event.data);
-      } catch (e) {
-        return;
-      }
+                return;
+            }
 
-      if (data && data.messageOrigin === 'checkoutiframe') {
-        if (data.subject === 'height') {
-          document.getElementById('stripe-checkout-iframe').height = parseInt(data.height, 10);
-        } else if (data.subject === 'payment-success') {
-          document.querySelector('body').style.overflow = 'hidden';
-          document.getElementById('stripe-payment-overlay').style.display = 'block';
+            var example = document.querySelector('.thirtybees');
+            var form = example.querySelector('form');
+
+            function updateQueryStringParameter(uri, key, value) {
+                var re = new RegExp("([?&])" + key + "=.*?(&|$)", "i");
+                var separator = uri.indexOf('?') !== -1 ? "&" : "?";
+                if (uri.match(re)) {
+                    return uri.replace(re, '$1' + key + "=" + value + '$2');
+                } else {
+                    return uri + separator + key + "=" + value;
+                }
+            }
+
+            function enableInputs() {
+                Array.prototype.forEach.call(
+                    form.querySelectorAll(
+                        "input[type='text'], input[type='email'], input[type='tel']"
+                    ),
+                    function (input) {
+                        input.removeAttribute('disabled');
+                    }
+                );
+            }
+
+            function disableInputs() {
+                Array.prototype.forEach.call(
+                    form.querySelectorAll(
+                        "input[type='text'], input[type='email'], input[type='tel']"
+                    ),
+                    function (input) {
+                        input.setAttribute('disabled', 'true');
+                    }
+                );
+            }
+
+            var stripe = Stripe('{$stripe_publishable_key|escape:'javascript'}');
+            var elements = stripe.elements({
+                fonts: [
+                    {
+                        cssSrc: 'https://fonts.googleapis.com/css?family={$stripe_input_font_family|replace:' ':'+'|escape:'javascript'}',
+                    },
+                ],
+                locale: 'auto'
+            });
+            var style = {
+                base: {
+                    color: '{if !empty($stripe_payment_request_background_color)}{$stripe_payment_request_background_color|escape:'javascript'}{else}#32325D{/if}',
+                    fontWeight: 500,
+                    fontFamily: '{if !empty($stripe_input_font_family)}{$stripe_input_font_family|escape:'javascript'}, {/if}Open Sans, Segoe UI, sans-serif',
+                    fontSize: '{if !empty($stripe_checkout_font_size)}{$stripe_checkout_font_size|escape:'javascript'}{else}15px{/if}',
+                    fontSmoothing: 'antialiased',
+
+                    '::placeholder': {
+                        color: '{if !empty($stripe_payment_request_foreground_color)}{$stripe_payment_request_foreground_color|escape:'javascript'}{else}#CFD7DF{/if}'
+                    }
+                },
+                invalid: {
+                    color: '{if !empty($stripe_error_color)}{$stripe_error_color|escape:'javascript'}{else}#e25950{/if}'
+                }
+            };
+
+            // Create an instance of the card Element
+            var card = elements.create('card', {
+                style: style
+            });
+
+            // Add an instance of the card Element into the `card-element` <div>
+            card.mount('#thirtybees-stripe-card');
+
+            {if !empty($stripe_payment_request) && $stripe_payment_request}
+            /**
+             * Payment Request Element
+             */
+            var paymentRequest = stripe.paymentRequest({
+                country: '{$stripe_country|escape:'javascript'}'.toUpperCase(),
+                currency: '{$stripe_currency|escape:'javascript'}'.toLowerCase(),
+                total: {
+                    amount: {$stripe_amount|escape:'javascript'},
+                    label: 'Total'
+                }
+            });
+
+            paymentRequest.on('source', function (result) {
+                if (result.source) {
+                    var a = document.createElement('a');
+                    a.href = '{$link->getModuleLink('stripe', 'validation', [ 'type' => 'paymentRequest' ], true)|escape:'javascript'}';
+
+                    a.search = updateQueryStringParameter(a.search, 'stripe-token', result.source.id);
+                    a.search = updateQueryStringParameter(a.search, 'stripe-id_cart', {$id_cart|intval});
+
+                    document.getElementById('error-text').style.display = 'none';
+                    result.complete('success');
+                    window.location = a.href;
+                } else {
+                    // Otherwise, un-disable inputs.
+                    if (result.error && result.error.message) {
+                        document.querySelector('.message').textContent = result.error.message;
+                    }
+                    document.getElementById('error-text').style.display = 'block';
+                    enableInputs();
+                    result.complete('fail');
+                }
+            });
+
+            var paymentRequestElement = elements.create('paymentRequestButton', {
+                paymentRequest: paymentRequest,
+                style: {
+                    paymentRequestButton: {
+                        type: 'buy',
+                        theme: '{if !empty($stripe_payment_request_style)}{$stripe_payment_request_style|escape:'javascript'}{else}dark{/if}'
+                    },
+                    base: {
+                        color: '{if !empty($stripe_payment_request_background_color)}{$stripe_payment_request_background_color|escape:'javascript'}{else}#32325D{/if}',
+                        fontWeight: 500,
+                        fontFamily: '{if !empty($stripe_input_font_family)}{$stripe_input_font_family|escape:'javascript'}, {/if}Open Sans, Segoe UI, sans-serif',
+                        fontSize: '{if !empty($stripe_checkout_font_size)}{$stripe_checkout_font_size|escape:'javascript'}{else}15px{/if}',
+                        fontSmoothing: 'antialiased',
+
+                        '::placeholder': {
+                            color: '{if !empty($stripe_payment_request_foreground_color)}{$stripe_payment_request_foreground_color|escape:'javascript'}{else}#CFD7DF{/if}'
+                        }
+                    },
+                    invalid: {
+                        color: '{if !empty($stripe_error_color)}{$stripe_error_color|escape:'javascript'}{else}#e25950{/if}'
+                    }
+                }
+            });
+
+            paymentRequest.canMakePayment().then(function (result) {
+                if (result) {
+                    document.querySelector('.thirtybees .card-only').style.display = 'none';
+                    document.querySelector('.thirtybees .payment-request-available').style.display = 'block';
+                    paymentRequestElement.mount('#thirtybees-paymentRequest');
+                }
+            });
+            {/if}
+
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                // Show a loading screen...
+                example.className += ' submitting';
+                document.getElementById('error-text').style.display = 'none';
+                document.getElementById('submit-text').style.display = 'block';
+
+                // Disable all inputs.
+                disableInputs();
+
+                // Gather additional customer data we may have collected in our form.
+                var name = form.querySelector('#thirtybees-name');
+                var address1 = form.querySelector('#thirtybees-address');
+                var city = form.querySelector('#thirtybees-city');
+                var state = form.querySelector('#thirtybees-state');
+                var zip = form.querySelector('#thirtybees-zip');
+                var additionalData = {
+                    name: name ? name.value : undefined,
+                    address_line1: address1 ? address1.value : undefined,
+                    address_city: city ? city.value : undefined,
+                    address_state: state ? state.value : undefined,
+                    address_zip: zip ? zip.value : undefined,
+                };
+
+                stripe
+                    .handleCardPayment('{$stripe_client_secret|escape:'javascript'}', card)
+                    .then(function () {
+                        window.location = '{$link->getModuleLink('stripe', 'validation', ['type' => 'cc'], true)|escape:'javascript'}';
+                    });
+
+            });
         }
-      }
-    });
-  }());
+
+        initElements();
+    })();
 </script>
+

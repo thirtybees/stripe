@@ -36,6 +36,13 @@ if (!defined('_TB_VERSION_')) {
 class Utils
 {
     /**
+     * Cookie keys
+     */
+    const STRIPE_SESSION = 'stripeSession';
+    const STRIPE_PAYMENT_INTENT_ID = 'stripePIID';
+    const STRIPE_PAYMENT_INTENT_CLIENT_SECRET = 'stripePICS';
+
+    /**
      * Returns cart total in smallest common currency unit
      *
      * @param Cart $cart
@@ -70,98 +77,14 @@ class Utils
      *
      * @param Cart $cart
      * @return string
-     * @throws \PrestaShopException
      */
     public static function getCurrencyCode(Cart $cart)
     {
-        $currency = new Currency((int)$cart->id_currency);
+        $currency = Currency::getCurrencyInstance((int)$cart->id_currency);
         return mb_strtolower($currency->iso_code);
     }
 
-    /**
-     * Returns stripe session ID from cookie
-     *
-     * Session information is stored in variable stripeSession with this format
-     *
-     * <timestamp>:<cartId>:<cartTotal>:<sessionId>
-     *
-     * @param Cookie $cookie
-     * @param Cart $cart
-     * @return mixed|null
-     * @throws \Adapter_Exception
-     * @throws \PrestaShopDatabaseException
-     * @throws \PrestaShopException
-     */
-    public static function getSessionFromCookie(Cookie $cookie, Cart $cart)
-    {
-        // check if cookie contains stripe session variable
-        if (!isset($cookie->stripeSession)) {
-            return null;
-        }
-
-        $arr = explode(':', $cookie->stripeSession);
-
-        if (!$arr) {
-            return null;
-        }
-
-        // check timestamp expiration
-        $ts = (int)array_shift($arr);
-        if ($ts < (time() - 24 * 60 * 60)) {
-            return null;
-        }
-
-        // check cart id
-        $cartId = (int)array_shift($arr);
-        if ($cartId !== (int)$cart->id) {
-            return null;
-        }
-
-        // check that cart total hasn't changed
-        $sessionTotal = (int)array_shift($arr);
-        $total = Utils::getCartTotal($cart);
-        if ($sessionTotal != $total) {
-            return null;
-        }
-
-        return array_shift($arr);
-    }
-
-    /**
-     * Saves stripe session into cookie
-     *
-     * Session information is stored in variable stripeSession with this format
-     *
-     * <timestamp>:<cartId>:<cartTotal>:<sessionId>
-     *
-     * @param Cookie $cookie
-     * @param Cart $cart
-     * @param $sessionId
-     * @throws \Adapter_Exception
-     * @throws \PrestaShopDatabaseException
-     * @throws \PrestaShopException
-     */
-    public static function saveSessionToCookie(Cookie $cookie, Cart $cart, $sessionId)
-    {
-        $now = time();
-        $cartId = (int)$cart->id;
-        $total = static::getCartTotal($cart);
-        $cookie->stripeSession = $now . ':' . $cartId . ':' . $total . ':' .$sessionId;
-    }
-
-    /**
-     * Removes stripe session information from cookie
-     *
-     * @param Cookie $cookie
-     */
-    public static function removeSessionFromCookie(Cookie $cookie)
-    {
-        if (isset($cookie->stripeSession)) {
-           unset($cookie->stripeSession);
-        }
-    }
-
-    /**
+   /**
      * Derive StripeTransaction type from stripe review status
      *
      * @param string $status payment intent status
@@ -214,6 +137,169 @@ class Utils
             return (int)$paymentMethodDetails->card->last4;
         }
         return 0;
+    }
+
+    /**
+     * Returns stripe object ID from cookie
+     *
+     * @param Cookie $cookie
+     * @param Cart $cart
+     * @return mixed|null
+     * @throws \Adapter_Exception
+     * @throws \PrestaShopDatabaseException
+     * @throws \PrestaShopException
+     */
+    public static function getSessionFromCookie(Cookie $cookie, Cart $cart)
+    {
+        return static::getFromCookie(static::STRIPE_SESSION, $cookie, $cart);
+    }
+
+    /**
+     * Saves stripe session id into cookie
+     *
+     * @param Cookie $cookie
+     * @param Cart $cart
+     * @param $sessionId
+     * @throws \Adapter_Exception
+     * @throws \PrestaShopDatabaseException
+     * @throws \PrestaShopException
+     */
+    public static function saveSessionToCookie(Cookie $cookie, Cart $cart, $sessionId)
+    {
+        static::saveToCookie(static::STRIPE_SESSION, $cookie, $cart, $sessionId);
+    }
+
+    /**
+     * Returns stripe payment intent ID from cookie
+     *
+     * @param Cookie $cookie
+     * @param Cart $cart
+     * @return mixed|null
+     * @throws \Adapter_Exception
+     * @throws \PrestaShopDatabaseException
+     * @throws \PrestaShopException
+     */
+    public static function getPaymentIntentIdFromCookie(Cookie $cookie, Cart $cart)
+    {
+        return static::getFromCookie(static::STRIPE_PAYMENT_INTENT_ID, $cookie, $cart);
+    }
+
+    /**
+     * Returns stripe payment intent client secret from cookie
+     *
+     * @param Cookie $cookie
+     * @param Cart $cart
+     * @return mixed|null
+     * @throws \Adapter_Exception
+     * @throws \PrestaShopDatabaseException
+     * @throws \PrestaShopException
+     */
+    public static function getPaymentIntentClientSecretFromCookie(Cookie $cookie, Cart $cart)
+    {
+        return static::getFromCookie(static::STRIPE_PAYMENT_INTENT_CLIENT_SECRET, $cookie, $cart);
+    }
+
+    /**
+     * Saves stripe payment intent information into cookie
+     *
+     * @param Cookie $cookie
+     * @param Cart $cart
+     * @param $paymentIntentId
+     * @param $clientSecret
+     * @throws \Adapter_Exception
+     * @throws \PrestaShopDatabaseException
+     * @throws \PrestaShopException
+     */
+    public static function savePaymentIntentToCookie(Cookie $cookie, Cart $cart, $paymentIntentId, $clientSecret)
+    {
+        static::saveToCookie(static::STRIPE_PAYMENT_INTENT_ID, $cookie, $cart, $paymentIntentId);
+        static::saveToCookie(static::STRIPE_PAYMENT_INTENT_CLIENT_SECRET, $cookie, $cart, $clientSecret);
+    }
+
+    /**
+     * Returns stripe object ID from cookie
+     *
+     * Session information is stored in variable $key with this format
+     *
+     * <timestamp>:<cartId>:<cartTotal>:<sessionId>
+     *
+     * @param Cookie $cookie
+     * @param Cart $cart
+     * @return mixed|null
+     * @throws \Adapter_Exception
+     * @throws \PrestaShopDatabaseException
+     * @throws \PrestaShopException
+     */
+    private static function getFromCookie($key, Cookie $cookie, Cart $cart)
+    {
+        // check if cookie contains stripe session variable
+        if (!isset($cookie->{$key})) {
+            return null;
+        }
+
+        $arr = explode(':', $cookie->{$key});
+
+        if (!$arr) {
+            return null;
+        }
+
+        // check timestamp expiration
+        $ts = (int)array_shift($arr);
+        if ($ts < (time() - 24 * 60 * 60)) {
+            return null;
+        }
+
+        // check cart id
+        $cartId = (int)array_shift($arr);
+        if ($cartId !== (int)$cart->id) {
+            return null;
+        }
+
+        // check that cart total hasn't changed
+        $sessionTotal = (int)array_shift($arr);
+        $total = Utils::getCartTotal($cart);
+        if ($sessionTotal != $total) {
+            return null;
+        }
+
+        return array_shift($arr);
+    }
+
+    /**
+     * Saves stripe object id into cookie
+     *
+     * Object information is stored in variable {$key} with this format
+     *
+     * <timestamp>:<cartId>:<cartTotal>:<sessionId>
+     *
+     * @param string $key
+     * @param Cookie $cookie
+     * @param Cart $cart
+     * @param $sessionId
+     * @throws \Adapter_Exception
+     * @throws \PrestaShopDatabaseException
+     * @throws \PrestaShopException
+     */
+    private static function saveToCookie($key, Cookie $cookie, Cart $cart, $sessionId)
+    {
+        $now = time();
+        $cartId = (int)$cart->id;
+        $total = static::getCartTotal($cart);
+        $cookie->{$key} = $now . ':' . $cartId . ':' . $total . ':' .$sessionId;
+    }
+
+    /**
+     * Removes stripe objects information from cookie
+     *
+     * @param Cookie $cookie
+     */
+    public static function removeFromCookie(Cookie $cookie)
+    {
+        foreach ([static::STRIPE_SESSION, static::STRIPE_PAYMENT_INTENT_ID, static::STRIPE_PAYMENT_INTENT_CLIENT_SECRET] as $key) {
+            if (isset($cookie->{$key})) {
+                unset($cookie->{$key});
+            }
+        }
     }
 
 }
