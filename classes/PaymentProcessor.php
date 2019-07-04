@@ -162,7 +162,7 @@ class PaymentProcessor
         $this->review = new StripeReview();
         $this->review->id_charge = $charge->id;
         $this->review->test = !Configuration::get(Stripe::GO_LIVE);
-        $this->review->status = StripeReview::APPROVED;
+        $this->review->status = StripeReview::CAPTURED;
         $this->review->id_order = 0;
         $review = $paymentIntent->review ? $paymentIntent->review : $charge->review;
         if ($review) {

@@ -70,7 +70,6 @@ class Stripe extends PaymentModule
     const GIROPAY = 'STRIPE_GIROPAY';
     const SOFORT = 'STRIPE_SOFORT';
     const P24 = 'STRIPE_P24';
-    const THREEDSECURE = 'STRIPE_THREEDSECURE';
 
     const OPTIONS_MODULE_SETTINGS = 1;
 
@@ -772,7 +771,6 @@ class Stripe extends PaymentModule
             static::GIROPAY                  => (bool) Tools::getValue(static::GIROPAY),
             static::SOFORT                   => (bool) Tools::getValue(static::SOFORT),
             static::P24                      => (bool) Tools::getValue(static::P24),
-            static::THREEDSECURE             => (bool) Tools::getValue(static::THREEDSECURE),
             static::SHOW_PAYMENT_LOGOS       => (bool) Tools::getValue(static::SHOW_PAYMENT_LOGOS),
             static::COLLECT_BILLING          => (bool) Tools::getValue(static::COLLECT_BILLING),
             static::STRIPE_CHECKOUT          => (bool) Tools::getValue(static::STRIPE_CHECKOUT),
@@ -1618,15 +1616,6 @@ class Stripe extends PaymentModule
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                     ],
-                    static::THREEDSECURE       => [
-                        'title'      => $this->l('Enforce 3D Secure'),
-                        'type'       => 'bool',
-                        'name'       => static::THREEDSECURE,
-                        'value'      => Configuration::get(static::THREEDSECURE),
-                        'auto_value' => false,
-                        'validation' => 'isBool',
-                        'cast'       => 'intval',
-                    ],
                     static::STRIPE_PAYMENT_REQUEST => [
                         'title'      => $this->l('Enable the payment request button'),
                         'desc'       => $this->l('This option adds an Apple Pay or Google Pay button to the form'),
@@ -2140,7 +2129,6 @@ class Stripe extends PaymentModule
                 'showPaymentLogos'              => Configuration::get(static::SHOW_PAYMENT_LOGOS),
                 'stripeShopThumb'               => str_replace('http://', 'https://', $this->context->link->getMediaLink(__PS_BASE_URI__.'modules/stripe/views/img/shop'.$this->getShopId().'.jpg')),
                 'autoplay'                      => $autoplay,
-                'three_d_secure'                => Configuration::get(static::THREEDSECURE),
                 'local_module_dir'              => _PS_MODULE_DIR_,
                 'params'                        => $params,
             ]
