@@ -43,6 +43,7 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
     }
 
     /**
+     * @throws Adapter_Exception
      * @throws PrestaShopException
      */
     public function initContent()
@@ -99,52 +100,19 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
     }
 
     /**
-     * Init credit card payment
+     * Init stripe checkout flow payment
      *
      * @throws PrestaShopException
+     * @throws Adapter_Exception
      */
     protected function initStripeCheckout()
     {
-        $this->context->controller->addJS('https://checkout.stripe.com/checkout.js');
-
-        /** @var Cookie $email */
-        $cookie = $this->context->cookie;
-        $stripeEmail = $cookie->email;
-
-        /** @var Cart $cart */
-        $cart = $this->context->cart;
-        $currency = new Currency($cart->id_currency);
-
-        $link = $this->context->link;
-
-        $stripeAmount = $cart->getOrderTotal();
-        if (!in_array(mb_strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
-            $stripeAmount = (int) ($stripeAmount * 100);
-        }
-
-        $this->module->checkShopThumb();
-
-        $this->context->smarty->assign(
-            [
-                'stripe_email'             => $stripeEmail,
-                'stripe_currency'          => $currency->iso_code,
-                'stripe_amount'            => $stripeAmount,
-                'stripe_confirmation_page' => $link->getModuleLink('stripe', 'validation'),
-                'id_cart'                  => (int) $cart->id,
-                'stripe_secret_key'        => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::SECRET_KEY_LIVE) : Configuration::get(Stripe::SECRET_KEY_TEST),
-                'stripe_publishable_key'   => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::PUBLISHABLE_KEY_LIVE) : Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
-                'stripe_locale'            => Stripe::getStripeLanguage($this->context->language->language_code),
-                'stripe_zipcode'           => (bool) Configuration::get(Stripe::ZIPCODE),
-                'stripe_alipay_block'      => (bool) Configuration::get(Stripe::ALIPAY_BLOCK),
-                'stripe_shopname'          => $this->context->shop->name,
-                'stripe_collect_billing'   => Configuration::get(Stripe::COLLECT_BILLING),
-                'stripe_collect_shipping'  => Configuration::get(Stripe::COLLECT_SHIPPING),
-                'autoplay'                 => true,
-                'stripeShopThumb'          => $this->context->link->getMediaLink('/modules/stripe/views/img/shop'.$this->context->shop->id.'.jpg'),
-                'module_dir'               => __PS_BASE_URI__.'modules/stripe/',
-            ]
-        );
-
+        $this->context->controller->addJS('https://js.stripe.com/v3/');
+        $this->context->smarty->assign([
+            'stripe_publishable_key'   => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::PUBLISHABLE_KEY_LIVE) : Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
+            'stripe_session_id'        => $this->module->getCheckoutSession(),
+            'autoplay'                 => true,
+        ]);
         $this->setTemplate('eupayment.tpl');
     }
 

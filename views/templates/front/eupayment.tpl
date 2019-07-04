@@ -16,91 +16,49 @@
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
 <div class="row">
-  <form id="stripe-form" action="{$stripe_confirmation_page|escape:'htmlall'}" method="POST">
-    <input type="hidden" name="stripe-id_cart" value="{$id_cart|escape:'htmlall'}">
-  </form>
-  <a id="stripe_payment_link" href="#" title="{l s='Pay with Stripe' mod='stripe'}" class="btn btn-default">
-    {l s='Pay with Stripe' mod='stripe'}
-  </a>
-  <script type="text/javascript" data-cookieconsent="necessary">
-    (function () {
-      var handler = null;
-
-      function documentReady(fn) {
-        if (document.readyState !== 'loading'){
-          fn();
-        } else if (document.addEventListener) {
-          document.addEventListener('DOMContentLoaded', fn);
-        } else {
-          document.attachEvent('onreadystatechange', function() {
-            if (document.readyState !== 'loading')
-              fn();
-          });
-        }
-      }
-
-      function initEuStripe() {
-        if (typeof $ === 'undefined') {
-          setTimeout(initEuStripe, 100);
-          return;
-        }
-
-        documentReady(function () {
-          function openStripeHandler(e) {
-            if (!handler) {
-              return;
+    <a id="stripe_payment_link" href="#" title="{l s='Pay with Stripe' mod='stripe'}" class="btn btn-default">
+        {l s='Pay with Stripe' mod='stripe'}
+    </a>
+    <script type="text/javascript" data-cookieconsent="necessary">
+        (function () {
+            function documentReady(fn) {
+                if (document.readyState !== 'loading') {
+                    fn();
+                } else if (document.addEventListener) {
+                    document.addEventListener('DOMContentLoaded', fn);
+                } else {
+                    document.attachEvent('onreadystatechange', function () {
+                        if (document.readyState !== 'loading') {
+                            fn();
+                        }
+                    });
+                }
             }
 
-            {* Open Checkout with further options: *}
-            handler.open({
-              name: '{$stripe_shopname|escape:'javascript'}',
-              zipCode: {if $stripe_zipcode}true{else}false{/if},
-              currency: '{$stripe_currency|escape:'javascript'}',
-              amount: '{$stripe_amount|escape:'javascript'}',
-              email: '{$stripe_email|escape:'javascript'}',
-              billingAddress: {if $stripe_collect_billing}true{else}false{/if},
-              shippingAddress: {if $stripe_collect_shipping}true{else}false{/if}
-            });
-            if (typeof e !== 'undefined' && typeof e !== 'function') {
-              e.preventDefault();
+            function initStripe() {
+                if (typeof Stripe === 'undefined') {
+                    return setTimeout(initStripe, 100);
+                }
+
+                var stripe = Stripe('{$stripe_publishable_key|escape:'javascript'}');
+                var element = document.getElementById('stripe_payment_link');
+                var triggerStripe = function() {
+                    stripe
+                        .redirectToCheckout({ sessionId: '{$stripe_session_id|escape:'javascript' }'})
+                        .then(function(result) {
+                            console.log(result);
+                        });
+                };
+                element.addEventListener('click', function() {
+                    e.preventDefault();
+                    triggerStripe();
+                });
+                {if $autoplay}
+                triggerStripe();
+                {/if}
             }
-          }
 
-          function initStripe() {
-            if (typeof StripeCheckout === 'undefined') {
-              setTimeout(initStripe, 100);
-              return;
-            }
-
-            handler = StripeCheckout.configure({
-              key: '{$stripe_publishable_key|escape:'javascript'}',
-              image: '{$stripeShopThumb|escape:'javascript'}',
-              locale: '{$stripe_locale|escape:'javascript'}',
-              token: function (token) {
-                var form = document.getElementById('stripe-form');
-                {* Insert the token into the form so it gets submitted to the server: *}
-                var input = document.createElement('INPUT');
-                input.type = 'hidden';
-                input.name = 'stripe-token';
-                input.value = token.id;
-
-                {* Append the token and submit the form *}
-                form.appendChild(input);
-                form.submit();
-              }
-            });
-
-            document.getElementById('stripe_payment_link').addEventListener('click', openStripeHandler);
-            {if $autoplay}
-            openStripeHandler();
-            {/if}
-          }
-
-          initStripe();
-        });
-      }
-
-      initEuStripe();
-    })();
-  </script>
+            documentReady(initStripe);
+        })();
+    </script>
 </div>
