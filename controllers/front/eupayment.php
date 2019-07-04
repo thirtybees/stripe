@@ -166,8 +166,6 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
                 'stripe_ajax_confirmation_page' => $link->getPageLink('order-confirmation', Tools::usingSecureMode(), '&id_cart='.$cart->id.'&id_module='.$this->module->id.'&key='.$customer->secure_key),
                 'showPaymentLogos'              => Configuration::get(Stripe::SHOW_PAYMENT_LOGOS),
                 'stripeShopThumb'               => str_replace('http://', 'https://', $this->context->link->getMediaLink(__PS_BASE_URI__.'modules/stripe/views/img/shop'.$this->module->getShopId().'.jpg')),
-                'stripe_collect_billing'        => Configuration::get(Stripe::COLLECT_BILLING),
-                'stripe_collect_shipping'       => Configuration::get(Stripe::COLLECT_SHIPPING),
                 'stripe_apple_pay'              => Configuration::get(Stripe::STRIPE_PAYMENT_REQUEST),
                 'stripe_checkout'               => Configuration::get(Stripe::STRIPE_CHECKOUT),
                 'stripe_cc_form'                => Configuration::get(Stripe::STRIPE_CC_FORM),

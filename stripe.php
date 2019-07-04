@@ -40,7 +40,6 @@ class Stripe extends PaymentModule
 
     const ZIPCODE = 'STRIPE_ZIPCODE';
     const COLLECT_BILLING = 'STRIPE_COLLECT_BILLING';
-    const COLLECT_SHIPPING = 'STRIPE_COLLECT_SHIPPING';
     const ALIPAY_BLOCK = 'STRIPE_ALIPAY_BLOCK'; // Separate Alipay block
 
     const GO_LIVE = 'STRIPE_GO_LIVE';
@@ -781,7 +780,6 @@ class Stripe extends PaymentModule
             static::THREEDSECURE             => (bool) Tools::getValue(static::THREEDSECURE),
             static::SHOW_PAYMENT_LOGOS       => (bool) Tools::getValue(static::SHOW_PAYMENT_LOGOS),
             static::COLLECT_BILLING          => (bool) Tools::getValue(static::COLLECT_BILLING),
-            static::COLLECT_SHIPPING         => (bool) Tools::getValue(static::COLLECT_SHIPPING),
             static::STRIPE_CHECKOUT          => (bool) Tools::getValue(static::STRIPE_CHECKOUT),
             static::STRIPE_CC_FORM           => (bool) Tools::getValue(static::STRIPE_CC_FORM),
             static::STRIPE_PAYMENT_REQUEST   => (bool) Tools::getValue(static::STRIPE_PAYMENT_REQUEST),
@@ -1583,15 +1581,6 @@ class Stripe extends PaymentModule
                         'validation' => 'isBool',
                         'cast'       => 'intval',
                     ],
-                    static::COLLECT_SHIPPING   => [
-                        'title'      => $this->l('Collect shipping address'),
-                        'type'       => 'bool',
-                        'name'       => static::COLLECT_SHIPPING,
-                        'value'      => Configuration::get(static::COLLECT_SHIPPING),
-                        'auto_value' => false,
-                        'validation' => 'isBool',
-                        'cast'       => 'intval',
-                    ],
                     static::ZIPCODE            => [
                         'title'      => $this->l('Zipcode / postcode verification'),
                         'type'       => 'bool',
@@ -2193,8 +2182,6 @@ class Stripe extends PaymentModule
                 ),
                 'showPaymentLogos'              => Configuration::get(static::SHOW_PAYMENT_LOGOS),
                 'stripeShopThumb'               => str_replace('http://', 'https://', $this->context->link->getMediaLink(__PS_BASE_URI__.'modules/stripe/views/img/shop'.$this->getShopId().'.jpg')),
-                'stripe_collect_billing'        => Configuration::get(static::COLLECT_BILLING),
-                'stripe_collect_shipping'       => Configuration::get(static::COLLECT_SHIPPING),
                 'autoplay'                      => $autoplay,
                 'three_d_secure'                => Configuration::get(static::THREEDSECURE),
                 'local_module_dir'              => _PS_MODULE_DIR_,
