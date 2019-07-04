@@ -24,7 +24,11 @@ use Cookie;
 use ThirtyBeesStripe\Stripe\PaymentIntent;
 use Translate;
 use Currency;
+use Context;
+use Db;
+use DbQuery;
 use Stripe;
+use Configuration;
 
 if (!defined('_TB_VERSION_')) {
     return;
@@ -84,7 +88,7 @@ class Utils
         return mb_strtolower($currency->iso_code);
     }
 
-   /**
+    /**
      * Derive StripeTransaction type from stripe review status
      *
      * @param string $status payment intent status
@@ -285,7 +289,7 @@ class Utils
         $now = time();
         $cartId = (int)$cart->id;
         $total = static::getCartTotal($cart);
-        $cookie->{$key} = $now . ':' . $cartId . ':' . $total . ':' .$sessionId;
+        $cookie->{$key} = $now . ':' . $cartId . ':' . $total . ':' . $sessionId;
     }
 
     /**
@@ -300,6 +304,45 @@ class Utils
                 unset($cookie->{$key});
             }
         }
+    }
+
+    /**
+     * Return list of stripe countries
+     *
+     * @return array
+     */
+    public static function getStripeCountryCodes()
+    {
+        return ['AE', 'AT', 'AU', 'BE', 'BR', 'CA', 'CH', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR', 'HK', 'IE', 'IN', 'IT', 'JP', 'LT', 'LU', 'LV', 'MX', 'MY', 'NL', 'NO', 'NZ', 'PH', 'PL', 'PT', 'RO', 'SE', 'SG', 'SI', 'SK', 'US'];
+    }
+
+    /**
+     * Returns list of stripe countries
+     *
+     * @return array
+     * @throws \PrestaShopDatabaseException
+     * @throws \PrestaShopException
+     */
+    public static function getStripeCountries()
+    {
+        $query = (new DbQuery())
+            ->select('c.iso_code AS `code`, COALESCE(cl.name, c.iso_code) AS `name`')
+            ->from('country', 'c')
+            ->leftJoin('country_lang', 'cl', 'c.id_country = cl.id_country AND cl.id_lang = ' . (int)Context::getContext()->language->id)
+            ->where('c.iso_code IN (\'' . implode("','", static::getStripeCountryCodes()) . '\')');
+        return Db::getInstance()->executeS($query);
+    }
+
+    /**
+     * Returns stripe country associated with account
+     */
+    public static function getStripeCountry()
+    {
+        $value = Configuration::get(Stripe::ACCOUNT_COUNTRY);
+        if (!$value || !in_array($value, static::getStripeCountryCodes())) {
+            return 'US';
+        }
+        return $value;
     }
 
 }

@@ -59,6 +59,7 @@ class Stripe extends PaymentModule
     const USE_STATUS_REFUND = 'STRIPE_USE_STAT_REFUND';
     const GENERATE_CREDIT_SLIP = 'STRIPE_CREDIT_SLIP';
     const MANUAL_CAPTURE = 'STRIPE_MANUAL_CAPTURE';
+    const ACCOUNT_COUNTRY = 'STRIPE_ACCOUNT_COUNTRY';
 
     const SHOW_PAYMENT_LOGOS = 'STRIPE_PAYMENT_LOGOS';
 
@@ -811,6 +812,7 @@ class Stripe extends PaymentModule
             static::USE_STATUS_IN_REVIEW      => Tools::getValue(static::USE_STATUS_IN_REVIEW),
             static::STATUS_IN_REVIEW          => Tools::getValue(static::STATUS_IN_REVIEW),
             static::MANUAL_CAPTURE            => Tools::getValue(static::MANUAL_CAPTURE),
+            static::ACCOUNT_COUNTRY           => Tools::getValue(static::ACCOUNT_COUNTRY),
             static::GENERATE_CREDIT_SLIP      => (bool) Tools::getValue(static::GENERATE_CREDIT_SLIP),
         ];
 
@@ -1522,6 +1524,17 @@ class Stripe extends PaymentModule
                         'placeholder' => 'sk_live...',
                         'size'        => 64,
                     ],
+                    static::ACCOUNT_COUNTRY => [
+                        'title'       => $this->l('Account country'),
+                        'type'        => 'select',
+                        'label'       => $this->l('Country of your stripe account'),
+                        'name'        => static::ACCOUNT_COUNTRY,
+                        'required'    => true,
+                        'identifier'  => 'code',
+                        'value'       => Utils::getStripeCountry(),
+                        'auto_value'  => false,
+                        'list'        => Utils::getStripeCountries(),
+                    ],
                     static::GO_LIVE    => [
                         'title'      => $this->l('Go live'),
                         'type'       => 'bool',
@@ -2095,20 +2108,18 @@ class Stripe extends PaymentModule
         }
 
         $cart = $params['cart'];
-        $link = $this->context->link;
 
         $stripeAmount = Utils::getCartTotal($cart);
         $stripeCurrency = Utils::getCurrencyCode($cart);
 
         $invoiceAddress = new Address((int) $cart->id_address_invoice);
-        $country = new Country($invoiceAddress->id_country);
 
         $autoplay = true;
         $this->context->smarty->assign(
             [
                 'stripe_name'                   => $invoiceAddress->firstname.' '.$invoiceAddress->lastname,
                 'stripe_currency'               => $stripeCurrency,
-                'stripe_country'                => mb_strtoupper($country->iso_code),
+                'stripe_country'                => Utils::getStripeCountry(),
                 'stripe_amount'                 => $stripeAmount,
                 'stripe_amount_string'          => (string) $cart->getOrderTotal(),
                 'stripe_amount_formatted'       => Tools::displayPrice($cart->getOrderTotal(), Currency::getCurrencyInstance($cart->id_currency)),
@@ -2304,8 +2315,6 @@ class Stripe extends PaymentModule
         }
 
         $cart = $this->context->cart;
-        $invoiceAddress = new Address((int)$cart->id_address_invoice);
-        $country = new Country($invoiceAddress->id_country);
 
         $this->context->smarty->assign(
             [
@@ -2320,7 +2329,7 @@ class Stripe extends PaymentModule
                 'stripe_p24'                              => (bool) Configuration::get(static::P24),
                 'stripe_alipay_block'                     => (bool) Configuration::get(static::ALIPAY_BLOCK),
                 'stripe_currency'                         => Utils::getCurrencyCode($cart),
-                'stripe_country'                          => mb_strtoupper($country->iso_code),
+                'stripe_country'                          => Utils::getStripeCountry(),
                 'stripe_amount'                           => Utils::getCartTotal($cart),
                 'id_cart'                                 => (int) $cart->id,
                 'stripe_publishable_key'                  => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::PUBLISHABLE_KEY_LIVE) : Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),

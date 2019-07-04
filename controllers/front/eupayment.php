@@ -131,12 +131,11 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
         $cart = $this->context->cart;
         $stripeAmount = Utils::getCartTotal($cart);
         $invoiceAddress = new Address((int) $cart->id_address_invoice);
-        $country = new Country($invoiceAddress->id_country);
         $this->context->smarty->assign([
             'stripe_client_secret'                    => $this->module->getPaymentIntentSecret(),
             'stripe_name'                             => $invoiceAddress->firstname.' '.$invoiceAddress->lastname,
             'stripe_currency'                         => Utils::getCurrencyCode($cart),
-            'stripe_country'                          => mb_strtoupper($country->iso_code),
+            'stripe_country'                          => Utils::getStripeCountry(),
             'stripe_amount'                           => $stripeAmount,
             'id_cart'                                 => (int) $cart->id,
             'stripe_publishable_key'                  => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::PUBLISHABLE_KEY_LIVE) : Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
