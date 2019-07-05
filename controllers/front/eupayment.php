@@ -145,6 +145,7 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
             'stripeShopThumb'                         => str_replace('http://', 'https://', $this->context->link->getMediaLink(__PS_BASE_URI__.'modules/stripe/views/img/shop'.$this->module->getShopId().'.jpg')),
             'stripe_apple_pay'                        => Configuration::get(Stripe::STRIPE_PAYMENT_REQUEST),
             'module_dir'                              => __PS_BASE_URI__.'modules/stripe/',
+            'stripe_payment_request'                  => Configuration::get(Stripe::STRIPE_PAYMENT_REQUEST),
             'stripe_input_placeholder_color'          => Configuration::get(Stripe::INPUT_PLACEHOLDER_COLOR),
             'stripe_button_background_color'          => Configuration::get(Stripe::BUTTON_BACKGROUND_COLOR),
             'stripe_button_foreground_color'          => Configuration::get(Stripe::BUTTON_FOREGROUND_COLOR),
