@@ -15,18 +15,10 @@
  *  @copyright 2017-2018 thirty bees
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
-{if $status == 4}
+{if $status == 1}
   <span id="stripe-stat-{$tr['id_order']|intval}"
         data-tooltip="title"
-        title="{l s='Captured' mod='stripe'}"
-        style="white-space: nowrap;"
-  >
-    {$paymentText|escape:'html'} <i class="icon icon-lock"></i>
-  </span>
-{elseif $status == 1}
-  <span id="stripe-stat-{$tr['id_order']|intval}"
-        data-tooltip="title"
-        title="{l s='Authorized' mod='stripe'}"
+        title="{l s='Authorized for capture' mod='stripe'}"
         style="white-space: nowrap;"
   >
     {$paymentText|escape:'html'} <i class="icon icon-unlock"></i>
@@ -39,10 +31,34 @@
   >
     {$paymentText|escape:'html'} <i class="icon icon-search"></i>
   </span>
+{elseif $status == 3}
+  <span id="stripe-stat-{$tr['id_order']|intval}"
+        data-tooltip="title"
+        title="{l s='Uncaptured' mod='stripe'}"
+        style="white-space: nowrap;"
+  >
+    {$paymentText|escape:'html'} <i class="icon icon-unlock"></i>
+  </span>
+{elseif $status == 4}
+  <span id="stripe-stat-{$tr['id_order']|intval}"
+        data-tooltip="title"
+        title="{l s='Captured' mod='stripe'}"
+        style="white-space: nowrap;"
+  >
+    {$paymentText|escape:'html'} <i class="icon icon-lock"></i>
+  </span>
+{elseif $status == 5}
+  <span id="stripe-stat-{$tr['id_order']|intval}"
+        data-tooltip="title"
+        title="{l s='Released' mod='stripe'}"
+        style="white-space: nowrap;"
+  >
+    {$paymentText|escape:'html'} <i class="icon icon-reply"></i>
+  </span>
 {else}
   {$paymentText|escape:'html'}
 {/if}
-{if $status == 4 || $status == 1 || $status == 2}
+{if $status > 0}
 <script type="text/javascript" data-cookieconsent="necessary">
   (function () {
     function initTooltip() {

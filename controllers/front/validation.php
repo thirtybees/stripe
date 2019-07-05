@@ -130,6 +130,7 @@ class StripeValidationModuleFrontController extends ModuleFrontController
         $paymentIntent = $api->getPaymentIntent($paymentIntentId);
         switch ($paymentIntent->status) {
             case PaymentIntent::STATUS_SUCCEEDED:
+            case PaymentIntent::STATUS_REQUIRES_CAPTURE:
                 $this->processPayment($this->context->cart, $paymentIntent);
                 break;
             case PaymentIntent::STATUS_CANCELED:

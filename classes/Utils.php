@@ -21,6 +21,7 @@ namespace StripeModule;
 
 use Cart;
 use Cookie;
+use ThirtyBeesStripe\Stripe\Charge;
 use ThirtyBeesStripe\Stripe\PaymentIntent;
 use Translate;
 use Currency;
@@ -97,7 +98,7 @@ class Utils
      */
     public static function getTransactionType($status, StripeReview $stripeReview)
     {
-        if ($status === PaymentIntent::STATUS_SUCCEEDED) {
+        if ($status === PaymentIntent::STATUS_SUCCEEDED || $status === PaymentIntent::STATUS_REQUIRES_CAPTURE) {
             switch ($stripeReview->status) {
                 case StripeReview::AUTHORIZED:
                     return StripeTransaction::TYPE_AUTHORIZED;
@@ -132,14 +133,20 @@ class Utils
     /**
      * Returns last 4 digits of payment
      *
-     * @param mixed $paymentMethodDetails payment method details returned by stripe
+     * @param Charge $charge
      * @return int
      */
-    public static function getCardLastDigits($paymentMethodDetails)
+    public static function getCardLastDigits(Charge $charge)
     {
+        $paymentMethodDetails = $charge->payment_method_details;
         if ($paymentMethodDetails && isset($paymentMethodDetails->type) && $paymentMethodDetails->type === 'card') {
             return (int)$paymentMethodDetails->card->last4;
         }
+
+        if (isset($charge->source['last4'])) {
+            return (int)$charge->source['last4'];
+        }
+
         return 0;
     }
 

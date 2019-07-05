@@ -227,8 +227,15 @@ class GuzzleClient implements ClientInterface
                     $headers[$name] = $values;
                 }
             }
+            $message = 'Could not connect with Stripe';
+            try {
+                $json = json_decode((string)$e->getResponse()->getBody(), true);
+                if (isset($json['error']['message'])) {
+                    $message = $json['error']['message'];
+                }
+            } catch (\Exception $ignored) {}
             throw new Error\ApiConnection(
-                'Could not connect with Stripe',
+                $message,
                 $e->getResponse()->getStatusCode(),
                 (string) $e->getResponse()->getBody(),
                 json_encode((string) $e->getResponse()->getBody()),

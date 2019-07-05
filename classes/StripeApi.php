@@ -23,6 +23,7 @@ use \Configuration;
 use \Cart;
 use \Context;
 use \Customer;
+use ThirtyBeesStripe\Stripe\Error\ApiConnection;
 
 if (!defined('_TB_VERSION_')) {
     return;
@@ -58,6 +59,7 @@ class StripeApi
     /**
      * @param Cart $cart
      * @return string
+     * @throws ApiConnection
      * @throws \Adapter_Exception
      * @throws \PrestaShopDatabaseException
      * @throws \PrestaShopException
@@ -84,6 +86,13 @@ class StripeApi
             $sessionData['billing_address_collection'] = 'required';
         }
 
+        // manual capture
+        if ((bool)Configuration::get(\Stripe::MANUAL_CAPTURE)) {
+            $sessionData['payment_intent_data'] = [
+                'capture_method' => 'manual'
+            ];
+        }
+
         // pre-fill customer email
         if ($cart->id_customer) {
             $customer = (int)$context->customer->id === (int)$cart->id_customer ? $context->customer : new Customer($cart->id_customer);
@@ -99,6 +108,7 @@ class StripeApi
      *
      * @param string $id
      *
+     * @throws ApiConnection
      * @return \ThirtyBeesStripe\Stripe\Checkout\Session
      */
     public function getCheckoutSession($id)
@@ -109,6 +119,7 @@ class StripeApi
     /**
      * @param string $id
      *
+     * @throws ApiConnection
      * @return \ThirtyBeesStripe\Stripe\PaymentIntent
      */
     public function getPaymentIntent($id)
@@ -120,6 +131,7 @@ class StripeApi
      * Create payment intent
      * @param Cart $cart
      *
+     * @throws ApiConnection
      * @return \ThirtyBeesStripe\Stripe\PaymentIntent
      * @throws \Adapter_Exception
      * @throws \PrestaShopDatabaseException
@@ -132,6 +144,10 @@ class StripeApi
             'amount' => Utils::getCartTotal($cart),
             'currency' => Utils::getCurrencyCode($cart),
         ];
+        // manual capture
+        if ((bool)Configuration::get(\Stripe::MANUAL_CAPTURE)) {
+            $paymentIntentData['capture_method'] = 'manual';
+        }
         return \ThirtyBeesStripe\Stripe\PaymentIntent::create($paymentIntentData);
     }
 }

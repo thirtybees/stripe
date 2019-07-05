@@ -43,7 +43,7 @@
       </span>
     {/if}
   </div>
-  {if in_array($stripe_status->status, [1,2,3])}
+  {if $stripe_status->status == 2 || ($stripe_status->id_payment_intent && in_array($stripe_status->status, [1,3]))}
     <h4>{l s='Authorize & Capture' mod='stripe'}</h4>
     <form id="stripe_review" action="{$stripe_module_review_action|escape:'htmlall'}" method="post">
       <div class="well">
@@ -63,15 +63,27 @@
       <input name="stripe_action" type="hidden" value="ignore">
     </form>
   {/if}
-  {if $stripe_review->id_charge}
+
+  {if !$stripe_status->id_payment_intent && in_array($stripe_status->status, [1,3])}
+    <div class="alert alert-warning">
+      {l s='This transaction must be captured or released from Stripe web application' mod='stripe'}
+    </div>
+  {/if}
+
+  {if $stripe_review->id_payment_intent}
+    {assign var='transactionId' value=$stripe_review->id_payment_intent}
+  {else}
+    {assign var='transactionId' value=$stripe_review->id_charge}
+  {/if}
+  {if $transactionId}
     <h4>{l s='Details' mod='stripe'}</h4>
     <span>
       <span>{l s='Transaction:' mod='stripe'}</span>&nbsp;
       <em>
-        <a href="https://dashboard.stripe.com/{if $stripe_review->test}test{else}live{/if}/payments/{$stripe_review->id_charge|escape:'html'}"
+        <a href="https://dashboard.stripe.com/{if $stripe_review->test}test{else}live{/if}/payments/{$transactionId|escape:'html'}"
            target="_blank"
         >
-          {$stripe_review->id_charge|escape:'html'}
+          {$transactionId|escape:'html'}
         </a>
       </em>
     </span>

@@ -19,6 +19,8 @@
 
 use StripeModule\StripeReview;
 use StripeModule\StripeTransaction;
+use StripeModule\Utils;
+use ThirtyBeesStripe\Stripe\PaymentIntent;
 
 if (!defined('_TB_VERSION_')) {
     exit;
@@ -128,8 +130,9 @@ class StripeSourcevalidationModuleFrontController extends ModuleFrontController
         $paymentStatus = Configuration::get(Stripe::STATUS_VALIDATED);
         $stripeReview = new StripeReview();
         $stripeReview->id_charge = $stripeCharge->id;
-        $stripeReview->status = 0;
+        $stripeReview->status = StripeReview::CAPTURED;
         $stripeReview->test = !Configuration::get(Stripe::GO_LIVE);
+        $stripeReview->captured = true;
         if ($stripeCharge->status === 'succeeded') {
             $message = null;
 
@@ -177,33 +180,11 @@ class StripeSourcevalidationModuleFrontController extends ModuleFrontController
             if ($idOrder) {
                 // Log transaction
                 $stripeTransaction = new StripeTransaction();
-                if (isset($stripeCharge->source['last4'])) {
-                    $stripeTransaction->card_last_digits = (int) $stripeCharge->source['last4'];
-                } else {
-                    // Often not available with 3D secure or any other source
-                    $stripeTransaction->card_last_digits = 0;
-                }
+                $stripeTransaction->card_last_digits = Utils::getCardLastDigits($stripeCharge);
                 $stripeTransaction->id_charge = $stripeCharge->id;
                 $stripeTransaction->amount = $stripeAmount;
                 $stripeTransaction->id_order = $idOrder;
-                switch ($stripeReview->status) {
-                    case StripeReview::AUTHORIZED:
-                        $stripeTransaction->type = StripeTransaction::TYPE_AUTHORIZED;
-
-                        break;
-                    case StripeReview::IN_REVIEW:
-                        $stripeTransaction->type = StripeTransaction::TYPE_IN_REVIEW;
-
-                        break;
-                    case StripeReview::CAPTURED:
-                        $stripeTransaction->type = StripeTransaction::TYPE_CAPTURED;
-
-                        break;
-                    default:
-                        $stripeTransaction->type = StripeTransaction::TYPE_CHARGE;
-
-                        break;
-                }
+                $stripeTransaction->type = Utils::getTransactionType(PaymentIntent::STATUS_SUCCEEDED, $stripeReview);
                 $stripeTransaction->source = StripeTransaction::SOURCE_FRONT_OFFICE;
                 $stripeTransaction->source_type = $type;
                 $stripeTransaction->add();

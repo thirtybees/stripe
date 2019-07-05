@@ -18,6 +18,7 @@
  */
 
 use StripeModule\GuzzleClient;
+use StripeModule\PaymentProcessor;
 use StripeModule\StripeReview;
 use StripeModule\StripeTransaction;
 use StripeModule\StripeApi;
@@ -578,7 +579,7 @@ class Stripe extends PaymentModule
                 ];
                 $charge->markAsSafe();
 
-                $review->status = StripeReview::AUTHORIZED;
+                $review->status = $review->captured ? StripeReview::CAPTURED : StripeReview::APPROVED;
                 $review->save();
 
                 $transaction = new StripeTransaction();
@@ -606,82 +607,18 @@ class Stripe extends PaymentModule
                 $cookie->write();
             }
         } elseif (Tools::getValue('stripe_action') === 'capture') {
-            $guzzle = new GuzzleClient();
-            ApiRequestor::setHttpClient($guzzle);
-            try {
-                \ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(static::GO_LIVE)
-                    ? Configuration::get(static::SECRET_KEY_LIVE)
-                    : Configuration::get(static::SECRET_KEY_TEST)
-                );
-                $charge = \ThirtyBeesStripe\Stripe\Charge::retrieve($review->id_charge);
-                $charge->metadata = [
-                    'from_back_office' => true,
-                ];
-                $charge->capture();
-
-                $review->status = StripeReview::CAPTURED;
-                $review->save();
-
-                $transaction = new StripeTransaction();
-                $transaction->id_order = $idOrder;
-                $transaction->id_charge = $charge->id;
-                $transaction->source = StripeTransaction::SOURCE_FRONT_OFFICE;
-                $transaction->type = StripeTransaction::TYPE_CAPTURED;
-                $transaction->card_last_digits = (int) StripeTransaction::getLastFourDigitsByChargeId($charge->id);
-                $transaction->amount = (int) $charge->amount;
-                $transaction->save();
-
-                $orderHistory = new OrderHistory();
-                $orderHistory->id_order = $idOrder;
-                $orderHistory->changeIdOrderState((int) Configuration::get('PS_OS_PAYMENT'), $idOrder, !$order->hasInvoice());
-                $orderHistory->addWithemail(true);
-
-                $cookie = new Cookie('stripe');
-                $cookie->confirmation = $this->l('The payment has been captured');
-                $cookie->write();
-            } catch (Exception $e) {
-                $cookie = new Cookie('stripe');
-                $cookie->error = sprintf('Invalid Stripe request: %s', $e->getMessage());
-                $cookie->write();
+            $processor = new PaymentProcessor($this);
+            if ($processor->capturePayment($review->id_payment_intent, $review, $idOrder)) {
+                $this->setConfirmationMessage($this->l('The payment has been captured'));
+            } else {
+                $this->setErrorMessage($processor->getErrors());
             }
         } elseif (Tools::getValue('stripe_action') === 'release') {
-            $guzzle = new GuzzleClient();
-            ApiRequestor::setHttpClient($guzzle);
-            try {
-                \ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(static::GO_LIVE)
-                    ? Configuration::get(static::SECRET_KEY_LIVE)
-                    : Configuration::get(static::SECRET_KEY_TEST)
-                );
-                $charge = \ThirtyBeesStripe\Stripe\Charge::retrieve($review->id_charge);
-                $charge->metadata = [
-                    'from_back_office' => true,
-                ];
-                $charge->refund();
-
-                $review->status = StripeReview::RELEASED;
-                $review->save();
-
-                $transaction = new StripeTransaction();
-                $transaction->id_order = $idOrder;
-                $transaction->id_charge = $charge->id;
-                $transaction->source = StripeTransaction::SOURCE_FRONT_OFFICE;
-                $transaction->type = StripeTransaction::TYPE_FULL_REFUND;
-                $transaction->card_last_digits = (int) StripeTransaction::getLastFourDigitsByChargeId($charge->id);
-                $transaction->amount = (int) $charge->amount;
-                $transaction->save();
-
-                $orderHistory = new OrderHistory();
-                $orderHistory->id_order = $idOrder;
-                $orderHistory->changeIdOrderState((int) Configuration::get('PS_OS_CANCEL'), $idOrder, !$order->hasInvoice());
-                $orderHistory->addWithemail(true);
-
-                $cookie = new Cookie('stripe');
-                $cookie->confirmation = $this->l('The payment has been released');
-                $cookie->write();
-            } catch (Exception $e) {
-                $cookie = new Cookie('stripe');
-                $cookie->error = sprintf('Invalid Stripe request: %s', $e->getMessage());
-                $cookie->write();
+            $processor = new PaymentProcessor($this);
+            if ($processor->releasePayment($review->id_payment_intent, $review, $idOrder)) {
+                $this->setConfirmationMessage($this->l('The payment has been released'));
+            } else {
+                $this->setErrorMessage($processor->getErrors());
             }
         }
 
@@ -1144,6 +1081,11 @@ class Stripe extends PaymentModule
                     $result['color'] = '#32CD32';
                     $result['type_icon'] = 'lock';
                     $result['type_text'] = $this->l('Captured');
+                    break;
+                case StripeTransaction::TYPE_CHARGE_FAIL:
+                    $result['color'] = '#ec2e15';
+                    $result['type_icon'] = 'close';
+                    $result['type_text'] = $this->l('Charge failed');
                     break;
                 default:
                     $result['color'] = '';
@@ -2501,6 +2443,11 @@ class Stripe extends PaymentModule
                         $result['type_icon'] = 'lock';
                         $result['type_text'] = $this->l('Captured');
                         break;
+                    case StripeTransaction::TYPE_CHARGE_FAIL:
+                        $result['color'] = '#ec2e15';
+                        $result['type_icon'] = 'close';
+                        $result['type_text'] = $this->l('Charge failed');
+                        break;
                     default:
                         $result['color'] = '';
                         break;
@@ -2866,5 +2813,30 @@ class Stripe extends PaymentModule
     public function getStripeApi()
     {
         return new StripeApi();
+    }
+
+    /**
+     * @param string $confirmation
+     * @throws PrestaShopException
+     */
+    private function setConfirmationMessage($confirmation)
+    {
+        $cookie = new Cookie('stripe');
+        $cookie->confirmation = $confirmation;
+        $cookie->write();
+    }
+
+    /**
+     * @param string | array $error
+     * @throws PrestaShopException
+     */
+    private function setErrorMessage($error)
+    {
+        $cookie = new Cookie('stripe');
+        if (is_array($error)) {
+            $error = implode(', ', $error);
+        }
+        $cookie->error = $error;
+        $cookie->write();
     }
 }

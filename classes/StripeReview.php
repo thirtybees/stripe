@@ -45,8 +45,12 @@ class StripeReview extends \ObjectModel
     public $status;
     /** @var string $id_review */
     public $id_review = '';
+    /** @var string $id_payment_intent */
+    public $id_payment_intent = '';
     /** @var string $id_charge */
     public $id_charge = '';
+    /** @var bool $captured */
+    public $captured = false;
     /** @var bool $test */
     public $test = false;
     // @codingStandardsIgnoreEnd
@@ -75,10 +79,20 @@ class StripeReview extends \ObjectModel
                 'validate' => 'isString',
                 'db_type'  => 'VARCHAR(255)',
             ],
+            'id_payment_intent' => [
+                'type'     => self::TYPE_STRING,
+                'validate' => 'isString',
+                'db_type'  => 'VARCHAR(255)',
+            ],
             'id_charge' => [
                 'type'     => self::TYPE_STRING,
                 'validate' => 'isString',
                 'db_type'  => 'VARCHAR(255)',
+            ],
+            'captured' => [
+                'type'     => self::TYPE_BOOL,
+                'validate' => 'isBool',
+                'db_type'  => 'TINYINT(1)',
             ],
             'test'      => [
                 'type'     => self::TYPE_BOOL,

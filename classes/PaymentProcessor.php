@@ -19,6 +19,7 @@
 
 namespace StripeModule;
 
+use ThirtyBeesStripe\Stripe\Error\ApiConnection;
 use ThirtyBeesStripe\Stripe\PaymentIntent;
 use ThirtyBeesStripe\Stripe\Charge;
 use Configuration;
@@ -161,8 +162,10 @@ class PaymentProcessor
         // log information about stripe review
         $this->review = new StripeReview();
         $this->review->id_charge = $charge->id;
+        $this->review->id_payment_intent = $paymentIntent->id;
         $this->review->test = !Configuration::get(Stripe::GO_LIVE);
-        $this->review->status = StripeReview::CAPTURED;
+        $this->review->status = $charge->captured ? StripeReview::CAPTURED : StripeReview::AUTHORIZED;
+        $this->review->captured = !!$charge->captured;
         $this->review->id_order = 0;
         $review = $paymentIntent->review ? $paymentIntent->review : $charge->review;
         if ($review) {
@@ -179,7 +182,7 @@ class PaymentProcessor
 
         // Log information about stripe transaction to db
         $this->transaction = new StripeTransaction();
-        $this->transaction->card_last_digits = Utils::getCardLastDigits($charge->payment_method_details);
+        $this->transaction->card_last_digits = Utils::getCardLastDigits($charge);
         $this->transaction->id_charge = $charge->id;
         $this->transaction->amount = Utils::getCartTotal($cart);
         $this->transaction->id_order = 0;
@@ -228,6 +231,137 @@ class PaymentProcessor
     }
 
     /**
+     * Captures uncaptured payment
+     *
+     * @param string $paymentIntentId
+     * @param StripeReview $review
+     * @param int $orderId
+     * @return bool
+     */
+    public function capturePayment($paymentIntentId, StripeReview $review, $orderId)
+    {
+        $this->reset();
+        $this->review = $review;
+        try {
+            $paymentIntent = $this->module->getStripeApi()->getPaymentIntent($paymentIntentId);
+
+            if ($paymentIntent->status === PaymentIntent::STATUS_SUCCEEDED) {
+                // already captured
+                $this->review->captured = true;
+                $this->review->status = StripeReview::CAPTURED;
+                if (! $this->review->update()) {
+                    $this->addError($this->l('Failed to update review object'), Db::getInstance()->getMsgError());
+                }
+                return true;
+            }
+
+            if ($paymentIntent->status === PaymentIntent::STATUS_REQUIRES_CAPTURE) {
+                // capture amount
+                $updatedIntent = $paymentIntent->capture();
+                // update review
+                $this->review->captured = true;
+                $this->review->status = StripeReview::CAPTURED;
+                if (!$this->review->update()) {
+                    $this->addError($this->l('Failed to update review object'), Db::getInstance()->getMsgError());
+                }
+
+                // Log information about stripe transaction to db
+                $charges = [];
+                foreach ($updatedIntent->charges as $charge) {
+                    $charges[] = $charge;
+                }
+                $charge = $charges[0];
+                $this->transaction = new StripeTransaction();
+                $this->transaction->card_last_digits = Utils::getCardLastDigits($charge);
+                $this->transaction->id_charge = $charge->id;
+                $this->transaction->amount = $charge->amount;
+                $this->transaction->id_order = $orderId;
+                $this->transaction->type = StripeTransaction::TYPE_CAPTURED;
+                $this->transaction->source = StripeTransaction::SOURCE_BACK_OFFICE;
+                $this->transaction->source_type = 'cc';
+                if (!$this->transaction->add()) {
+                    $this->addError($this->l('Failed to create stripe transaction object'), Db::getInstance()->getMsgError());
+                    return false;
+                }
+                return true;
+            }
+            $this->addError('Invalid payment intent status: '.$paymentIntent->status, print_r($paymentIntent, true));
+            return false;
+        } catch (ApiConnection $e) {
+            $this->addError($e->getMessage(), (string)$e);
+        } catch (Exception $e) {
+            $this->addError(sprintf($this->l("Couldn't find payment intent %s"), $paymentIntentId), (string)$e);
+        }
+        return false;
+    }
+
+
+    /**
+     * Releases uncaptured payment
+     *
+     * @param string $paymentIntentId
+     * @param StripeReview $review
+     * @param int $orderId
+     * @return bool
+     */
+    public function releasePayment($paymentIntentId, StripeReview $review, $orderId)
+    {
+        $this->reset();
+        $this->review = $review;
+        try {
+            $paymentIntent = $this->module->getStripeApi()->getPaymentIntent($paymentIntentId);
+
+            if ($paymentIntent->status === PaymentIntent::STATUS_CANCELED) {
+                // already captured
+                $this->review->captured = false;
+                $this->review->status = StripeReview::RELEASED;
+                if (! $this->review->update()) {
+                    $this->addError($this->l('Failed to update review object'), Db::getInstance()->getMsgError());
+                }
+                return true;
+            }
+
+            if ($paymentIntent->status === PaymentIntent::STATUS_REQUIRES_CAPTURE) {
+                // capture amount
+                $updatedIntent = $paymentIntent->cancel();
+                // update review
+                $this->review->captured = false;
+                $this->review->status = StripeReview::RELEASED;
+                if (!$this->review->update()) {
+                    $this->addError($this->l('Failed to update review object'), Db::getInstance()->getMsgError());
+                }
+
+                // Log information about stripe transaction to db
+                $charges = [];
+                foreach ($updatedIntent->charges as $charge) {
+                    $charges[] = $charge;
+                }
+                $charge = $charges[0];
+                $this->transaction = new StripeTransaction();
+                $this->transaction->card_last_digits = Utils::getCardLastDigits($charge);
+                $this->transaction->id_charge = $charge->id;
+                $this->transaction->amount = $charge->amount;
+                $this->transaction->id_order = $orderId;
+                $this->transaction->type = StripeTransaction::TYPE_FULL_REFUND;;
+                $this->transaction->source = StripeTransaction::SOURCE_BACK_OFFICE;
+                $this->transaction->source_type = 'cc';
+                if (!$this->transaction->add()) {
+                    $this->addError($this->l('Failed to create stripe transaction object'), Db::getInstance()->getMsgError());
+                    return false;
+                }
+                return true;
+            }
+            $this->addError('Invalid payment intent status: '.$paymentIntent->status, print_r($paymentIntent, true));
+            return false;
+        } catch (ApiConnection $e) {
+            $this->addError($e->getMessage(), (string)$e);
+        } catch (Exception $e) {
+            $this->addError(sprintf($this->l("Couldn't find payment intent %s"), $paymentIntentId), (string)$e);
+        }
+        return false;
+    }
+
+    /**
      * Collect error message
      *
      * @param $displayable
@@ -235,9 +369,6 @@ class PaymentProcessor
      */
     private function addError($displayable, $debug=null)
     {
-        if (_PS_MODE_DEV_) {
-            $displayable .= "\n" . $debug;
-        }
         $this->errors[] = $displayable;
         $this->debug[] = $debug;
     }
@@ -276,4 +407,5 @@ class PaymentProcessor
     {
         return $this->module->l($message);
     }
+
 }
