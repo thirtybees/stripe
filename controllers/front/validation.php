@@ -57,8 +57,6 @@ class StripeValidationModuleFrontController extends ModuleFrontController
             case static::CREDIT_CARD:
                 $this->validateCreditCard();
                 break;
-            case static::PAYMENT_REQUEST:
-                $this->validatePaymentRequest();
             default:
                 $this->redirectToCheckout();
         }
@@ -98,15 +96,6 @@ class StripeValidationModuleFrontController extends ModuleFrontController
         } else {
             $this->redirectToCheckout();
         }
-    }
-
-    /**
-     * Validate payment request response
-     */
-    public function validatePaymentRequest()
-    {
-        // TODO implement
-        die('NOT IMPLEMENTED YET');
     }
 
     /**

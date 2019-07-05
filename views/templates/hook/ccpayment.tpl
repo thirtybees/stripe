@@ -309,26 +309,21 @@
                 }
             });
 
-            paymentRequest.on('source', function (result) {
-                if (result.source) {
-                    var a = document.createElement('a');
-                    a.href = '{$link->getModuleLink('stripe', 'validation', [ 'type' => 'paymentRequest' ], true)|escape:'javascript'}';
-
-                    a.search = updateQueryStringParameter(a.search, 'stripe-token', result.source.id);
-                    a.search = updateQueryStringParameter(a.search, 'stripe-id_cart', {$id_cart|intval});
-
-                    document.getElementById('error-text').style.display = 'none';
-                    result.complete('success');
-                    window.location = a.href;
-                } else {
-                    // Otherwise, un-disable inputs.
-                    if (result.error && result.error.message) {
-                        document.querySelector('.message').textContent = result.error.message;
+            paymentRequest.on('paymentmethod', function(ev) {
+                stripe.confirmPaymentIntent('{$stripe_client_secret|escape:'javascript'}', {
+                    payment_method: ev.paymentMethod.id,
+                }).then(function(confirmResult) {
+                    if (confirmResult.error) {
+                        ev.complete('fail');
+                    } else {
+                        ev.complete('success');
+                        // Let Stripe.js handle the rest of the payment flow.
+                        stripe.handleCardPayment('{$stripe_client_secret|escape:'javascript'}')
+                        .then(function () {
+                            window.location = '{$link->getModuleLink('stripe', 'validation', ['type' => 'cc'], true)|escape:'javascript'}';
+                        });
                     }
-                    document.getElementById('error-text').style.display = 'block';
-                    enableInputs();
-                    result.complete('fail');
-                }
+                });
             });
 
             var paymentRequestElement = elements.create('paymentRequestButton', {
