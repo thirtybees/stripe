@@ -46,6 +46,7 @@ class StripeValidationModuleFrontController extends ModuleFrontController
      * @throws Adapter_Exception
      * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
+     * @throws \ThirtyBeesStripe\Stripe\Error\ApiConnection
      */
     public function postProcess()
     {
@@ -68,6 +69,7 @@ class StripeValidationModuleFrontController extends ModuleFrontController
      * @throws Adapter_Exception
      * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
+     * @throws \ThirtyBeesStripe\Stripe\Error\ApiConnection
      */
     public function validateCheckout()
     {
@@ -87,6 +89,7 @@ class StripeValidationModuleFrontController extends ModuleFrontController
      * @throws Adapter_Exception
      * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
+     * @throws \ThirtyBeesStripe\Stripe\Error\ApiConnection
      */
     public function validateCreditCard()
     {
@@ -112,6 +115,7 @@ class StripeValidationModuleFrontController extends ModuleFrontController
     /**
      * @param string $paymentIntentId
      * @throws PrestaShopException
+     * @throws \ThirtyBeesStripe\Stripe\Error\ApiConnection
      */
     private function processPaymentIntent($paymentIntentId)
     {
@@ -129,8 +133,7 @@ class StripeValidationModuleFrontController extends ModuleFrontController
             default:
                 if ($paymentIntent->last_payment_error) {
                     Utils::removeFromCookie($this->context->cookie);
-                    $this->errors = $paymentIntent->last_payment_error->message;
-                    $this->setTemplate('error.tpl');
+                    $this->displayErrors([ $paymentIntent->last_payment_error->message ]);
                 } else {
                     $this->redirectToCheckout();
                 }
@@ -151,8 +154,19 @@ class StripeValidationModuleFrontController extends ModuleFrontController
             Utils::removeFromCookie($this->context->cookie);
             $processor->redirectToOrderConfirmation();
         } else {
-            $this->errors = $processor->getErrors();
-            $this->setTemplate('error.tpl');
+            $this->displayErrors($processor->getErrors());
         }
+    }
+
+    /**
+     * @param string[] $errors
+     * @throws PrestaShopException
+     */
+    private function displayErrors($errors)
+    {
+        $orderProcess = Configuration::get('PS_ORDER_PROCESS_TYPE') ? 'order-opc' : 'order';
+        $this->context->smarty->assign('orderLink', $this->context->link->getPageLink($orderProcess, true));
+        $this->errors = $errors;
+        $this->setTemplate('error.tpl');
     }
 }
