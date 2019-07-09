@@ -165,7 +165,7 @@ class Stripe extends PaymentModule
     {
         $this->name = 'stripe';
         $this->tab = 'payments_gateways';
-        $this->version = '1.6.6';
+        $this->version = '1.7.0';
         $this->author = 'thirty bees';
         $this->need_instance = 0;
 
