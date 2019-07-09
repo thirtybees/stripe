@@ -1897,13 +1897,13 @@ class Stripe extends PaymentModule
                         'auto_value' => false,
                     ],
                     static::BUTTON_FOREGROUND_COLOR => [
-                        'title'      => $this->l('Button foreground color'),
+                        'title'      => $this->l('Button text color'),
                         'type'       => 'color',
                         'name'       => static::BUTTON_FOREGROUND_COLOR,
                         'validation' => 'isString',
                         'cast'       => 'strval',
                         'size'       => '1',
-                        'value'      => Configuration::get(static::BUTTON_FOREGROUND_COLOR) ?: '#000000',
+                        'value'      => Configuration::get(static::BUTTON_FOREGROUND_COLOR) ?: '#FFFFFF',
                         'auto_value' => false,
                     ],
                     static::BUTTON_BACKGROUND_COLOR => [
