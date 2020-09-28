@@ -19,7 +19,7 @@
     <div class="row">
         <div class="col-xs-12 col-md-12">
             <p class="payment_module" id="stripe_payment_button">
-                <a id="stripe_payment_link" href="#" title="{l s='Pay by Credit Card' mod='stripe'}">
+                <a id="stripe_payment_link" href="{$link->getModuleLink('stripe', 'eupayment', ['method' => 'stripe_checkout'], true)}" title="{l s='Pay by Credit Card' mod='stripe'}">
                     <img src="{$module_dir|escape:'htmlall'}/views/img/stripebtnlogo.png"
                          alt="{l s='Pay by Credit Card' mod='stripe'}" width="64" height="64"/>
                     {l s='Pay by Credit Card' mod='stripe'}
