@@ -1,5 +1,3 @@
-{* <link rel="stylesheet" href="//fonts.googleapis.com/css?family={$stripe_checkout_font_family|replace:' ':'+'|escape:'htmlall'}:300,400,600,700&amp;lang=en" /> *}
-
 <style>
     .thirtybees.thirtybees-stripe {
         background-color: transparent;
@@ -103,6 +101,11 @@
         cursor: pointer;
     }
 
+    .thirtybees.thirtybees-stripe button:disabled {
+        color: #999;
+        cursor: not-allowed;
+    }
+
     .thirtybees.thirtybees-stripe button:active {
         background-color: {if !empty($stripe_highlight_color)}{$stripe_highlight_color|escape:'htmlall'}{else}#b76ac4{/if};
     }
@@ -145,7 +148,7 @@
                 </legend>
                 <div class="tb-container">
                     <div id="thirtybees-stripe-card"></div>
-                    <button type="submit"
+                    <button type="submit" id="stripe-submit-button"
                             data-tid="elements_thirtybees.form.donate_button">{l s='Pay' mod='stripe'}</button>
                 </div>
             </fieldset>
@@ -229,6 +232,7 @@
     </div>
 </div>
 
+{if isset($stripe_client_secret) && $stripe_client_secret}
 <script type="text/javascript" data-cookieconsent="necessary">
     (function () {
         function initElements() {
@@ -403,4 +407,10 @@
         initElements();
     })();
 </script>
-
+{else}
+<script type="text/javascript" data-cookieconsent="necessary">
+    document.getElementById('stripe-submit-button').disabled = true;
+    document.getElementById('error-text-message').innerText = '{$stripe_error|escape:'javascript'}';
+    document.getElementById('error-text').style.display = 'block';
+</script>
+{/if}

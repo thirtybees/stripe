@@ -131,8 +131,9 @@ class StripeApi
      * Create payment intent
      * @param Cart $cart
      *
-     * @throws ApiConnection
      * @return \ThirtyBeesStripe\Stripe\PaymentIntent
+     *
+     * @throws ApiConnection
      * @throws \Adapter_Exception
      * @throws \PrestaShopDatabaseException
      * @throws \PrestaShopException

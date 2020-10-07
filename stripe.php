@@ -2253,7 +2253,11 @@ class Stripe extends PaymentModule
 
         $creditCard = (bool)Configuration::get(static::STRIPE_CC_FORM);
         if ($creditCard) {
-            $this->context->smarty->assign('stripe_client_secret',  $this->getPaymentIntentSecret());
+            try {
+                $this->context->smarty->assign('stripe_client_secret',  $this->getPaymentIntentSecret());
+            } catch (\ThirtyBeesStripe\Stripe\Error\ApiConnection $e) {
+                $this->context->smarty->assign('stripe_error', $e->getMessage());
+            }
         }
 
         $cart = $this->context->cart;
@@ -2787,6 +2791,7 @@ class Stripe extends PaymentModule
      * @throws Adapter_Exception
      * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
+     * @throws \ThirtyBeesStripe\Stripe\Error\ApiConnection
      */
     public function getPaymentIntentSecret()
     {
