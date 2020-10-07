@@ -13,11 +13,12 @@
 
     .thirtybees.thirtybees-stripe form {
         max-width: 496px !important;
-        padding: 0 15px;
+        padding: 0px;
     }
 
     .thirtybees.thirtybees-stripe form > * + * {
-        margin-top: 20px;
+        margin-top: 10px;
+        margin-bottom: 10px;
     }
 
     .thirtybees.thirtybees-stripe .tb-container {
@@ -117,6 +118,16 @@
     .thirtybees.thirtybees-stripe .error .message {
         color: {if !empty($stripe_error_color)}{$stripe_error_color|escape:'htmlall'}{else}#e25950{/if};
     }
+
+    .thirtybees.thirtybees-stripe #error-text {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .thirtybees.thirtybees-stripe #error-text .message {
+        padding-left: 15px;
+    }
 </style>
 
 <div id="tb-stripe-elements">
@@ -149,7 +160,7 @@
                           d="M8.5,7.29791847 L6.12604076,4.92395924 C5.79409512,4.59201359 5.25590488,4.59201359 4.92395924,4.92395924 C4.59201359,5.25590488 4.59201359,5.79409512 4.92395924,6.12604076 L7.29791847,8.5 L4.92395924,10.8739592 C4.59201359,11.2059049 4.59201359,11.7440951 4.92395924,12.0760408 C5.25590488,12.4079864 5.79409512,12.4079864 6.12604076,12.0760408 L8.5,9.70208153 L10.8739592,12.0760408 C11.2059049,12.4079864 11.7440951,12.4079864 12.0760408,12.0760408 C12.4079864,11.7440951 12.4079864,11.2059049 12.0760408,10.8739592 L9.70208153,8.5 L12.0760408,6.12604076 C12.4079864,5.79409512 12.4079864,5.25590488 12.0760408,4.92395924 C11.7440951,4.59201359 11.2059049,4.59201359 10.8739592,4.92395924 L8.5,7.29791847 L8.5,7.29791847 Z"
                     ></path>
                 </svg>
-                <span class="message"></span>
+                <span class="message" id="error-text-message"></span>
             </div>
             <div id="submit-text" style="display: none">
                 <span>{l s='Submitting...' mod='stripe'}</span>&nbsp;
@@ -370,24 +381,20 @@
                 // Disable all inputs.
                 disableInputs();
 
-                // Gather additional customer data we may have collected in our form.
-                var name = form.querySelector('#thirtybees-name');
-                var address1 = form.querySelector('#thirtybees-address');
-                var city = form.querySelector('#thirtybees-city');
-                var state = form.querySelector('#thirtybees-state');
-                var zip = form.querySelector('#thirtybees-zip');
-                var additionalData = {
-                    name: name ? name.value : undefined,
-                    address_line1: address1 ? address1.value : undefined,
-                    address_city: city ? city.value : undefined,
-                    address_state: state ? state.value : undefined,
-                    address_zip: zip ? zip.value : undefined,
-                };
-
                 stripe
                     .handleCardPayment('{$stripe_client_secret|escape:'javascript'}', card)
-                    .then(function () {
-                        window.location = '{$link->getModuleLink('stripe', 'validation', ['type' => 'cc'], true)|escape:'javascript'}';
+                    .then(function (data) {
+                        enableInputs();
+                        example.className = example.className.replace('submitting', '');
+                        document.getElementById('submit-text').style.display = 'none';
+                        if (data.error) {
+                            var error = data.error;
+                            console.warn("Stripe validation error: ", error);
+                            document.getElementById('error-text-message').innerText = error.message;
+                            document.getElementById('error-text').style.display = 'block';
+                        } else {
+                            window.location = '{$link->getModuleLink('stripe', 'validation', ['type' => 'cc'], true)|escape:'javascript'}';
+                        }
                     });
 
             });
