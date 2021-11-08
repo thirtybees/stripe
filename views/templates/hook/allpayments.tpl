@@ -16,7 +16,7 @@
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
 {if ($stripe_checkout && in_array($stripe_currency, Stripe::$methodCurrencies['credit_card']))}
-  {if "{$smarty.current_dir}payment.tpl"|file_exists}{include file="./payment.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/payment.tpl"}{/if}
+  {if "{$smarty.current_dir}/payment.tpl"|file_exists}{include file="./payment.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/payment.tpl"}{/if}
 {/if}
 {if ($stripe_ideal && in_array($stripe_currency, Stripe::$methodCurrencies['ideal']))}
   {if "{$smarty.current_dir}/idealpayment.tpl"|file_exists}{include file="./idealpayment.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/idealpayment.tpl"}{/if}
