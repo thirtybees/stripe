@@ -74,7 +74,7 @@ class Utils
         if (in_array(mb_strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
             return (int)$amount;
         }
-        return (int)($amount * 100);
+        return (int)round($amount * 100);
     }
 
     /**
