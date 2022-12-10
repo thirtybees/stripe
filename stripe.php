@@ -432,7 +432,7 @@ class Stripe extends PaymentModule
             Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&id_order='.$idOrder);
         }
 
-        $amount = (float) Tools::getValue('stripe_refund_amount');
+        $amount = (float) Tools::parseNumber(Tools::getValue('stripe_refund_amount'));
 
         $idCharge = StripeTransaction::getChargeByIdOrder($idOrder);
         $order = new Order($idOrder);
