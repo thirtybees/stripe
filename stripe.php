@@ -2473,8 +2473,11 @@ class Stripe extends PaymentModule
                     case 'three_d_secure':
                         $result['source_type'] = $this->l('3D Secure');
                         break;
-                    default:
+                    case 'cc':
                         $result['source_type'] = $this->l('Credit Card');
+                        break;
+                    default:
+                        $result['source_type'] = $this->l('Unknown');
                         break;
                 }
 
