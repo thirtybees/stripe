@@ -425,7 +425,7 @@ class Stripe extends PaymentModule
             Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&id_order='.$idOrder);
         }
 
-        $amount = (float) Tools::getValue('stripe_refund_amount');
+        $amount = (float) static::parseNumber(Tools::getValue('stripe_refund_amount'));
 
         $idCharge = StripeTransaction::getChargeByIdOrder($idOrder);
         $order = new Order($idOrder);
@@ -2779,5 +2779,20 @@ class Stripe extends PaymentModule
         $cookie = new Cookie('stripe');
         $cookie->__set($type, $message);
         $cookie->write();
+    }
+
+
+    /**
+     * @param string $value
+     *
+     * @return float
+     */
+    private static function parseNumber($value)
+    {
+        if (method_exists('Tools', 'parseNumber')) {
+            return Tools::parseNumber($value);
+        } else {
+            return (float)str_replace(',', '.', (string)$value);
+        }
     }
 }
