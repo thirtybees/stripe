@@ -15,27 +15,68 @@
  *  @copyright 2017-2018 thirty bees
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
+{strip}
 {if ($stripe_checkout && in_array($stripe_currency, Stripe::$methodCurrencies['credit_card']))}
-  {if "{$smarty.current_dir}/payment.tpl"|file_exists}{include file="./payment.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/payment.tpl"}{/if}
+    {if file_exists("{$smarty.current_dir}/payment.tpl")}
+        {include file="./payment.tpl"}
+    {else}
+        {include file="{$local_module_dir}stripe/views/templates/hook/payment.tpl"}
+    {/if}
 {/if}
+
 {if ($stripe_ideal && in_array($stripe_currency, Stripe::$methodCurrencies['ideal']))}
-  {if "{$smarty.current_dir}/idealpayment.tpl"|file_exists}{include file="./idealpayment.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/idealpayment.tpl"}{/if}
+    {if file_exists("{$smarty.current_dir}/idealpayment.tpl")}
+        {include file="./idealpayment.tpl"}
+    {else}
+        {include file="{$local_module_dir}stripe/views/templates/hook/idealpayment.tpl"}
+    {/if}
 {/if}
+
 {if ($stripe_bancontact && in_array($stripe_currency, Stripe::$methodCurrencies['bancontact']))}
-  {if "{$smarty.current_dir}/bancontactpayment.tpl"|file_exists}{include file="./bancontactpayment.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/bancontactpayment.tpl"}{/if}
+    {if file_exists("{$smarty.current_dir}/bancontactpayment.tpl")}
+        {include file="./bancontactpayment.tpl"}
+    {else}
+        {include file="{$local_module_dir}stripe/views/templates/hook/bancontactpayment.tpl"}
+    {/if}
 {/if}
+
 {if ($stripe_giropay && in_array($stripe_currency, Stripe::$methodCurrencies['giropay']))}
-  {if "{$smarty.current_dir}/giropaypayment.tpl"|file_exists}{include file="./giropaypayment.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/giropaypayment.tpl"}{/if}
+    {if file_exists("{$smarty.current_dir}/giropaypayment.tpl")}
+        {include file="./giropaypayment.tpl"}
+    {else}
+        {include file="{$local_module_dir}stripe/views/templates/hook/giropaypayment.tpl"}
+    {/if}
 {/if}
+
 {if ($stripe_sofort && in_array($stripe_country, ['AT', 'DE', 'NL', 'BE', 'ES'])  && in_array($stripe_currency, Stripe::$methodCurrencies['sofort']))}
-  {if "{$smarty.current_dir}/sofortpayment.tpl"|file_exists}{include file="./sofortpayment.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/sofortpayment.tpl"}{/if}
+    {if file_exists("{$smarty.current_dir}/sofortpayment.tpl")}
+        {include file="./sofortpayment.tpl"}
+    {else}
+        {include file="{$local_module_dir}stripe/views/templates/hook/sofortpayment.tpl"}
+    {/if}
 {/if}
+
 {if ($stripe_p24 && in_array($stripe_country, ['PL'])  && in_array($stripe_currency, Stripe::$methodCurrencies['p24']))}
-  {if "{$smarty.current_dir}/p24.tpl"|file_exists}{include file="./p24.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/p24.tpl"}{/if}
+    {if file_exists("{$smarty.current_dir}/p24.tpl")}
+        {include file="./p24.tpl"}
+    {else}
+        {include file="{$local_module_dir}stripe/views/templates/hook/p24.tpl"}
+    {/if}
 {/if}
+
 {if ($stripe_alipay_block && in_array($stripe_currency, Stripe::$methodCurrencies['alipay']))}
-  {if "{$smarty.current_dir}/alipaypayment.tpl"|file_exists}{include file="./alipaypayment.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/alipaypayment.tpl"}{/if}
+    {if file_exists("{$smarty.current_dir}/alipaypayment.tpl")}
+        {include file="./alipaypayment.tpl"}
+    {else}
+        {include file="{$local_module_dir}stripe/views/templates/hook/alipaypayment.tpl"}
+    {/if}
 {/if}
+
 {if ($stripe_cc_form && in_array($stripe_currency, Stripe::$methodCurrencies['credit_card']))}
-  {if "{$smarty.current_dir}/ccpayment.tpl"|file_exists}{include file="./ccpayment.tpl"}{else}{include file="{$local_module_dir}stripe/views/templates/hook/ccpayment.tpl"}{/if}
+    {if file_exists("{$smarty.current_dir}/ccpayment.tpl")}
+        {include file="./ccpayment.tpl"}
+    {else}
+        {include file="{$local_module_dir}stripe/views/templates/hook/ccpayment.tpl"}
+    {/if}
 {/if}
+{/strip}
