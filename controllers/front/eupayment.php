@@ -21,6 +21,8 @@ if (!defined('_TB_VERSION_')) {
     exit;
 }
 
+use Stripe\Exception\ApiConnectionException;
+use Stripe\Exception\ApiErrorException;
 use StripeModule\Utils;
 
 /**
@@ -35,7 +37,6 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
      * StripeEupaymentModuleFrontController constructor.
      *
      * @throws PrestaShopException
-     * @throws Adapter_Exception
      */
     public function __construct()
     {
@@ -45,7 +46,9 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
     }
 
     /**
-     * @throws Adapter_Exception
+     * @throws ApiConnectionException
+     * @throws ApiErrorException
+     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
      */
     public function initContent()
@@ -105,7 +108,7 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
      * Init stripe checkout flow payment
      *
      * @throws PrestaShopException
-     * @throws Adapter_Exception
+     * @throws ApiErrorException
      */
     protected function initStripeCheckout()
     {
@@ -121,8 +124,10 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
     /**
      * Init credit card payment
      *
+     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
-     * @throws Adapter_Exception
+     * @throws ApiConnectionException
+     * @throws ApiErrorException
      */
     protected function initCreditCard()
     {
@@ -165,11 +170,12 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
     /**
      * Initialize iDEAL payment
      *
+     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
+     * @throws ApiErrorException
      */
     protected function initIdeal()
     {
-        /** @var Cart $cart */
         $cart = $this->context->cart;
         $currency = new Currency($cart->id_currency);
 
@@ -181,13 +187,13 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
         $invoiceAddress = new Address((int) $cart->id_address_invoice);
 
         $guzzle = new \StripeModule\GuzzleClient();
-        \ThirtyBeesStripe\Stripe\ApiRequestor::setHttpClient($guzzle);
-        ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE)
+        \Stripe\ApiRequestor::setHttpClient($guzzle);
+        Stripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE)
             ? Configuration::get(Stripe::SECRET_KEY_LIVE)
             : Configuration::get(Stripe::SECRET_KEY_TEST)
         );
 
-        $source = \ThirtyBeesStripe\Stripe\Source::create([
+        $source = \Stripe\Source::create([
             'type' => 'ideal',
             'amount' => (int)$stripeAmount,
             'currency' => $currency->iso_code,
@@ -204,17 +210,18 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
             ]
         ]);
 
-        Tools::redirect($source->redirect->url);
+        $this->performRedirect($source);
     }
 
     /**
      * Initialize Bancontact payment
      *
+     * @throws ApiErrorException
+     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
      */
     protected function initBancontact()
     {
-        /** @var Cart $cart */
         $cart = $this->context->cart;
         $currency = new Currency($cart->id_currency);
 
@@ -226,13 +233,13 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
         $invoiceAddress = new Address((int) $cart->id_address_invoice);
 
         $guzzle = new \StripeModule\GuzzleClient();
-        \ThirtyBeesStripe\Stripe\ApiRequestor::setHttpClient($guzzle);
-        ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE)
+        \Stripe\ApiRequestor::setHttpClient($guzzle);
+        Stripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE)
             ? Configuration::get(Stripe::SECRET_KEY_LIVE)
             : Configuration::get(Stripe::SECRET_KEY_TEST)
         );
 
-        $source = \ThirtyBeesStripe\Stripe\Source::create([
+        $source = \Stripe\Source::create([
             'type' => 'bancontact',
             'amount' => (int)$stripeAmount,
             'currency' => $currency->iso_code,
@@ -244,17 +251,18 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
             ]
         ]);
 
-        Tools::redirect($source->redirect->url);
+        $this->performRedirect($source);
     }
 
     /**
      * Initialize Giropay payment
      *
+     * @throws ApiErrorException
+     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
      */
     protected function initGiropay()
     {
-        /** @var Cart $cart */
         $cart = $this->context->cart;
         $currency = new Currency($cart->id_currency);
 
@@ -266,13 +274,13 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
         $invoiceAddress = new Address((int) $cart->id_address_invoice);
 
         $guzzle = new \StripeModule\GuzzleClient();
-        \ThirtyBeesStripe\Stripe\ApiRequestor::setHttpClient($guzzle);
-        ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE)
+        \Stripe\ApiRequestor::setHttpClient($guzzle);
+        Stripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE)
             ? Configuration::get(Stripe::SECRET_KEY_LIVE)
             : Configuration::get(Stripe::SECRET_KEY_TEST)
         );
 
-        $source = \ThirtyBeesStripe\Stripe\Source::create([
+        $source = \Stripe\Source::create([
             'type' => 'giropay',
             'amount' => (int)$stripeAmount,
             'currency' => $currency->iso_code,
@@ -289,18 +297,18 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
             ]
         ]);
 
-        Tools::redirect($source->redirect->url);
+        $this->performRedirect($source);
     }
 
     /**
      * Initialize Sofort Banking payment
      *
+     * @throws ApiErrorException
+     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
-     * @throws Adapter_Exception
      */
     protected function initSofort()
     {
-        /** @var Cart $cart */
         $cart = $this->context->cart;
         $currency = new Currency($cart->id_currency);
 
@@ -313,13 +321,13 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
         $country = new Country($invoiceAddress->id_country);
 
         $guzzle = new \StripeModule\GuzzleClient();
-        \ThirtyBeesStripe\Stripe\ApiRequestor::setHttpClient($guzzle);
-        ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE)
+        \Stripe\ApiRequestor::setHttpClient($guzzle);
+        Stripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE)
             ? Configuration::get(Stripe::SECRET_KEY_LIVE)
             : Configuration::get(Stripe::SECRET_KEY_TEST)
         );
 
-        $source = \ThirtyBeesStripe\Stripe\Source::create([
+        $source = \Stripe\Source::create([
             'type'     => 'sofort',
             'amount'   => (int) $stripeAmount,
             'currency' => $currency->iso_code,
@@ -339,17 +347,18 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
             ],
         ]);
 
-        Tools::redirect($source->redirect->url);
+        $this->performRedirect($source);
     }
 
     /**
      * Initialize P24 payment
      *
+     * @throws ApiErrorException
+     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
      */
     protected function initP24()
     {
-        /** @var Cart $cart */
         $customer = $this->context->customer;
         $cart = $this->context->cart;
         $currency = new Currency($cart->id_currency);
@@ -362,13 +371,13 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
         $invoiceAddress = new Address((int) $cart->id_address_invoice);
 
         $guzzle = new \StripeModule\GuzzleClient();
-        \ThirtyBeesStripe\Stripe\ApiRequestor::setHttpClient($guzzle);
-        ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE)
+        \Stripe\ApiRequestor::setHttpClient($guzzle);
+        Stripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE)
             ? Configuration::get(Stripe::SECRET_KEY_LIVE)
             : Configuration::get(Stripe::SECRET_KEY_TEST)
         );
 
-        $source = \ThirtyBeesStripe\Stripe\Source::create([
+        $source = \Stripe\Source::create([
             'type' => 'p24',
             'amount' => (int)$stripeAmount,
             'currency' => $currency->iso_code,
@@ -386,17 +395,18 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
             ]
         ]);
 
-        Tools::redirect($source->redirect->url);
+        $this->performRedirect($source);
     }
 
     /**
      * Initialize Alipay payment
      *
+     * @throws ApiErrorException
+     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
      */
     protected function initAlipay()
     {
-        /** @var Cart $cart */
         $cart = $this->context->cart;
         $currency = new Currency($cart->id_currency);
 
@@ -406,13 +416,13 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
         }
 
         $guzzle = new \StripeModule\GuzzleClient();
-        \ThirtyBeesStripe\Stripe\ApiRequestor::setHttpClient($guzzle);
-        ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE)
+        \Stripe\ApiRequestor::setHttpClient($guzzle);
+        Stripe\Stripe::setApiKey(Configuration::get(Stripe::GO_LIVE)
             ? Configuration::get(Stripe::SECRET_KEY_LIVE)
             : Configuration::get(Stripe::SECRET_KEY_TEST)
         );
 
-        $source = \ThirtyBeesStripe\Stripe\Source::create([
+        $source = \Stripe\Source::create([
             'type'     => 'alipay',
             'amount'   => (int) $stripeAmount,
             'currency' => $currency->iso_code,
@@ -426,6 +436,19 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
             ],
         ]);
 
-        Tools::redirect($source->redirect->url);
+        $this->performRedirect($source);
+    }
+
+    /**
+     * @param \Stripe\Source $source
+     *
+     * @return void
+     * @throws PrestaShopException
+     */
+    protected function performRedirect(\Stripe\Source $source): void
+    {
+        if (isset($source->performRedirect->url)) {
+            Tools::redirect($source->performRedirect->url);
+        }
     }
 }

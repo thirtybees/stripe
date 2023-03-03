@@ -21,8 +21,9 @@ namespace StripeModule;
 
 use Cart;
 use Cookie;
-use ThirtyBeesStripe\Stripe\Charge;
-use ThirtyBeesStripe\Stripe\PaymentIntent;
+use PrestaShopException;
+use Stripe\Charge;
+use Stripe\PaymentIntent;
 use Translate;
 use Currency;
 use Context;
@@ -52,7 +53,6 @@ class Utils
      *
      * @param Cart $cart
      * @return int
-     * @throws \Adapter_Exception
      * @throws \PrestaShopDatabaseException
      * @throws \PrestaShopException
      */
@@ -81,7 +81,9 @@ class Utils
      * Return currency code for given cart
      *
      * @param Cart $cart
+     *
      * @return string
+     * @throws PrestaShopException
      */
     public static function getCurrencyCode(Cart $cart)
     {
@@ -117,7 +119,8 @@ class Utils
      * Returns payment method name
      *
      * @param mixed $paymentMethodDetails payment method details returned by stripe
-     * @return mixed
+     *
+     * @return string
      */
     public static function getPaymentMethodName($paymentMethodDetails)
     {
@@ -134,17 +137,18 @@ class Utils
      * Returns last 4 digits of payment
      *
      * @param Charge $charge
+     *
      * @return int
      */
     public static function getCardLastDigits(Charge $charge)
     {
         $paymentMethodDetails = $charge->payment_method_details;
-        if ($paymentMethodDetails && isset($paymentMethodDetails->type) && $paymentMethodDetails->type === 'card') {
+        if ($paymentMethodDetails && isset($paymentMethodDetails->type) && $paymentMethodDetails->type === 'card' && isset($paymentMethodDetails->card)) {
             return (int)$paymentMethodDetails->card->last4;
         }
 
-        if (isset($charge->source['last4'])) {
-            return (int)$charge->source['last4'];
+        if (isset($charge->source->last4)) {
+            return (int)$charge->source->last4;
         }
 
         return 0;
@@ -155,10 +159,10 @@ class Utils
      *
      * @param Cookie $cookie
      * @param Cart $cart
-     * @return mixed|null
-     * @throws \Adapter_Exception
-     * @throws \PrestaShopDatabaseException
-     * @throws \PrestaShopException
+     *
+     * @return string|null
+     *
+     * @throws PrestaShopException
      */
     public static function getSessionFromCookie(Cookie $cookie, Cart $cart)
     {
@@ -170,10 +174,9 @@ class Utils
      *
      * @param Cookie $cookie
      * @param Cart $cart
-     * @param $sessionId
-     * @throws \Adapter_Exception
-     * @throws \PrestaShopDatabaseException
-     * @throws \PrestaShopException
+     * @param string $sessionId
+     *
+     * @throws PrestaShopException
      */
     public static function saveSessionToCookie(Cookie $cookie, Cart $cart, $sessionId)
     {
@@ -185,10 +188,10 @@ class Utils
      *
      * @param Cookie $cookie
      * @param Cart $cart
-     * @return mixed|null
-     * @throws \Adapter_Exception
-     * @throws \PrestaShopDatabaseException
-     * @throws \PrestaShopException
+     *
+     * @return string|null
+     *
+     * @throws PrestaShopException
      */
     public static function getPaymentIntentIdFromCookie(Cookie $cookie, Cart $cart)
     {
@@ -200,10 +203,10 @@ class Utils
      *
      * @param Cookie $cookie
      * @param Cart $cart
-     * @return mixed|null
-     * @throws \Adapter_Exception
-     * @throws \PrestaShopDatabaseException
-     * @throws \PrestaShopException
+     *
+     * @return string|null
+     *
+     * @throws PrestaShopException
      */
     public static function getPaymentIntentClientSecretFromCookie(Cookie $cookie, Cart $cart)
     {
@@ -215,11 +218,10 @@ class Utils
      *
      * @param Cookie $cookie
      * @param Cart $cart
-     * @param $paymentIntentId
-     * @param $clientSecret
-     * @throws \Adapter_Exception
-     * @throws \PrestaShopDatabaseException
-     * @throws \PrestaShopException
+     * @param string $paymentIntentId
+     * @param string $clientSecret
+     *
+     * @throws PrestaShopException
      */
     public static function savePaymentIntentToCookie(Cookie $cookie, Cart $cart, $paymentIntentId, $clientSecret)
     {
@@ -234,12 +236,12 @@ class Utils
      *
      * <timestamp>:<cartId>:<cartTotal>:<sessionId>
      *
+     * @param string $key
      * @param Cookie $cookie
      * @param Cart $cart
-     * @return mixed|null
-     * @throws \Adapter_Exception
-     * @throws \PrestaShopDatabaseException
-     * @throws \PrestaShopException
+     *
+     * @return string|null
+     * @throws PrestaShopException
      */
     private static function getFromCookie($key, Cookie $cookie, Cart $cart)
     {
@@ -286,10 +288,9 @@ class Utils
      * @param string $key
      * @param Cookie $cookie
      * @param Cart $cart
-     * @param $sessionId
-     * @throws \Adapter_Exception
-     * @throws \PrestaShopDatabaseException
-     * @throws \PrestaShopException
+     * @param string $sessionId
+     *
+     * @throws PrestaShopException
      */
     private static function saveToCookie($key, Cookie $cookie, Cart $cart, $sessionId)
     {
@@ -327,8 +328,8 @@ class Utils
      * Returns list of stripe countries
      *
      * @return array
-     * @throws \PrestaShopDatabaseException
-     * @throws \PrestaShopException
+     *
+     * @throws PrestaShopException
      */
     public static function getStripeCountries()
     {
@@ -342,6 +343,8 @@ class Utils
 
     /**
      * Returns stripe country associated with account
+     *
+     * @throws PrestaShopException
      */
     public static function getStripeCountry()
     {

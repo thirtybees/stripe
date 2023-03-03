@@ -106,7 +106,6 @@ class StripeReview extends \ObjectModel
      * @param int $idOrder
      *
      * @return static
-     * @throws \Adapter_Exception
      * @throws \PrestaShopDatabaseException
      * @throws \PrestaShopException
      *
@@ -193,7 +192,6 @@ class StripeReview extends \ObjectModel
      * @param array  $tr
      *
      * @return string
-     * @throws \Adapter_Exception
      * @throws \Exception
      * @throws \PrestaShopDatabaseException
      * @throws \PrestaShopException

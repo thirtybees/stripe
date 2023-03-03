@@ -28,13 +28,14 @@ if (!defined('_TB_VERSION_')) {
  */
 class StripeDemoIframeModuleFrontController extends ModuleFrontController
 {
-    /** @var Stripe $module */
+    /**
+     * @var Stripe $module
+     */
     public $module;
 
     /**
      * StripeDemoIframeModuleFrontController constructor.
      *
-     * @throws Adapter_Exception
      * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
      */
@@ -61,11 +62,10 @@ class StripeDemoIframeModuleFrontController extends ModuleFrontController
     }
 
     /**
-     * @return bool|void
+     * @return void
      *
      * @throws PrestaShopException
-     *
-     * @since 1.5.0
+     * @throws SmartyException
      */
     public function initContent()
     {

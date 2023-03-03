@@ -17,9 +17,11 @@
  * @license   Academic Free License (AFL 3.0)
  */
 
+use Stripe\Exception\ApiConnectionException;
+use Stripe\Exception\ApiErrorException;
 use StripeModule\Utils;
 use StripeModule\PaymentProcessor;
-use ThirtyBeesStripe\Stripe\PaymentIntent;
+use Stripe\PaymentIntent;
 
 if (!defined('_TB_VERSION_')) {
     exit;
@@ -37,16 +39,18 @@ class StripeValidationModuleFrontController extends ModuleFrontController
     const CREDIT_CARD = 'cc';
     const PAYMENT_REQUEST = 'paymentRequest';
 
-    /** @var Stripe $module */
+    /**
+     * @var Stripe $module
+     */
     public $module;
 
     /**
      * Main controller method
      *
-     * @throws Adapter_Exception
      * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
-     * @throws \ThirtyBeesStripe\Stripe\Error\ApiConnection
+     * @throws ApiConnectionException
+     * @throws ApiErrorException
      */
     public function postProcess()
     {
@@ -66,10 +70,9 @@ class StripeValidationModuleFrontController extends ModuleFrontController
     /**
      * Validate stripe checkout flow
      *
-     * @throws Adapter_Exception
-     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
-     * @throws \ThirtyBeesStripe\Stripe\Error\ApiConnection
+     * @throws ApiConnectionException
+     * @throws ApiErrorException
      */
     public function validateCheckout()
     {
@@ -86,10 +89,8 @@ class StripeValidationModuleFrontController extends ModuleFrontController
     /**
      * Validate stripe checkout flow
      *
-     * @throws Adapter_Exception
-     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
-     * @throws \ThirtyBeesStripe\Stripe\Error\ApiConnection
+     * @throws ApiErrorException
      */
     public function validateCreditCard()
     {
@@ -114,8 +115,9 @@ class StripeValidationModuleFrontController extends ModuleFrontController
 
     /**
      * @param string $paymentIntentId
+     *
      * @throws PrestaShopException
-     * @throws \ThirtyBeesStripe\Stripe\Error\ApiConnection
+     * @throws ApiErrorException
      */
     private function processPaymentIntent($paymentIntentId)
     {
@@ -133,7 +135,11 @@ class StripeValidationModuleFrontController extends ModuleFrontController
             default:
                 if ($paymentIntent->last_payment_error) {
                     Utils::removeFromCookie($this->context->cookie);
-                    $this->displayErrors([ $paymentIntent->last_payment_error->message ]);
+                    if (isset($paymentIntent->last_payment_error->message)) {
+                        $this->displayErrors([ $paymentIntent->last_payment_error->message ]);
+                    } else {
+                        $this->displayErrors(['Unknown error']);
+                    }
                 } else {
                     $this->redirectToCheckout();
                 }
@@ -145,7 +151,9 @@ class StripeValidationModuleFrontController extends ModuleFrontController
      *
      * @param Cart $cart
      * @param PaymentIntent $paymentIntent
+     *
      * @throws PrestaShopException
+     * @throws ApiErrorException
      */
     private function processPayment(Cart $cart, PaymentIntent $paymentIntent)
     {

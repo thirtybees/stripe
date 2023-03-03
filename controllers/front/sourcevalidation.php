@@ -20,7 +20,7 @@
 use StripeModule\StripeReview;
 use StripeModule\StripeTransaction;
 use StripeModule\Utils;
-use ThirtyBeesStripe\Stripe\PaymentIntent;
+use Stripe\PaymentIntent;
 
 if (!defined('_TB_VERSION_')) {
     exit;
@@ -38,7 +38,6 @@ class StripeSourcevalidationModuleFrontController extends ModuleFrontController
      * StripeSourcevalidationModuleFrontController constructor.
      *
      * @throws PrestaShopException
-     * @throws Adapter_Exception
      */
     public function __construct()
     {
@@ -51,8 +50,10 @@ class StripeSourcevalidationModuleFrontController extends ModuleFrontController
      * Post process
      *
      * @return bool Whether the info has been successfully processed
+     *
+     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
-     * @throws Adapter_Exception
+     * @throws SmartyException
      */
     public function postProcess()
     {
@@ -89,18 +90,13 @@ class StripeSourcevalidationModuleFrontController extends ModuleFrontController
         $customer = new Customer((int) $cart->id_customer);
         $currency = new Currency((int) $cart->id_currency);
 
-        $stripe = [
-            'secret_key'      => Configuration::get(Stripe::GO_LIVE)
+        $secretKey = Configuration::get(Stripe::GO_LIVE)
                 ? Configuration::get(Stripe::SECRET_KEY_LIVE)
-                : Configuration::get(Stripe::SECRET_KEY_TEST),
-            'publishable_key' => Configuration::get(Stripe::GO_LIVE)
-                ? Configuration::get(Stripe::PUBLISHABLE_KEY_LIVE)
-                : Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
-        ];
+                : Configuration::get(Stripe::SECRET_KEY_TEST);
 
         $guzzle = new \StripeModule\GuzzleClient();
-        \ThirtyBeesStripe\Stripe\ApiRequestor::setHttpClient($guzzle);
-        \ThirtyBeesStripe\Stripe\Stripe::setApiKey($stripe['secret_key']);
+        \Stripe\ApiRequestor::setHttpClient($guzzle);
+        \Stripe\Stripe::setApiKey($secretKey);
 
 
         $stripeAmount = $cart->getOrderTotal();
@@ -109,7 +105,7 @@ class StripeSourcevalidationModuleFrontController extends ModuleFrontController
         }
 
         try {
-            $stripeCharge = \ThirtyBeesStripe\Stripe\Charge::create(
+            $stripeCharge = \Stripe\Charge::create(
                 [
                     'amount'   => $stripeAmount,
                     'currency' => mb_strtolower($currency->iso_code),

@@ -17,6 +17,7 @@
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
 
+use Stripe\Exception\ApiErrorException;
 use StripeModule\StripeReview;
 use StripeModule\StripeTransaction;
 
@@ -36,7 +37,6 @@ class StripeHookModuleFrontController extends ModuleFrontController
      * StripeHookModuleFrontController constructor.
      *
      * @throws PrestaShopException
-     * @throws Adapter_Exception
      */
     public function __construct()
     {
@@ -57,8 +57,10 @@ class StripeHookModuleFrontController extends ModuleFrontController
     /**
      * Post process
      *
-     * @throws  PrestaShopException
-     * @throws Adapter_Exception
+     * @throws PrestaShopDatabaseException
+     * @throws PrestaShopException
+     * @throws SmartyException
+     * @throws ApiErrorException
      */
     public function postProcess()
     {
@@ -68,9 +70,9 @@ class StripeHookModuleFrontController extends ModuleFrontController
             // Verify with Stripe
             try {
                 $guzzle = new \StripeModule\GuzzleClient();
-                \ThirtyBeesStripe\Stripe\ApiRequestor::setHttpClient($guzzle);
-                \ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(Stripe::SECRET_KEY_TEST));
-                $event = \ThirtyBeesStripe\Stripe\Event::retrieve($data['id']);
+                \Stripe\ApiRequestor::setHttpClient($guzzle);
+                \Stripe\Stripe::setApiKey(Configuration::get(Stripe::SECRET_KEY_TEST));
+                $event = \Stripe\Event::retrieve($data['id']);
             } catch (\Exception $e) {
                 die('ko');
             }
@@ -108,18 +110,19 @@ class StripeHookModuleFrontController extends ModuleFrontController
     /**
      * Process `charge.succeeded` event
      *
-     * @param \ThirtyBeesStripe\Stripe\Event $event
+     * @param \Stripe\Event $event
      *
+     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
-     * @throws Adapter_Exception
+     * @throws SmartyException
      */
     protected function processSucceeded($event)
     {
-        /** @var \ThirtyBeesStripe\Stripe\Charge $charge */
+        /** @var \Stripe\Charge $charge */
         $charge = $event->data['object'];
 
         // This is only supported for Sofort Banking at the moment
-        if (!isset($charge->metadata->type) || !$charge->metadata->type === 'sofort') {
+        if (!isset($charge->metadata->type) || $charge->metadata->type !== 'sofort') {
             die('ok');
         }
 
@@ -149,14 +152,15 @@ class StripeHookModuleFrontController extends ModuleFrontController
     /**
      * Process `charge.failed` event
      *
-     * @param \ThirtyBeesStripe\Stripe\Event $event
+     * @param \Stripe\Event $event
      *
+     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
-     * @throws Adapter_Exception
+     * @throws SmartyException
      */
     protected function processFailed($event)
     {
-        /** @var \ThirtyBeesStripe\Stripe\Charge $charge */
+        /** @var \Stripe\Charge $charge */
         $charge = $event->data['object'];
 
         if (!$idOrder = StripeTransaction::getIdOrderByCharge($charge->id)) {
@@ -186,15 +190,16 @@ class StripeHookModuleFrontController extends ModuleFrontController
     /**
      * Process `charge.approved` event
      *
-     * @param \ThirtyBeesStripe\Stripe\Event $event
+     * @param \Stripe\Event $event
      *
+     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
-     * @throws Adapter_Exception
+     * @throws SmartyException
+     * @throws \Stripe\Exception\ApiErrorException
      */
     protected function processApproved($event)
     {
-        /** @var \ThirtyBeesStripe\Stripe\Charge $charge */
-        $charge = \ThirtyBeesStripe\Stripe\Charge::retrieve($event->data['object']->charge);
+        $charge = \Stripe\Charge::retrieve($event->data['object']->charge);
 
         if (!empty($charge['metadata']['from_back_office'])) {
             die('not processed');
@@ -229,14 +234,15 @@ class StripeHookModuleFrontController extends ModuleFrontController
     /**
      * Process `charge.approved` event
      *
-     * @param \ThirtyBeesStripe\Stripe\Event $event
+     * @param \Stripe\Event $event
      *
+     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
-     * @throws Adapter_Exception
+     * @throws SmartyException
      */
     protected function processCaptured($event)
     {
-        /** @var \ThirtyBeesStripe\Stripe\Charge $charge */
+        /** @var \Stripe\Charge $charge */
         $charge = $event->data['object'];
 
         if (!empty($charge['metadata']['from_back_office'])) {
@@ -270,14 +276,15 @@ class StripeHookModuleFrontController extends ModuleFrontController
     /**
      * Process `charge.refund` event
      *
-     * @param \ThirtyBeesStripe\Stripe\Event $event
+     * @param \Stripe\Event $event
      *
+     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
-     * @throws Adapter_Exception
+     * @throws SmartyException
      */
     protected function processRefund($event)
     {
-        /** @var \ThirtyBeesStripe\Stripe\Charge $charge */
+        /** @var \Stripe\Charge $charge */
         $charge = $event->data['object'];
 
         $refunds = [];

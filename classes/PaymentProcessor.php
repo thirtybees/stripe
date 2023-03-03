@@ -19,16 +19,17 @@
 
 namespace StripeModule;
 
-use ThirtyBeesStripe\Stripe\Error\ApiConnection;
-use ThirtyBeesStripe\Stripe\PaymentIntent;
-use ThirtyBeesStripe\Stripe\Charge;
+use PrestaShopException;
+use Stripe\Exception\ApiErrorException;
+use Stripe\PaymentIntent;
+use Stripe\Charge;
 use Configuration;
 use Cart;
 use Stripe;
-use Exception;
 use Db;
 use Order;
 use Context;
+use Throwable;
 use Tools;
 
 if (!defined('_TB_VERSION_')) {
@@ -40,25 +41,39 @@ if (!defined('_TB_VERSION_')) {
  */
 class PaymentProcessor
 {
-    /** @var Stripe */
+    /**
+     * @var Stripe
+     */
     private $module;
 
-    /** @var string[] */
+    /**
+     * @var string[]
+     */
     private $errors = [];
 
-    /** @var string[] */
+    /**
+     * @var string[]
+     */
     private $debug = [];
 
-    /** @var int */
+    /**
+     * @var int
+     */
     private $orderId = 0;
 
-    /** @var string */
+    /**
+     * @var string
+     */
     private $redirect = null;
 
-    /** @var StripeReview */
+    /**
+     * @var StripeReview
+     */
     private $review = null;
 
-    /** @var StripeTransaction */
+    /**
+     * @var StripeTransaction
+     */
     private $transaction = null;
 
     /**
@@ -72,7 +87,9 @@ class PaymentProcessor
     }
 
     /**
-     *  Redirects to order confirmation page if payment processing was successful
+     * Redirects to order confirmation page if payment processing was successful
+     *
+     * @throws PrestaShopException
      */
     public function redirectToOrderConfirmation()
     {
@@ -99,47 +116,40 @@ class PaymentProcessor
      *
      * @param Cart $cart
      * @param PaymentIntent $paymentIntent
+     *
      * @return bool
+     *
+     * @throws ApiErrorException
+     * @throws PrestaShopException
      */
     public function processPayment(Cart $cart, PaymentIntent $paymentIntent)
     {
         $this->reset();
 
-        $charges = [];
-        foreach ($paymentIntent->charges as $charge) {
-            $charges[] = $charge;
-        }
-        if (! $charges) {
-            $this->addError($this->l('No charges associated with payment'), print_r($paymentIntent, true));
-        } else if (count($charges) === 1) {
-            try {
-                $this->processCharge($cart, $charges[0], $paymentIntent);
-                if ($this->orderId) {
-                    $this->redirect = Context::getContext()->link->getPageLink(
-                        'order-confirmation',
-                        null,
-                        null,
-                        [
-                            'id_cart' => (int)$cart->id,
-                            'id_module' => (int)$this->module->id,
-                            'id_order' => (int)$this->orderId,
-                            'key' => Tools::safeOutput($cart->secure_key),
-                        ]
-                    );
-                }
-            } catch (Exception $e) {
-                $this->addError($this->l('Unknown error when processing payment'), (string)$e);
+        $charge = $this->getCharge($paymentIntent->latest_charge);
+        if ($charge) {
+            $this->processCharge($cart, $charge, $paymentIntent);
+            if ($this->orderId) {
+                $this->redirect = Context::getContext()->link->getPageLink(
+                    'order-confirmation',
+                    null,
+                    null,
+                    [
+                        'id_cart' => (int)$cart->id,
+                        'id_module' => (int)$this->module->id,
+                        'id_order' => (int)$this->orderId,
+                        'key' => Tools::safeOutput($cart->secure_key),
+                    ]
+                );
             }
         } else {
-            $this->addError($this->l('Payment contains multiple charges'), print_r($paymentIntent, true));
+            $this->addError($this->l('No charges associated with payment'), print_r($paymentIntent, true));
         }
 
         // if there was any error, mark transaction as failed
         if ($this->errors && $this->transaction && $this->transaction->type !== StripeTransaction::TYPE_CHARGE_FAIL) {
             $this->transaction->type = StripeTransaction::TYPE_CHARGE_FAIL;
-            try {
-                $this->transaction->save();
-            } catch (Exception $ignored) {}
+            $this->transaction->save();
         }
 
         return $this->isValid();
@@ -152,8 +162,9 @@ class PaymentProcessor
      * @param Cart $cart
      * @param Charge $charge
      * @param PaymentIntent $paymentIntent
+     *
      * @return bool
-     * @throws Exception
+     * @throws PrestaShopException
      */
     public function processCharge(Cart $cart, Charge $charge, PaymentIntent $paymentIntent)
     {
@@ -207,7 +218,7 @@ class PaymentProcessor
                     false,
                     $cart->secure_key
                 );
-            } catch (Exception $e) {
+            } catch (Throwable $e) {
                 $this->addError($this->l('Failed to validate order'), (string)$e);
                 return false;
             }
@@ -266,30 +277,31 @@ class PaymentProcessor
                 }
 
                 // Log information about stripe transaction to db
-                $charges = [];
-                foreach ($updatedIntent->charges as $charge) {
-                    $charges[] = $charge;
-                }
-                $charge = $charges[0];
-                $this->transaction = new StripeTransaction();
-                $this->transaction->card_last_digits = Utils::getCardLastDigits($charge);
-                $this->transaction->id_charge = $charge->id;
-                $this->transaction->amount = $charge->amount;
-                $this->transaction->id_order = $orderId;
-                $this->transaction->type = StripeTransaction::TYPE_CAPTURED;
-                $this->transaction->source = StripeTransaction::SOURCE_BACK_OFFICE;
-                $this->transaction->source_type = 'cc';
-                if (!$this->transaction->add()) {
-                    $this->addError($this->l('Failed to create stripe transaction object'), Db::getInstance()->getMsgError());
+                $charge = $this->getCharge($updatedIntent->latest_charge);
+                if ($charge) {
+                    $this->transaction = new StripeTransaction();
+                    $this->transaction->card_last_digits = Utils::getCardLastDigits($charge);
+                    $this->transaction->id_charge = $charge->id;
+                    $this->transaction->amount = $charge->amount;
+                    $this->transaction->id_order = $orderId;
+                    $this->transaction->type = StripeTransaction::TYPE_CAPTURED;
+                    $this->transaction->source = StripeTransaction::SOURCE_BACK_OFFICE;
+                    $this->transaction->source_type = 'cc';
+                    if (!$this->transaction->add()) {
+                        $this->addError($this->l('Failed to create stripe transaction object'), Db::getInstance()->getMsgError());
+                        return false;
+                    }
+                } else {
+                    $this->addError($this->l('Failed to create stripe transaction object, charge not found'));
                     return false;
                 }
                 return true;
             }
             $this->addError('Invalid payment intent status: '.$paymentIntent->status, print_r($paymentIntent, true));
             return false;
-        } catch (ApiConnection $e) {
+        } catch (ApiErrorException $e) {
             $this->addError($e->getMessage(), (string)$e);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->addError(sprintf($this->l("Couldn't find payment intent %s"), $paymentIntentId), (string)$e);
         }
         return false;
@@ -332,30 +344,31 @@ class PaymentProcessor
                 }
 
                 // Log information about stripe transaction to db
-                $charges = [];
-                foreach ($updatedIntent->charges as $charge) {
-                    $charges[] = $charge;
-                }
-                $charge = $charges[0];
-                $this->transaction = new StripeTransaction();
-                $this->transaction->card_last_digits = Utils::getCardLastDigits($charge);
-                $this->transaction->id_charge = $charge->id;
-                $this->transaction->amount = $charge->amount;
-                $this->transaction->id_order = $orderId;
-                $this->transaction->type = StripeTransaction::TYPE_FULL_REFUND;;
-                $this->transaction->source = StripeTransaction::SOURCE_BACK_OFFICE;
-                $this->transaction->source_type = 'cc';
-                if (!$this->transaction->add()) {
-                    $this->addError($this->l('Failed to create stripe transaction object'), Db::getInstance()->getMsgError());
+                $charge = $this->getCharge($updatedIntent->latest_charge);
+                if ($charge) {
+                    $this->transaction = new StripeTransaction();
+                    $this->transaction->card_last_digits = Utils::getCardLastDigits($charge);
+                    $this->transaction->id_charge = $charge->id;
+                    $this->transaction->amount = $charge->amount;
+                    $this->transaction->id_order = $orderId;
+                    $this->transaction->type = StripeTransaction::TYPE_FULL_REFUND;
+                    $this->transaction->source = StripeTransaction::SOURCE_BACK_OFFICE;
+                    $this->transaction->source_type = 'cc';
+                    if (!$this->transaction->add()) {
+                        $this->addError($this->l('Failed to create stripe transaction object'), Db::getInstance()->getMsgError());
+                        return false;
+                    }
+                    return true;
+                } else {
+                    $this->addError($this->l('Failed to create stripe transaction object, charge not found'));
                     return false;
                 }
-                return true;
             }
             $this->addError('Invalid payment intent status: '.$paymentIntent->status, print_r($paymentIntent, true));
             return false;
-        } catch (ApiConnection $e) {
+        } catch (ApiErrorException $e) {
             $this->addError($e->getMessage(), (string)$e);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->addError(sprintf($this->l("Couldn't find payment intent %s"), $paymentIntentId), (string)$e);
         }
         return false;
@@ -364,8 +377,8 @@ class PaymentProcessor
     /**
      * Collect error message
      *
-     * @param $displayable
-     * @param null $debug
+     * @param string $displayable
+     * @param array|string|null $debug
      */
     private function addError($displayable, $debug=null)
     {
@@ -380,7 +393,6 @@ class PaymentProcessor
     {
         $this->errors = [];
         $this->debug = [];
-        $this->transaction = null;
         $this->review = null;
         $this->orderId = 0;
         $this->transaction = null;
@@ -397,6 +409,14 @@ class PaymentProcessor
     }
 
     /**
+     * @return string[]
+     */
+    public function getDebug()
+    {
+        return $this->debug;
+    }
+
+    /**
      * Translates string
      *
      * @param string $message
@@ -406,6 +426,22 @@ class PaymentProcessor
     public function l($message)
     {
         return $this->module->l($message);
+    }
+
+    /**
+     * @param string|null $chargeId
+     *
+     * @return Charge|null
+     *
+     * @throws ApiErrorException
+     */
+    protected function getCharge($chargeId)
+    {
+        if ($chargeId) {
+            return $this->module->getStripeApi()->getCharge($chargeId);
+        } else {
+            return null;
+        }
     }
 
 }

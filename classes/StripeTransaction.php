@@ -300,7 +300,6 @@ class StripeTransaction extends \ObjectModel
      *
      * @return StripeTransaction|false
      *
-     * @throws \Adapter_Exception
      * @throws \PrestaShopDatabaseException
      * @throws \PrestaShopException
      * @since 1.1.0
@@ -391,7 +390,6 @@ class StripeTransaction extends \ObjectModel
      * @param array $tr
      *
      * @return string
-     * @throws \Adapter_Exception
      * @throws \Exception
      * @throws \PrestaShopDatabaseException
      * @throws \PrestaShopException

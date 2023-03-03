@@ -25,13 +25,14 @@ if (!defined('_TB_VERSION_')) {
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\BadResponseException;
-use ThirtyBeesStripe\Stripe\Error;
-use ThirtyBeesStripe\Stripe\HttpClient\ClientInterface;
+use Stripe\Exception\ApiConnectionException;
+use Stripe\HttpClient\ClientInterface;
+use Throwable;
 
 /**
  * Class GuzzleClient
  *
- * @package ThirtyBeesStripe\HttpClient
+ * @package HttpClient
  *
  * @since   1.0.0
  */
@@ -139,16 +140,16 @@ class GuzzleClient implements ClientInterface
     }
 
     /**
-     * @param string  $method  The HTTP method being used
-     * @param string  $absUrl  The URL being requested, including domain and protocol
-     * @param array   $headers Headers to be used in the request (full strings, not KV pairs)
-     * @param array   $params  KV pairs for parameters. Can be nested for arrays and hashes
+     * @param string $method The HTTP method being used
+     * @param string $absUrl The URL being requested, including domain and protocol
+     * @param array $headers Headers to be used in the request (full strings, not KV pairs)
+     * @param array $params KV pairs for parameters. Can be nested for arrays and hashes
      * @param boolean $hasFile Whether or not $params references a file (via an @ prefix or
      *                         CurlFile)
      *
-     * @return array & Error\ApiConnection
-     * @throws Error\Api & Error\ApiConnection
-     * @throws Error\ApiConnection
+     * @return array
+     *
+     * @throws ApiConnectionException
      */
     public function request($method, $absUrl, $headers, $params, $hasFile)
     {
@@ -167,9 +168,7 @@ class GuzzleClient implements ClientInterface
 
         if ($method === 'GET') {
             if ($hasFile) {
-                throw new Error\Api(
-                    "Issuing a GET request with a file parameter"
-                );
+                throw new ApiConnectionException("Issuing a GET request with a file parameter");
             }
             if (count($params) > 0) {
                 $encoded = self::encode($params);
@@ -185,7 +184,7 @@ class GuzzleClient implements ClientInterface
                 $options['body'] = self::encode($params);
             }
         } else {
-            throw new Error\Api("Unrecognized method $method");
+            throw new ApiConnectionException("Unrecognized method $method");
         }
 
         // By default for large request body sizes (> 1024 bytes), cURL will
@@ -200,7 +199,7 @@ class GuzzleClient implements ClientInterface
         // we'll error under that condition. To compensate for that problem
         // for the time being, override cURL's behavior by simply always
         // sending an empty `Expect:` header.
-        array_push($headers, 'Expect: ');
+        $headers[] = 'Expect: ';
 
         $guzzle = new Client([
             'verify'      => _PS_TOOL_DIR_.'cacert.pem',
@@ -233,16 +232,17 @@ class GuzzleClient implements ClientInterface
                 if (isset($json['error']['message'])) {
                     $message = $json['error']['message'];
                 }
-            } catch (\Exception $ignored) {}
-            throw new Error\ApiConnection(
+            } catch (Throwable $ignored) {}
+            $body = (string)$e->getResponse()->getBody();
+            throw ApiConnectionException::factory(
                 $message,
                 $e->getResponse()->getStatusCode(),
-                (string) $e->getResponse()->getBody(),
-                json_encode((string) $e->getResponse()->getBody()),
+                $body,
+                json_decode($body, true),
                 $headers
             );
-        } catch (\Exception $e) {
-            throw new Error\ApiConnection('Could not connect with Stripe: ' . $e);
+        } catch (Throwable $e) {
+            throw new ApiConnectionException('Could not connect with Stripe: ' . $e);
         }
 
         return array($rbody, $rcode, $rheaders);

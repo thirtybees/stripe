@@ -23,7 +23,7 @@ use StripeModule\StripeReview;
 use StripeModule\StripeTransaction;
 use StripeModule\StripeApi;
 use StripeModule\Utils;
-use ThirtyBeesStripe\Stripe\ApiRequestor;
+use Stripe\ApiRequestor;
 
 if (!defined('_TB_VERSION_')) {
     return;
@@ -38,16 +38,13 @@ class Stripe extends PaymentModule
 {
     const MENU_SETTINGS = 1;
     const MENU_TRANSACTIONS = 2;
-
     const COLLECT_BILLING = 'STRIPE_COLLECT_BILLING';
     const ALIPAY_BLOCK = 'STRIPE_ALIPAY_BLOCK'; // Separate Alipay block
-
     const GO_LIVE = 'STRIPE_GO_LIVE';
     const SECRET_KEY_TEST = 'STRIPE_SECRET_KEY_TEST';
     const PUBLISHABLE_KEY_TEST = 'STRIPE_PUBLISHABLE_KEY_TEST';
     const SECRET_KEY_LIVE = 'STRIPE_SECRET_KEY_LIVE';
     const PUBLISHABLE_KEY_LIVE = 'STRIPE_PUBLISHABLE_KEY_LIVE';
-
     const STATUS_VALIDATED = 'STRIPE_STAT_VALIDATED';
     const STATUS_PARTIAL_REFUND = 'STRIPE_STAT_PART_REFUND';
     const USE_STATUS_PARTIAL_REFUND = 'STRIPE_USE_STAT_PART_REFUND';
@@ -61,9 +58,7 @@ class Stripe extends PaymentModule
     const GENERATE_CREDIT_SLIP = 'STRIPE_CREDIT_SLIP';
     const MANUAL_CAPTURE = 'STRIPE_MANUAL_CAPTURE';
     const ACCOUNT_COUNTRY = 'STRIPE_ACCOUNT_COUNTRY';
-
     const SHOW_PAYMENT_LOGOS = 'STRIPE_PAYMENT_LOGOS';
-
     const STRIPE_CHECKOUT = 'STRIPE_STRIPE_CHECKOUT';
     const STRIPE_CC_FORM = 'STRIPE_STRIPE_CC_FORM';
     const STRIPE_PAYMENT_REQUEST = 'STRIPE_STRIPE_PAYMENT_REQUEST';
@@ -72,14 +67,7 @@ class Stripe extends PaymentModule
     const GIROPAY = 'STRIPE_GIROPAY';
     const SOFORT = 'STRIPE_SOFORT';
     const P24 = 'STRIPE_P24';
-
     const OPTIONS_MODULE_SETTINGS = 1;
-
-    const TLS_OK = 'STRIPE_TLS_OK';
-    const TLS_LAST_CHECK = 'STRIPE_TLS_LAST_CHECK';
-
-    const INCLUDE_STRIPE_BOOTSTRAP = 'STRIPE_INCLUDE_BOOTSTRAP';
-
     const INPUT_PLACEHOLDER_COLOR = 'STRIPE_INPUT_PLACEHOLDER_COLOR';
     const BUTTON_BACKGROUND_COLOR = 'STRIPE_BUTTON_BACKGROUND_COLOR';
     const BUTTON_FOREGROUND_COLOR = 'STRIPE_BUTTON_FOREGROUND_COLOR';
@@ -92,17 +80,31 @@ class Stripe extends PaymentModule
     const CHECKOUT_FONT_FAMILY = 'STRIPE_CHECKOUT_FONT_FAMILY';
     const CHECKOUT_FONT_SIZE = 'STRIPE_CHECKOUT_FONT_SIZE';
     const PAYMENT_REQUEST_BUTTON_STYLE = 'STRIPE_PRB_STYLE';
+    const STRIPE_API_VERSION = 'STRIPE_API_VERSION';
 
-    const ENUM_TLS_OK = 1;
-    const ENUM_TLS_ERROR = -1;
-    /** @var array Supported languages */
+    /**
+     * @var array Supported languages
+     */
     public static $stripeLanguages = ['zh', 'nl', 'en', 'fr', 'de', 'it', 'ja', 'es'];
-    /** @var array Supported zero-decimal currencies */
+
+    /**
+     * @var array Supported zero-decimal currencies
+     */
     public static $zeroDecimalCurrencies = ['bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf', 'krw', 'mga', 'pyg', 'rwf', 'vdn', 'vuv', 'xaf', 'xof', 'xpf'];
-    /** @var string $baseUrl Module base URL */
+
+    /**
+     * @var string $baseUrl Module base URL
+     */
     public $baseUrl;
+
+    /**
+     * @var string
+     */
     public $moduleUrl;
-    /** @var array Hooks */
+
+    /**
+     * @var array Hooks
+     */
     public $hooks = [
         'displayHeader',
         'displayPaymentTop',
@@ -188,7 +190,7 @@ class Stripe extends PaymentModule
         $this->displayName = $this->l('Stripe');
         $this->description = $this->l('Accept payments with Stripe');
 
-        ThirtyBeesStripe\Stripe\Stripe::setAppInfo('thirty bees', $this->version, 'https://thirtybees.com/');
+        Stripe\Stripe::setAppInfo('thirty bees', $this->version, 'https://thirtybees.com/');
     }
 
     /**
@@ -369,8 +371,9 @@ class Stripe extends PaymentModule
     /**
      * Save form data.
      *
+     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
-     * @throws Adapter_Exception
+     * @throws SmartyException
      */
     protected function postProcess()
     {
@@ -384,14 +387,10 @@ class Stripe extends PaymentModule
         ) {
             $this->processReview();
         } elseif ($this->menu == static::MENU_SETTINGS) {
-            if (Tools::isSubmit('submitOptionsconfiguration') || Tools::isSubmit('submitOptionsconfiguration')) {
+            if (Tools::isSubmit('submitOptionsconfiguration')) {
                 $this->postProcessGeneralOptions();
                 $this->postProcessOrderOptions();
                 $this->postProcessDesignOptions();
-            }
-
-            if (Tools::isSubmit('checktls') && (bool) Tools::getValue('checktls')) {
-                $this->tlsCheck();
             }
         } elseif ($this->menu == static::MENU_TRANSACTIONS) {
             if (Tools::isSubmit('submitBulkdelete'.StripeTransaction::$definition['table'])
@@ -408,27 +407,21 @@ class Stripe extends PaymentModule
 
     /**
      * @return void
-     * @throws Adapter_Exception
      * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
+     * @throws SmartyException
      */
     protected function processRefund()
     {
         $idOrder = (int) Tools::getValue('stripe_refund_order');
         $access = Profile::getProfileAccess($this->context->employee->id_profile, Tab::getIdFromClassName('AdminOrders'));
         if (!$access) {
-            $cookie = new Cookie('stripe');
-            $cookie->error = $this->l('Unable to determine employee permissions.');
-            $cookie->write();
-
+            $this->setErrorMessage($this->l('Unable to determine employee permissions.'));
             Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&id_order='.$idOrder);
         }
 
         if (!$access['edit']) {
-            $cookie = new Cookie('stripe');
-            $cookie->error = $this->l('You do not have permission to refund orders.');
-            $cookie->write();
-
+            $this->setErrorMessage($this->l('You do not have permission to refund orders.'));
             Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&id_order='.$idOrder);
         }
 
@@ -449,11 +442,11 @@ class Stripe extends PaymentModule
         $guzzle = new GuzzleClient();
         ApiRequestor::setHttpClient($guzzle);
         try {
-            \ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(static::GO_LIVE)
+            \Stripe\Stripe::setApiKey(Configuration::get(static::GO_LIVE)
                 ? Configuration::get(static::SECRET_KEY_LIVE)
                 : Configuration::get(static::SECRET_KEY_TEST)
             );
-            \ThirtyBeesStripe\Stripe\Refund::create(
+            \Stripe\Refund::create(
                 [
                     'charge'   => $idCharge,
                     'amount'   => $amount,
@@ -463,10 +456,7 @@ class Stripe extends PaymentModule
                 ]
             );
         } catch (Exception $e) {
-            $cookie = new Cookie('stripe');
-            $cookie->error = sprintf('Invalid Stripe request: %s', $e->getMessage());
-            $cookie->write();
-
+            $this->setErrorMessage(sprintf('Invalid Stripe request: %s', $e->getMessage()));
             Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&id_order='.$idOrder);
         }
 
@@ -531,7 +521,6 @@ class Stripe extends PaymentModule
     }
 
     /**
-     * @throws Adapter_Exception
      * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
      */
@@ -541,27 +530,18 @@ class Stripe extends PaymentModule
         $order = new Order($idOrder);
         $access = Profile::getProfileAccess($this->context->employee->id_profile, Tab::getIdFromClassName('AdminOrders'));
         if (!$access) {
-            $cookie = new Cookie('stripe');
-            $cookie->error = $this->l('Unable to determine employee permissions.');
-            $cookie->write();
-
+            $this->setErrorMessage($this->l('Unable to determine employee permissions.'));
             Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&id_order='.$idOrder);
         }
 
         if (!$access['edit']) {
-            $cookie = new Cookie('stripe');
-            $cookie->error = $this->l('You do not have permission to review payments.');
-            $cookie->write();
-
+            $this->setErrorMessage($this->l('You do not have permission to review payments.'));
             Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&id_order='.$idOrder);
         }
 
         $review = StripeReview::getByOrderId($idOrder);
         if (!Validate::isLoadedObject($review)) {
-            $cookie = new Cookie('stripe');
-            $cookie->error = $this->l('An error occurred while processing the request.');
-            $cookie->write();
-
+            $this->setErrorMessage($this->l('An error occurred while processing the request.'));
             Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&id_order='.$idOrder);
         }
 
@@ -569,15 +549,20 @@ class Stripe extends PaymentModule
             $guzzle = new GuzzleClient();
             ApiRequestor::setHttpClient($guzzle);
             try {
-                \ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(static::GO_LIVE)
+                \Stripe\Stripe::setApiKey(Configuration::get(static::GO_LIVE)
                     ? Configuration::get(static::SECRET_KEY_LIVE)
                     : Configuration::get(static::SECRET_KEY_TEST)
                 );
-                $charge = \ThirtyBeesStripe\Stripe\Charge::retrieve($review->id_charge);
-                $charge->metadata = [
-                    'from_back_office' => true,
-                ];
-                $charge->markAsSafe();
+                $charge = \Stripe\Charge::retrieve($review->id_charge);
+                \Stripe\Charge::update(
+                    $charge->id,
+                    [
+                        'metadata' => [ 'from_back_office' => true ],
+                        'fraud_details' => [
+                            'user_repor' => 'safe'
+                        ]
+                    ]
+                );
 
                 $review->status = $review->captured ? StripeReview::CAPTURED : StripeReview::APPROVED;
                 $review->save();
@@ -591,9 +576,7 @@ class Stripe extends PaymentModule
                 $transaction->amount = (int) $charge->amount;
                 $transaction->save();
 
-                $cookie = new Cookie('stripe');
-                $cookie->confirmation = $this->l('The payment has been approved');
-                $cookie->write();
+                $this->setConfirmationMessage($this->l('The payment has been approved'));
 
                 if (Configuration::get(Stripe::USE_STATUS_AUTHORIZED)) {
                     $orderHistory = new OrderHistory();
@@ -602,9 +585,7 @@ class Stripe extends PaymentModule
                     $orderHistory->addWithemail(true);
                 }
             } catch (Exception $e) {
-                $cookie = new Cookie('stripe');
-                $cookie->error = sprintf('Invalid Stripe request: %s', $e->getMessage());
-                $cookie->write();
+                $this->setErrorMessage(sprintf('Invalid Stripe request: %s', $e->getMessage()));
             }
         } elseif (Tools::getValue('stripe_action') === 'capture') {
             $processor = new PaymentProcessor($this);
@@ -634,8 +615,8 @@ class Stripe extends PaymentModule
     protected function processBulkCapture()
     {
         $guzzle = new \StripeModule\GuzzleClient();
-        \ThirtyBeesStripe\Stripe\ApiRequestor::setHttpClient($guzzle);
-        \ThirtyBeesStripe\Stripe\Stripe::setApiKey(Configuration::get(Stripe::SECRET_KEY_TEST));
+        \Stripe\ApiRequestor::setHttpClient($guzzle);
+        \Stripe\Stripe::setApiKey(Configuration::get(Stripe::SECRET_KEY_TEST));
         $idOrders = Tools::getValue('orderBox');
         if (!is_array($idOrders)) {
             $this->context->controller->errors[] = $this->l('No orders found');
@@ -649,8 +630,7 @@ class Stripe extends PaymentModule
 
         try {
             foreach ($idOrders as $idOrder) {
-                /** @var \ThirtyBeesStripe\Stripe\Charge $charge */
-                $charge = \ThirtyBeesStripe\Stripe\Charge::retrieve(StripeTransaction::getChargeByIdOrder($idOrder));
+                $charge = \Stripe\Charge::retrieve(StripeTransaction::getChargeByIdOrder($idOrder));
                 $charge->metadata = [
                     'from_back_office' => true,
                 ];
@@ -680,8 +660,9 @@ class Stripe extends PaymentModule
 
             return;
         }
-
-        $this->context->controller->confirmations[] = $this->l('The payments have been successfully captured');
+        /** @var AdminController $controller */
+        $controller = $this->context->controller;
+        $controller->confirmations[] = $this->l('The payments have been successfully captured');
     }
 
     /**
@@ -719,8 +700,10 @@ class Stripe extends PaymentModule
         if ($goLive
             && (substr($publishableKeyLive, 0, 7) !== 'pk_live' || substr($secretKeyLive, 0, 7) !== 'sk_live')
         ) {
-            $this->context->controller->confirmations = [];
-            $this->context->controller->errors[] = ($this->l('Live mode has been chosen but one or more of the live keys are invalid'));
+            /** @var AdminController $controller */
+            $controller = $this->context->controller;
+            $controller->confirmations = [];
+            $controller->errors[] = ($this->l('Live mode has been chosen but one or more of the live keys are invalid'));
 
             return;
         }
@@ -873,31 +856,7 @@ class Stripe extends PaymentModule
      */
     public function getShopId()
     {
-        if (isset(Context::getContext()->employee->id) && Context::getContext()->employee->id && Shop::getContext() == Shop::CONTEXT_SHOP) {
-            $cookie = Context::getContext()->cookie->getFamily('shopContext');
-
-            return (int) Tools::substr($cookie['shopContext'], 2, count($cookie['shopContext']));
-        }
-
         return (int) Context::getContext()->shop->id;
-    }
-
-    /**
-     * Check if TLS 1.2 is supported
-     *
-     * @throws PrestaShopException
-     */
-    protected function tlsCheck()
-    {
-        $guzzle = new GuzzleClient();
-        \ThirtyBeesStripe\Stripe\ApiRequestor::setHttpClient($guzzle);
-        \ThirtyBeesStripe\Stripe\Stripe::setApiKey('sk_test_BQokikJOvBiI2HlWgH4olfQ2');
-        try {
-            \ThirtyBeesStripe\Stripe\Charge::all();
-            $this->updateAllValue(static::TLS_OK, static::ENUM_TLS_OK);
-        } catch (\ThirtyBeesStripe\Stripe\Error\Api $e) {
-            $this->updateAllValue(static::TLS_OK, static::ENUM_TLS_ERROR);
-        }
     }
 
     /**
@@ -1000,7 +959,6 @@ class Stripe extends PaymentModule
         $currentPage = (int) $this->getSelectedPage(StripeTransaction::$definition['table'], $listTotal);
 
         $helperList = new HelperList();
-        $helperList->id = 1;
         $helperList->shopLinkType = false;
         $helperList->list_id = StripeTransaction::$definition['table'];
         $helperList->module = $this;
@@ -1185,18 +1143,16 @@ class Stripe extends PaymentModule
         if ($page > $totalPages) {
             $page = $totalPages;
         }
-
-        $this->page = (int) $page;
-
         return $page;
     }
 
     /**
      * @param HelperList $helperList
-     * @param array      $fieldsList
+     * @param array $fieldsList
      *
-     * @return array|string
-     * @throws ReflectionException
+     * @return string
+     * @throws PrestaShopDatabaseException
+     * @throws PrestaShopException
      */
     protected function getSQLFilter($helperList, $fieldsList)
     {
@@ -1257,7 +1213,7 @@ class Stripe extends PaymentModule
                 if ($field = $this->filterToField($fieldsList, $key, $filter)) {
                     $type = (array_key_exists('filter_type', $field) ? $field['filter_type'] : (array_key_exists('type', $field) ? $field['type'] : false));
                     if (($type == 'date' || $type == 'datetime') && is_string($value)) {
-                        $value = Tools::unSerialize($value);
+                        $value = json_decode($value, true);
                     }
                     $key = isset($tmpTab[1]) ? $tmpTab[0].'.`'.$tmpTab[1].'`' : '`'.$tmpTab[0].'`';
 
@@ -1304,11 +1260,11 @@ class Stripe extends PaymentModule
     }
 
     /**
-     * @param $fieldsList
-     * @param $key
-     * @param $filter
+     * @param array $fieldsList
+     * @param string $key
+     * @param string $filter
      *
-     * @return bool
+     * @return array|false
      */
     protected function filterToField($fieldsList, $key, $filter)
     {
@@ -1358,13 +1314,11 @@ class Stripe extends PaymentModule
         $this->context->smarty->assign(
             [
                 'module_url' => $this->moduleUrl.'&menu='.static::MENU_SETTINGS,
-                'tls_ok'     => (int) Configuration::get(static::TLS_OK),
                 'baseUrl'    => $this->baseUrl,
             ]
         );
 
         $output .= $this->display(__FILE__, 'views/templates/admin/configure.tpl');
-        $output .= $this->display(__FILE__, 'views/templates/admin/tlscheck.tpl');
 
         $output .= $this->renderGeneralOptions();
 
@@ -1376,8 +1330,6 @@ class Stripe extends PaymentModule
      *
      * @return string HTML
      *
-     * @throws Exception
-     * @throws HTMLPurifier_Exception
      * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
      * @throws SmartyException
@@ -2056,7 +2008,6 @@ class Stripe extends PaymentModule
 
         $invoiceAddress = new Address((int) $cart->id_address_invoice);
 
-        $autoplay = true;
         $this->context->smarty->assign(
             [
                 'stripe_name'                   => $invoiceAddress->firstname.' '.$invoiceAddress->lastname,
@@ -2081,7 +2032,7 @@ class Stripe extends PaymentModule
                 'stripe_shopname'               => $this->context->shop->name,
                 'showPaymentLogos'              => Configuration::get(static::SHOW_PAYMENT_LOGOS),
                 'stripeShopThumb'               => str_replace('http://', 'https://', $this->context->link->getMediaLink(__PS_BASE_URI__.'modules/stripe/views/img/shop'.$this->getShopId().'.jpg')),
-                'autoplay'                      => $autoplay,
+                'autoplay'                      => true,
                 'local_module_dir'              => _PS_MODULE_DIR_,
                 'params'                        => $params,
             ]
@@ -2255,7 +2206,7 @@ class Stripe extends PaymentModule
         if ($creditCard) {
             try {
                 $this->context->smarty->assign('stripe_client_secret',  $this->getPaymentIntentSecret());
-            } catch (\ThirtyBeesStripe\Stripe\Error\ApiConnection $e) {
+            } catch (\Stripe\Exception\ApiConnectionException $e) {
                 $this->context->smarty->assign('stripe_error', $e->getMessage());
             }
         }
@@ -2312,22 +2263,26 @@ class Stripe extends PaymentModule
     public function hookDisplayAdminOrder($params)
     {
         $cookie = new Cookie('stripe');
-        if ($cookie->error) {
-            $this->context->controller->errors[] = $cookie->error;
+
+        /** @var AdminController $controller */
+        $controller = $this->context->controller;
+
+        if (isset($cookie->error)) {
+            $controller->errors[] = $cookie->error;
         }
-        if ($cookie->confirmation) {
-            $this->context->controller->confirmations[] = $cookie->confirmation;
+        if (isset($cookie->confirmation)) {
+            $controller->confirmations[] = $cookie->confirmation;
         }
         unset($cookie->error);
         unset($cookie->confirmation);
         $cookie->write();
 
-        if (Tools::getValue('stripeRefund') === 'refunded' && empty($this->context->controller->errors)) {
-            $this->context->controller->confirmations[] = $this->l('The refund via Stripe has been successfully processed');
+        if (Tools::getValue('stripeRefund') === 'refunded' && empty($controller->errors)) {
+            $controller->confirmations[] = $this->l('The refund via Stripe has been successfully processed');
         }
 
         if (StripeTransaction::getTransactionsByOrderId($params['id_order'], true)) {
-            $this->context->controller->addJS($this->_path.'views/js/sweetalert-2.1.0.min.js');
+            $controller->addJS($this->_path.'views/js/sweetalert-2.1.0.min.js');
 
             $order = new Order($params['id_order']);
             $orderCurrency = new Currency($order->id_currency);
@@ -2357,8 +2312,8 @@ class Stripe extends PaymentModule
                     'stripe_module_review_action' => $this->context->link->getAdminLink('AdminModules', true).
                         "&configure={$this->name}&tab_module={$this->tab}&module_name={$this->name}&orderstripereview",
                     'id_order'                    => (int) $order->id,
-                    'canViewStripeRefunds'        => $this->context->controller->tabAccess['view'],
-                    'canEditStripeRefunds'        => $this->context->controller->tabAccess['edit'],
+                    'canViewStripeRefunds'        => true,
+                    'canEditStripeRefunds'        => true,
                 ]
             );
 
@@ -2373,9 +2328,10 @@ class Stripe extends PaymentModule
      *
      * @return void
      *
-     * @throws Adapter_Exception
      * @throws PrestaShopException
      * @since 1.6.0
+     * @noinspection PhpArrayWriteIsNotUsedInspection
+     * @noinspection PhpArrayUsedOnlyForWriteInspection
      */
     public function hookActionAdminOrdersListingFieldsModifier($params)
     {
@@ -2496,7 +2452,6 @@ class Stripe extends PaymentModule
         }
 
         $helperList = new HelperList();
-        $helperList->id = 1;
         $helperList->list_id = 'stripe_transaction';
         $helperList->shopLinkType = false;
         $helperList->no_link = true;
@@ -2566,7 +2521,7 @@ class Stripe extends PaymentModule
         $doc->loadHTML(mb_convert_encoding($listHtml, 'HTML-ENTITIES', 'UTF-8'));
         $node = $doc->getElementsByTagName('table')->item(0);
 
-        return (string) '<h4>'.$this->l('Transactions & Events').'</h4>'.$doc->saveXML($node->parentNode);
+        return '<h4>' .$this->l('Transactions & Events').'</h4>'.$doc->saveXML($node->parentNode);
     }
 
     /**
@@ -2575,13 +2530,12 @@ class Stripe extends PaymentModule
      * @param Module $module
      *
      * @return void
-     * @throws Adapter_Exception
      * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
      */
     public function hookActionModuleInstallAfter($module)
     {
-        if (!isset($module->name) || empty($module->name)) {
+        if (empty($module->name)) {
             return;
         }
 
@@ -2687,23 +2641,6 @@ class Stripe extends PaymentModule
     }
 
     /**
-     * Add information message
-     *
-     * @param string $message Message
-     * @param bool   $private
-     */
-    protected function addInformation($message, $private = false)
-    {
-        if (!Tools::isSubmit('configure')) {
-            if (!$private) {
-                $this->context->controller->informations[] = '<a href="'.$this->baseUrl.'">'.$this->displayName.': '.$message.'</a>';
-            }
-        } else {
-            $this->context->controller->informations[] = $message;
-        }
-    }
-
-    /**
      * Add confirmation message
      *
      * @param string $message Message
@@ -2711,29 +2648,14 @@ class Stripe extends PaymentModule
      */
     protected function addConfirmation($message, $private = false)
     {
+        /** @var AdminController $controller */
+        $controller = $this->context->controller;
         if (!Tools::isSubmit('configure')) {
             if (!$private) {
-                $this->context->controller->confirmations[] = '<a href="'.$this->baseUrl.'">'.$this->displayName.': '.$message.'</a>';
+                $controller->confirmations[] = '<a href="'.$this->baseUrl.'">'.$this->displayName.': '.$message.'</a>';
             }
         } else {
-            $this->context->controller->confirmations[] = $message;
-        }
-    }
-
-    /**
-     * Add warning message
-     *
-     * @param string $message Message
-     * @param bool   $private
-     */
-    protected function addWarning($message, $private = false)
-    {
-        if (!Tools::isSubmit('configure')) {
-            if (!$private) {
-                $this->context->controller->warnings[] = '<a href="'.$this->baseUrl.'">'.$this->displayName.': '.$message.'</a>';
-            }
-        } else {
-            $this->context->controller->warnings[] = $message;
+            $controller->confirmations[] = $message;
         }
     }
 
@@ -2744,14 +2666,16 @@ class Stripe extends PaymentModule
      */
     protected function addError($message, $private = false)
     {
+        /** @var AdminController $controller */
+        $controller = $this->context->controller;
         if (!Tools::isSubmit('configure')) {
             if (!$private) {
-                $this->context->controller->errors[] = '<a href="'.$this->baseUrl.'">'.$this->displayName.': '.$message.'</a>';
+                $controller->errors[] = '<a href="'.$this->baseUrl.'">'.$this->displayName.': '.$message.'</a>';
             }
         } else {
             // Do not add error in this case
             // It will break execution of AdminController
-            $this->context->controller->warnings[] = $message;
+            $controller->warnings[] = $message;
         }
     }
 
@@ -2761,9 +2685,9 @@ class Stripe extends PaymentModule
      * This method returns existing session, or creates a new one
      *
      * @return string
-     * @throws Adapter_Exception
      * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
+     * @throws \Stripe\Exception\ApiErrorException
      */
     public function getCheckoutSession()
     {
@@ -2788,10 +2712,10 @@ class Stripe extends PaymentModule
      * This method returns existing payment intent, or creates a new one
      *
      * @return string
-     * @throws Adapter_Exception
      * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
-     * @throws \ThirtyBeesStripe\Stripe\Error\ApiConnection
+     * @throws \Stripe\Exception\ApiConnectionException
+     * @throws \Stripe\Exception\ApiErrorException
      */
     public function getPaymentIntentSecret()
     {
@@ -2813,7 +2737,6 @@ class Stripe extends PaymentModule
 
     /**
      * @return StripeApi
-     * @throws PrestaShopException
      */
     public function getStripeApi()
     {
@@ -2826,9 +2749,7 @@ class Stripe extends PaymentModule
      */
     private function setConfirmationMessage($confirmation)
     {
-        $cookie = new Cookie('stripe');
-        $cookie->confirmation = $confirmation;
-        $cookie->write();
+        $this->saveToCookie('confirmation', $confirmation);
     }
 
     /**
@@ -2837,11 +2758,23 @@ class Stripe extends PaymentModule
      */
     private function setErrorMessage($error)
     {
-        $cookie = new Cookie('stripe');
         if (is_array($error)) {
             $error = implode(', ', $error);
         }
-        $cookie->error = $error;
+        $this->saveToCookie('error', $error);
+    }
+
+    /**
+     * @param string $type
+     * @param string $message
+     *
+     * @return void
+     * @throws PrestaShopException
+     */
+    private function saveToCookie($type, $message)
+    {
+        $cookie = new Cookie('stripe');
+        $cookie->__set($type, $message);
         $cookie->write();
     }
 }

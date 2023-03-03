@@ -19,11 +19,13 @@
 
 namespace StripeModule;
 
-use \Configuration;
-use \Cart;
-use \Context;
-use \Customer;
-use ThirtyBeesStripe\Stripe\Error\ApiConnection;
+use Configuration;
+use Cart;
+use Context;
+use Customer;
+use PrestaShopDatabaseException;
+use PrestaShopException;
+use Stripe\Exception\ApiErrorException;
 
 if (!defined('_TB_VERSION_')) {
     return;
@@ -34,23 +36,33 @@ if (!defined('_TB_VERSION_')) {
  */
 class StripeApi
 {
-    /** @var GuzzleClient */
+
+    /**
+     * @var GuzzleClient
+     */
     private $guzzle;
 
     /**
      * StripeApi constructor.
-     * @param null $liveMode
-     * @throws \PrestaShopException
+     *
+     * @param bool|null $liveMode
+     *
+     * @throws PrestaShopException
      */
     public function __construct($liveMode = null)
     {
         if (is_null($liveMode)) {
             $liveMode = Configuration::get(\Stripe::GO_LIVE);
         }
+        $apiVersion = Configuration::get(\Stripe::STRIPE_API_VERSION);
+        if (! $apiVersion) {
+            $apiVersion = null;
+        }
 
         $this->guzzle = new GuzzleClient();
-        \ThirtyBeesStripe\Stripe\ApiRequestor::setHttpClient($this->guzzle);
-        \ThirtyBeesStripe\Stripe\Stripe::setApiKey($liveMode
+        \Stripe\ApiRequestor::setHttpClient($this->guzzle);
+        \Stripe\Stripe::setApiVersion($apiVersion);
+        \Stripe\Stripe::setApiKey($liveMode
             ? Configuration::get(\Stripe::SECRET_KEY_LIVE)
             : Configuration::get(\Stripe::SECRET_KEY_TEST)
         );
@@ -58,11 +70,11 @@ class StripeApi
 
     /**
      * @param Cart $cart
+     *
      * @return string
-     * @throws ApiConnection
-     * @throws \Adapter_Exception
-     * @throws \PrestaShopDatabaseException
-     * @throws \PrestaShopException
+     *
+     * @throws PrestaShopException
+     * @throws ApiErrorException
      */
     public function createCheckoutSession(Cart $cart)
     {
@@ -72,22 +84,29 @@ class StripeApi
         $validationLink = $link->getModuleLink('stripe', 'validation', ['type' => 'checkout']);
         $sessionData = [
             'payment_method_types' => ['card'],
-            'line_items' => [[
-                'amount' => $total,
-                'currency' => Utils::getCurrencyCode($cart),
-                'quantity' => 1,
-                'name' => sprintf('Purchase from %s', Configuration::get('PS_SHOP_NAME')),
-            ]],
+            'line_items' => [
+                [
+                    'quantity' => 1,
+                    'price_data' => [
+                        'currency' => Utils::getCurrencyCode($cart),
+                        'unit_amount' => $total,
+                        'product_data' => [
+                            'name' => sprintf('Purchase from %s', Configuration::get('PS_SHOP_NAME')),
+                        ],
+                    ]
+                ]
+            ],
+            'mode' => 'payment',
             'success_url' => $validationLink,
             'cancel_url' => $validationLink,
         ];
 
-        if ((bool)Configuration::get(\Stripe::COLLECT_BILLING)) {
+        if (Configuration::get(\Stripe::COLLECT_BILLING)) {
             $sessionData['billing_address_collection'] = 'required';
         }
 
         // manual capture
-        if ((bool)Configuration::get(\Stripe::MANUAL_CAPTURE)) {
+        if (Configuration::get(\Stripe::MANUAL_CAPTURE)) {
             $sessionData['payment_intent_data'] = [
                 'capture_method' => 'manual'
             ];
@@ -99,7 +118,7 @@ class StripeApi
             $sessionData['customer_email'] = $customer->email;
         }
 
-        $session = \ThirtyBeesStripe\Stripe\Checkout\Session::create($sessionData);
+        $session = \Stripe\Checkout\Session::create($sessionData);
         return $session->id;
     }
 
@@ -108,35 +127,47 @@ class StripeApi
      *
      * @param string $id
      *
-     * @throws ApiConnection
-     * @return \ThirtyBeesStripe\Stripe\Checkout\Session
+     * @throws ApiErrorException
+     * @return \Stripe\Checkout\Session
      */
     public function getCheckoutSession($id)
     {
-        return \ThirtyBeesStripe\Stripe\Checkout\Session::retrieve($id);
+        return \Stripe\Checkout\Session::retrieve($id);
     }
 
     /**
      * @param string $id
      *
-     * @throws ApiConnection
-     * @return \ThirtyBeesStripe\Stripe\PaymentIntent
+     * @return \Stripe\PaymentIntent
+     *
+     * @throws ApiErrorException
      */
     public function getPaymentIntent($id)
     {
-        return \ThirtyBeesStripe\Stripe\PaymentIntent::retrieve($id);
+        return \Stripe\PaymentIntent::retrieve($id);
+    }
+
+    /**
+     * @param $chargeId
+     *
+     * @return \Stripe\Charge
+     *
+     * @throws ApiErrorException
+     */
+    public function getCharge($chargeId)
+    {
+        return \Stripe\Charge::retrieve($chargeId);
     }
 
     /**
      * Create payment intent
      * @param Cart $cart
      *
-     * @return \ThirtyBeesStripe\Stripe\PaymentIntent
+     * @return \Stripe\PaymentIntent
      *
-     * @throws ApiConnection
-     * @throws \Adapter_Exception
-     * @throws \PrestaShopDatabaseException
-     * @throws \PrestaShopException
+     * @throws ApiErrorException
+     * @throws PrestaShopDatabaseException
+     * @throws PrestaShopException
      */
     public function createPaymentIntent(Cart $cart)
     {
@@ -146,9 +177,9 @@ class StripeApi
             'currency' => Utils::getCurrencyCode($cart),
         ];
         // manual capture
-        if ((bool)Configuration::get(\Stripe::MANUAL_CAPTURE)) {
+        if (Configuration::get(\Stripe::MANUAL_CAPTURE)) {
             $paymentIntentData['capture_method'] = 'manual';
         }
-        return \ThirtyBeesStripe\Stripe\PaymentIntent::create($paymentIntentData);
+        return \Stripe\PaymentIntent::create($paymentIntentData);
     }
 }
