@@ -2518,7 +2518,7 @@ class Stripe extends PaymentModule
         $listHtml = $helperList->generateList($results, $fieldsList);
 
         $doc = new DOMDocument('1.0', 'UTF-8');
-        $doc->loadHTML(mb_convert_encoding($listHtml, 'HTML-ENTITIES', 'UTF-8'));
+        $doc->loadHTML('<meta charset="UTF-8">'.$listHtml);
         $node = $doc->getElementsByTagName('table')->item(0);
 
         return '<h4>' .$this->l('Transactions & Events').'</h4>'.$doc->saveXML($node->parentNode);
