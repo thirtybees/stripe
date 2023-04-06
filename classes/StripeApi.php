@@ -82,6 +82,7 @@ class StripeApi
         $total = Utils::getCartTotal($cart);
         $link = $context->link;
         $validationLink = $link->getModuleLink('stripe', 'validation', ['type' => 'checkout']);
+        $module = \Module::getInstanceByName('stripe');
         $sessionData = [
             'payment_method_types' => ['card'],
             'line_items' => [
@@ -91,7 +92,7 @@ class StripeApi
                         'currency' => Utils::getCurrencyCode($cart),
                         'unit_amount' => $total,
                         'product_data' => [
-                            'name' => sprintf('Purchase from %s', Configuration::get('PS_SHOP_NAME')),
+                            'name' => sprintf($module->l('Purchase from %s', 'StripeApi'), Configuration::get('PS_SHOP_NAME')),
                         ],
                     ]
                 ]
