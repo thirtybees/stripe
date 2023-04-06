@@ -26,6 +26,7 @@ use Customer;
 use PrestaShopDatabaseException;
 use PrestaShopException;
 use Stripe\Exception\ApiErrorException;
+use Translate;
 
 if (!defined('_TB_VERSION_')) {
     return;
@@ -91,7 +92,7 @@ class StripeApi
                         'currency' => Utils::getCurrencyCode($cart),
                         'unit_amount' => $total,
                         'product_data' => [
-                            'name' => sprintf('Purchase from %s', Configuration::get('PS_SHOP_NAME')),
+                            'name' => sprintf($this->l('Purchase from %s'), Configuration::get('PS_SHOP_NAME')),
                         ],
                     ]
                 ]
@@ -181,5 +182,15 @@ class StripeApi
             $paymentIntentData['capture_method'] = 'manual';
         }
         return \Stripe\PaymentIntent::create($paymentIntentData);
+    }
+
+    /**
+     * @param string $string
+     *
+     * @return string
+     */
+    public function l($string)
+    {
+        return Translate::getModuleTranslation('stripe', $string, 'StripeApi');
     }
 }
