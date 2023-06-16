@@ -21,6 +21,11 @@ if (!defined('_TB_VERSION_')) {
     exit;
 }
 
+/**
+ * @return true
+ * @throws PrestaShopDatabaseException
+ * @throws PrestaShopException
+ */
 function upgrade_module_1_1_0()
 {
     Db::getInstance()->execute('ALTER TABLE `'._DB_PREFIX_.'stripe_transaction` ADD `source_type` VARCHAR(255) NULL');

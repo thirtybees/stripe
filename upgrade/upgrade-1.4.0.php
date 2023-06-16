@@ -21,16 +21,19 @@ if (!defined('_TB_VERSION_')) {
     exit;
 }
 
+/**
+ * @return true
+ * @throws PrestaShopDatabaseException
+ * @throws PrestaShopException
+ */
 function upgrade_module_1_4_0()
 {
     $key = 'STRIPE_INCLUDE_BOOTSTRAP';
-    $values = true;
-    $html = false;
 
     foreach (Shop::getShops() as $shop) {
-        Configuration::updateValue($key, $values, $html, $shop['id_shop_group'], $shop['id_shop']);
+        Configuration::updateValue($key, true, false, $shop['id_shop_group'], $shop['id_shop']);
     }
-    Configuration::updateGlobalValue($key, $values, $html);
+    Configuration::updateGlobalValue($key, true, false);
 
     return true;
 }

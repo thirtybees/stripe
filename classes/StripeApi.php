@@ -149,7 +149,7 @@ class StripeApi
     }
 
     /**
-     * @param $chargeId
+     * @param array|string $chargeId
      *
      * @return \Stripe\Charge
      *

@@ -21,6 +21,11 @@ if (!defined('_TB_VERSION_')) {
     exit;
 }
 
+/**
+ * @return true
+ * @throws PrestaShopDatabaseException
+ * @throws PrestaShopException
+ */
 function upgrade_module_1_2_0()
 {
     foreach (Shop::getShops(true) as $shop) {

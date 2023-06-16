@@ -2593,8 +2593,8 @@ class Stripe extends PaymentModule
     /**
      * Get Tab name from database
      *
-     * @param $className string Class name of tab
-     * @param $idLang    int Language id
+     * @param string $className Class name of tab
+     * @param int $idLang Language id
      *
      * @return string Returns the localized tab name
      */

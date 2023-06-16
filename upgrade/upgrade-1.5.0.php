@@ -21,6 +21,13 @@ if (!defined('_TB_VERSION_')) {
     exit;
 }
 
+/**
+ * @param Stripe $module
+ *
+ * @return true
+ * @throws PrestaShopDatabaseException
+ * @throws PrestaShopException
+ */
 function upgrade_module_1_5_0($module)
 {
     $module->registerHook('displayPaymentRequestButton');
