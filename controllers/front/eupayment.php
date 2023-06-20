@@ -54,16 +54,16 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
     public function initContent()
     {
         if (!Module::isEnabled('stripe')) {
-            Tools::redirect('index.php?controller=order&step=3');
+            Tools::redirect($this->getCheckoutUrl());
         }
         $cart = $this->context->cart;
         if (!$cart->id_customer || !$cart->id_address_delivery || !$cart->id_address_invoice || !$this->module->active) {
-            Tools::redirect('index.php?controller=order&step=3');
+            Tools::redirect($this->getCheckoutUrl());
         }
 
         $customer = new Customer($cart->id_customer);
         if (!Validate::isLoadedObject($customer)) {
-            Tools::redirect('index.php?controller=order&step=3');
+            Tools::redirect($this->getCheckoutUrl());
         }
 
         parent::initContent();
@@ -445,10 +445,20 @@ class StripeEupaymentModuleFrontController extends ModuleFrontController
      * @return void
      * @throws PrestaShopException
      */
-    protected function performRedirect(\Stripe\Source $source): void
+    protected function performRedirect(\Stripe\Source $source)
     {
-        if (isset($source->performRedirect->url)) {
-            Tools::redirect($source->performRedirect->url);
-        }
+        $url = isset($source->redirect->url)
+            ? $source->redirect->url
+            : $this->getCheckoutUrl();
+        Tools::redirect($url);
+    }
+
+    /**
+     * @return string
+     * @throws PrestaShopException
+     */
+    protected function getCheckoutUrl()
+    {
+        return Context::getContext()->link->getPageLink('order', null, null, 'step=3');
     }
 }
