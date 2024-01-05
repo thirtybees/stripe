@@ -2338,7 +2338,8 @@ class Stripe extends PaymentModule
         static $called = false;
         if (!$called) {
             $params['fields']['payment']['callback'] = 'displayPaymentText';
-            $params['fields']['payment']['callback_object'] = '\\StripeModule\\StripeReview';
+            $params['fields']['payment']['callback_object'] = StripeReview::class;
+            $params['fields']['payment']['callback_export'] = false;
             if (Tools::isSubmit('submitBulkupdateStripeCapture')) {
                 $this->processBulkCapture();
             }
