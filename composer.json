@@ -1,6 +1,6 @@
 {
     "require": {
-        "stripe/stripe-php": "^10.8.0"
+        "stripe/stripe-php": "^13"
     },
     "require-dev": {
     },
@@ -8,5 +8,11 @@
         "psr-4": {
             "StripeModule\\": "classes/"
         }
+    },
+    "config": {
+        "platform": {
+            "php": "7.4"
+        }
     }
+
 }

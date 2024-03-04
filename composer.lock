@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a72f736f00f44ab43d8b0724439e2be5",
+    "content-hash": "c6df4aec63bc32d95e6ee9394e99260e",
     "packages": [
         {
             "name": "stripe/stripe-php",
-            "version": "v10.8.0",
+            "version": "v13.13.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/stripe/stripe-php.git",
-                "reference": "0783c59483641452b957f4b75f9e370f1215a803"
+                "reference": "8dc58bab25f222a74d1157d4ca9e9e48451dd0c1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/stripe/stripe-php/zipball/0783c59483641452b957f4b75f9e370f1215a803",
-                "reference": "0783c59483641452b957f4b75f9e370f1215a803",
+                "url": "https://api.github.com/repos/stripe/stripe-php/zipball/8dc58bab25f222a74d1157d4ca9e9e48451dd0c1",
+                "reference": "8dc58bab25f222a74d1157d4ca9e9e48451dd0c1",
                 "shasum": ""
             },
             "require": {
@@ -28,10 +28,8 @@
             },
             "require-dev": {
                 "friendsofphp/php-cs-fixer": "3.5.0",
-                "php-coveralls/php-coveralls": "^2.5",
                 "phpstan/phpstan": "^1.2",
-                "phpunit/phpunit": "^5.7 || ^9.0",
-                "squizlabs/php_codesniffer": "^3.3"
+                "phpunit/phpunit": "^5.7 || ^9.0"
             },
             "type": "library",
             "extra": {
@@ -63,9 +61,9 @@
             ],
             "support": {
                 "issues": "https://github.com/stripe/stripe-php/issues",
-                "source": "https://github.com/stripe/stripe-php/tree/v10.8.0"
+                "source": "https://github.com/stripe/stripe-php/tree/v13.13.0"
             },
-            "time": "2023-03-02T21:27:35+00:00"
+            "time": "2024-02-29T20:22:15+00:00"
         }
     ],
     "packages-dev": [],
@@ -76,5 +74,8 @@
     "prefer-lowest": false,
     "platform": [],
     "platform-dev": [],
-    "plugin-api-version": "2.3.0"
+    "platform-overrides": {
+        "php": "7.4"
+    },
+    "plugin-api-version": "2.6.0"
 }
