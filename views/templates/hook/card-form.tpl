@@ -245,15 +245,6 @@
             var example = document.querySelector('.thirtybees');
             var form = example.querySelector('form');
 
-            function updateQueryStringParameter(uri, key, value) {
-                var re = new RegExp("([?&])" + key + "=.*?(&|$)", "i");
-                var separator = uri.indexOf('?') !== -1 ? "&" : "?";
-                if (uri.match(re)) {
-                    return uri.replace(re, '$1' + key + "=" + value + '$2');
-                } else {
-                    return uri + separator + key + "=" + value;
-                }
-            }
 
             function enableInputs() {
                 Array.prototype.forEach.call(
@@ -335,7 +326,7 @@
                         // Let Stripe.js handle the rest of the payment flow.
                         stripe.handleCardPayment('{$stripe_client_secret|escape:'javascript'}')
                         .then(function () {
-                            window.location = '{$link->getModuleLink('stripe', 'validation', ['type' => 'cc'], true)|escape:'javascript'}';
+                            window.location = '{$validationUrl|escape:'javascript'}';
                         });
                     }
                 });
@@ -397,7 +388,7 @@
                             document.getElementById('error-text-message').innerText = error.message;
                             document.getElementById('error-text').style.display = 'block';
                         } else {
-                            window.location = '{$link->getModuleLink('stripe', 'validation', ['type' => 'cc'], true)|escape:'javascript'}';
+                            window.location = '{$validationUrl|escape:'javascript'}';
                         }
                     });
 

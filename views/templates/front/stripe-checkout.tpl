@@ -40,11 +40,11 @@
                     return setTimeout(initStripe, 100);
                 }
 
-                var stripe = Stripe('{$stripe_publishable_key|escape:'javascript'}');
+                var stripe = Stripe('{$stripePublishableKey|escape:'javascript'}');
                 var element = document.getElementById('stripe_payment_link');
                 var triggerStripe = function() {
                     stripe
-                        .redirectToCheckout({ sessionId: '{$stripe_session_id|escape:'javascript' }'})
+                        .redirectToCheckout({ sessionId: '{$sessionId|escape:'javascript' }'})
                         .then(function(result) {
                             console.log(result);
                         });
@@ -53,9 +53,7 @@
                     e.preventDefault();
                     triggerStripe();
                 });
-                {if $autoplay}
                 triggerStripe();
-                {/if}
             }
 
             documentReady(initStripe);

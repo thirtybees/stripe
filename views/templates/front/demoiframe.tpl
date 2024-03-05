@@ -2,7 +2,6 @@
 <html>
 <head>
   {if !empty($stripe_checkout_font_family)}<link rel="stylesheet" href="https://fonts.googleapis.com/css?family={$stripe_checkout_font_family|replace:' ':'+'|escape:'htmlall'}" />{/if}
-  {include file="./assets.tpl"}
   <style>
     body {
       font-family: {if !empty($stripe_checkout_font_family)}{$stripe_checkout_font_family|escape:'htmlall'}, {/if}Inter UI, Open Sans, Segoe UI, sans-serif;
@@ -133,6 +132,7 @@
       *width: 100%;
     }
   </style>
+  <script type="text/javascript" src="{$stripeJs}"></script>
 </head>
 <body>
   <div id="tb-stripe-elements">
@@ -193,20 +193,6 @@
           setTimeout(initElements, 10);
 
           return;
-        }
-
-        var example = document.querySelector('.thirtybees');
-        var form = example.querySelector('form');
-
-        function updateQueryStringParameter(uri, key, value) {
-          var re = new RegExp("([?&])" + key + "=.*?(&|$)", "i");
-          var separator = uri.indexOf('?') !== -1 ? "&" : "?";
-          if (uri.match(re)) {
-            return uri.replace(re, '$1' + key + "=" + value + '$2');
-          }
-          else {
-            return uri + separator + key + "=" + value;
-          }
         }
 
         function sendHeight() {

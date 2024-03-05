@@ -17,6 +17,8 @@
  * @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
 
+use StripeModule\Utils;
+
 if (!defined('_TB_VERSION_')) {
     exit;
 }
@@ -36,7 +38,6 @@ class StripeDemoIframeModuleFrontController extends ModuleFrontController
     /**
      * StripeDemoIframeModuleFrontController constructor.
      *
-     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
      */
     public function __construct()
@@ -69,29 +70,18 @@ class StripeDemoIframeModuleFrontController extends ModuleFrontController
      */
     public function initContent()
     {
-        if (!$this->module->active ||
-            (!Configuration::get(Stripe::SECRET_KEY_TEST) && !Configuration::get(Stripe::PUBLISHABLE_KEY_TEST))
-            && (!Configuration::get(Stripe::SECRET_KEY_LIVE) && !Configuration::get(Stripe::PUBLISHABLE_KEY_LIVE))
-        ) {
-            exit;
+        if (!$this->module->active) {
+            die('module not enabled');
         }
 
         $this->context->smarty->assign(
             [
-                'stripe_name'                             => 'Demo demo',
+                'stripeJs'                                => Utils::stripeJavascriptUrl(),
                 'stripe_currency'                         => 'USD',
                 'stripe_country'                          => 'US',
                 'stripe_amount'                           => 1000,
-                'stripe_amount_string'                    => '10.00',
-                'id_cart'                                 => 1,
                 'stripe_publishable_key'                  => 'pk_test_6pRNASCoBOKtIshFeQd4XMUh',
-                'stripe_locale'                           => Stripe::getStripeLanguage(Context::getContext()->language->language_code),
-                'stripe_checkout'                         => true,
-                'stripe_cc_form'                          => true,
                 'stripe_payment_request'                  => Configuration::get(Stripe::STRIPE_PAYMENT_REQUEST),
-                'stripe_shopname'                         => $this->context->shop->name,
-                'local_module_dir'                        => _PS_MODULE_DIR_,
-                'module_dir'                              => __PS_BASE_URI__.'modules/stripe/',
                 'stripe_input_placeholder_color'          => Configuration::get(Stripe::INPUT_PLACEHOLDER_COLOR.'_TEMP'),
                 'stripe_button_background_color'          => Configuration::get(Stripe::BUTTON_BACKGROUND_COLOR.'_TEMP'),
                 'stripe_button_foreground_color'          => Configuration::get(Stripe::BUTTON_FOREGROUND_COLOR.'_TEMP'),

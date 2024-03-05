@@ -23,9 +23,13 @@ use Configuration;
 use Cart;
 use Context;
 use Customer;
-use PrestaShopDatabaseException;
 use PrestaShopException;
+use Stripe\Charge;
+use Stripe\Checkout\Session;
+use Stripe\Event;
 use Stripe\Exception\ApiErrorException;
+use Stripe\PaymentIntent;
+use Stripe\Refund;
 use Translate;
 
 if (!defined('_TB_VERSION_')) {
@@ -38,32 +42,19 @@ if (!defined('_TB_VERSION_')) {
 class StripeApi
 {
 
-    /**
-     * @var GuzzleClient
-     */
-    private $guzzle;
 
     /**
      * StripeApi constructor.
      *
-     * @param bool|null $liveMode
+     * @param string $moduleVersion
      *
      * @throws PrestaShopException
      */
-    public function __construct($liveMode = null)
+    public function __construct($moduleVersion)
     {
-        if (is_null($liveMode)) {
-            $liveMode = Configuration::get(\Stripe::GO_LIVE);
-        }
-        $apiVersion = Configuration::get(\Stripe::STRIPE_API_VERSION);
-        if (! $apiVersion) {
-            $apiVersion = null;
-        }
-
-        $this->guzzle = new GuzzleClient();
-        \Stripe\ApiRequestor::setHttpClient($this->guzzle);
-        \Stripe\Stripe::setApiVersion($apiVersion);
-        \Stripe\Stripe::setApiKey($liveMode
+        \Stripe\Stripe::setAppInfo('thirty bees', $moduleVersion, 'https://thirtybees.com/');
+        \Stripe\ApiRequestor::setHttpClient(new GuzzleClient());
+        \Stripe\Stripe::setApiKey(Configuration::get(\Stripe::GO_LIVE)
             ? Configuration::get(\Stripe::SECRET_KEY_LIVE)
             : Configuration::get(\Stripe::SECRET_KEY_TEST)
         );
@@ -71,20 +62,23 @@ class StripeApi
 
     /**
      * @param Cart $cart
+     * @param string $methodId
      *
-     * @return string
+     * @return Session
      *
-     * @throws PrestaShopException
      * @throws ApiErrorException
+     * @throws PrestaShopException
      */
-    public function createCheckoutSession(Cart $cart)
+    public function createCheckoutSession(Cart $cart, string $methodId)
     {
         $context = Context::getContext();
         $total = Utils::getCartTotal($cart);
-        $link = $context->link;
-        $validationLink = $link->getModuleLink('stripe', 'validation', ['type' => 'checkout']);
+        $validationLink = Utils::getValidationUrl($methodId);
+        $methods = [
+            \Stripe\PaymentMethod::TYPE_CARD
+        ];
         $sessionData = [
-            'payment_method_types' => ['card'],
+            'payment_method_types' => $methods,
             'line_items' => [
                 [
                     'quantity' => 1,
@@ -119,8 +113,7 @@ class StripeApi
             $sessionData['customer_email'] = $customer->email;
         }
 
-        $session = \Stripe\Checkout\Session::create($sessionData);
-        return $session->id;
+        return \Stripe\Checkout\Session::create($sessionData);
     }
 
     /**
@@ -162,26 +155,52 @@ class StripeApi
 
     /**
      * Create payment intent
-     * @param Cart $cart
      *
-     * @return \Stripe\PaymentIntent
+     * @param Cart $cart
+     * @param string $methodType
+     * @param array $methodData
+     * @param string $returnUrl
+     *
+     * @return PaymentIntent
      *
      * @throws ApiErrorException
-     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
      */
-    public function createPaymentIntent(Cart $cart)
-    {
+    public function createPaymentIntent(
+        Cart $cart,
+        string $methodType = \Stripe\PaymentMethod::TYPE_CARD,
+        array $methodData = [],
+        string $returnUrl = ""
+    ) {
         $paymentIntentData = [
-            'payment_method_types' => ['card'],
+            'payment_method_types' => [ $methodType ],
             'amount' => Utils::getCartTotal($cart),
             'currency' => Utils::getCurrencyCode($cart),
         ];
+        if ($returnUrl) {
+            $paymentIntentData['confirm'] = true;
+            $paymentIntentData['return_url'] = $returnUrl;
+        }
+        if ($methodData) {
+            $paymentIntentData['payment_method_data'] = $methodData;
+        }
         // manual capture
-        if (Configuration::get(\Stripe::MANUAL_CAPTURE)) {
+        if ($methodType === \Stripe\PaymentMethod::TYPE_CARD && Configuration::get(\Stripe::MANUAL_CAPTURE)) {
             $paymentIntentData['capture_method'] = 'manual';
         }
         return \Stripe\PaymentIntent::create($paymentIntentData);
+    }
+
+
+    /**
+     * @param string $eventId
+     *
+     * @return Event
+     * @throws ApiErrorException
+     */
+    public function getEvent($eventId)
+    {
+        return \Stripe\Event::retrieve($eventId);
     }
 
     /**
@@ -193,4 +212,40 @@ class StripeApi
     {
         return Translate::getModuleTranslation('stripe', $string, 'StripeApi');
     }
+
+    /**
+     * @param string $idCharge
+     * @param int $amount
+     *
+     * @return Refund
+     * @throws ApiErrorException
+     */
+    public function createRefund(string $idCharge, int $amount)
+    {
+        return \Stripe\Refund::create([
+            'charge' => $idCharge,
+            'amount' => $amount,
+            'metadata' => [
+                'from_back_office' => 'true',
+            ]
+        ]);
+    }
+
+    /**
+     * @param Charge $charge
+     * @param array $data
+     *
+     * @return Charge
+     * @throws ApiErrorException
+     */
+    public function updateCharge(\Stripe\Charge $charge, array $data = [])
+    {
+        if (! isset($data['metadata'])) {
+            $data['metadata'] = [];
+        }
+        $data['metadata']['from_back_office'] = 'true';
+
+        return \Stripe\Charge::update($charge->id, $data);
+    }
+
 }

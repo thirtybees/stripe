@@ -17,13 +17,12 @@
  * @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
 
-use StripeModule\GuzzleClient;
+use StripeModule\PaymentMethodsRepository;
 use StripeModule\PaymentProcessor;
 use StripeModule\StripeReview;
 use StripeModule\StripeTransaction;
 use StripeModule\StripeApi;
 use StripeModule\Utils;
-use Stripe\ApiRequestor;
 
 if (!defined('_TB_VERSION_')) {
     return;
@@ -38,129 +37,86 @@ class Stripe extends PaymentModule
 {
     const MENU_SETTINGS = 1;
     const MENU_TRANSACTIONS = 2;
-    const COLLECT_BILLING = 'STRIPE_COLLECT_BILLING';
-    const ALIPAY_BLOCK = 'STRIPE_ALIPAY_BLOCK'; // Separate Alipay block
+
+    // global settings
+    const ACCOUNT_COUNTRY = 'STRIPE_ACCOUNT_COUNTRY';
     const GO_LIVE = 'STRIPE_GO_LIVE';
-    const SECRET_KEY_TEST = 'STRIPE_SECRET_KEY_TEST';
+    const PUBLISHABLE_KEY_LIVE = 'STRIPE_PUBLISHABLE_KEY_LIVE';
     const PUBLISHABLE_KEY_TEST = 'STRIPE_PUBLISHABLE_KEY_TEST';
     const SECRET_KEY_LIVE = 'STRIPE_SECRET_KEY_LIVE';
-    const PUBLISHABLE_KEY_LIVE = 'STRIPE_PUBLISHABLE_KEY_LIVE';
-    const STATUS_VALIDATED = 'STRIPE_STAT_VALIDATED';
-    const STATUS_PARTIAL_REFUND = 'STRIPE_STAT_PART_REFUND';
-    const USE_STATUS_PARTIAL_REFUND = 'STRIPE_USE_STAT_PART_REFUND';
-    const USE_STATUS_AUTHORIZED = 'STRIPE_USE_STAT_AUTHORIZED';
-    const USE_STATUS_IN_REVIEW = 'STRIPE_USE_STAT_IN_REVIEW';
-    const STATUS_REFUND = 'STRIPE_STAT_REFUND';
-    const STATUS_SOFORT = 'STRIPE_STAT_SOFORT';
-    const STATUS_AUTHORIZED = 'STRIPE_STAT_AUTHORIZED';
-    const STATUS_IN_REVIEW = 'STRIPE_STAT_IN_REVIEW';
-    const USE_STATUS_REFUND = 'STRIPE_USE_STAT_REFUND';
-    const GENERATE_CREDIT_SLIP = 'STRIPE_CREDIT_SLIP';
+    const SECRET_KEY_TEST = 'STRIPE_SECRET_KEY_TEST';
+
+    // Order process settings
     const MANUAL_CAPTURE = 'STRIPE_MANUAL_CAPTURE';
-    const ACCOUNT_COUNTRY = 'STRIPE_ACCOUNT_COUNTRY';
+
+    // Order statuses
+    const USE_STATUS_AUTHORIZED = 'STRIPE_USE_STAT_AUTHORIZED';
+    const STATUS_AUTHORIZED = 'STRIPE_STAT_AUTHORIZED';
+
+    const USE_STATUS_IN_REVIEW = 'STRIPE_USE_STAT_IN_REVIEW';
+    const STATUS_IN_REVIEW = 'STRIPE_STAT_IN_REVIEW';
+
+    const STATUS_PROCESSING = 'STRIPE_STAT_SOFORT';
+    const STATUS_VALIDATED = 'STRIPE_STAT_VALIDATED';
+
+    // Full refunds
+    const USE_STATUS_REFUND = 'STRIPE_USE_STAT_REFUND';
+    const STATUS_REFUND = 'STRIPE_STAT_REFUND';
+    const GENERATE_CREDIT_SLIP = 'STRIPE_CREDIT_SLIP';
+
+    // Partial refurnds
+    const USE_STATUS_PARTIAL_REFUND = 'STRIPE_USE_STAT_PART_REFUND';
+    const STATUS_PARTIAL_REFUND = 'STRIPE_STAT_PART_REFUND';
+
+
+    // Payment Methods specific settings
+    const COLLECT_BILLING = 'STRIPE_COLLECT_BILLING';
     const SHOW_PAYMENT_LOGOS = 'STRIPE_PAYMENT_LOGOS';
-    const STRIPE_CHECKOUT = 'STRIPE_STRIPE_CHECKOUT';
-    const STRIPE_CC_FORM = 'STRIPE_STRIPE_CC_FORM';
+
+    // Credit Card customization
     const STRIPE_PAYMENT_REQUEST = 'STRIPE_STRIPE_PAYMENT_REQUEST';
-    const IDEAL = 'STRIPE_IDEAL';
-    const BANCONTACT = 'STRIPE_BANCONTACT';
-    const GIROPAY = 'STRIPE_GIROPAY';
-    const SOFORT = 'STRIPE_SOFORT';
-    const P24 = 'STRIPE_P24';
-    const OPTIONS_MODULE_SETTINGS = 1;
-    const INPUT_PLACEHOLDER_COLOR = 'STRIPE_INPUT_PLACEHOLDER_COLOR';
     const BUTTON_BACKGROUND_COLOR = 'STRIPE_BUTTON_BACKGROUND_COLOR';
     const BUTTON_FOREGROUND_COLOR = 'STRIPE_BUTTON_FOREGROUND_COLOR';
-    const HIGHLIGHT_COLOR = 'STRIPE_HIGHLIGHT_COLOR';
-    const ERROR_COLOR = 'STRIPE_ERROR_COLOR';
-    const ERROR_GLYPH_COLOR = 'STRIPE_ERROR_GLYPH_COLOR';
-    const INPUT_TEXT_FOREGROUND_COLOR = 'STRIPE_PAYMENT_REQFGC';
-    const INPUT_TEXT_BACKGROUND_COLOR = 'STRIPE_PAYMENT_REQBGC';
-    const INPUT_FONT_FAMILY = 'STRIPE_INPUT_FONT_FAMILY';
     const CHECKOUT_FONT_FAMILY = 'STRIPE_CHECKOUT_FONT_FAMILY';
     const CHECKOUT_FONT_SIZE = 'STRIPE_CHECKOUT_FONT_SIZE';
+    const ERROR_COLOR = 'STRIPE_ERROR_COLOR';
+    const ERROR_GLYPH_COLOR = 'STRIPE_ERROR_GLYPH_COLOR';
+    const HIGHLIGHT_COLOR = 'STRIPE_HIGHLIGHT_COLOR';
+    const INPUT_FONT_FAMILY = 'STRIPE_INPUT_FONT_FAMILY';
+    const INPUT_PLACEHOLDER_COLOR = 'STRIPE_INPUT_PLACEHOLDER_COLOR';
+    const INPUT_TEXT_BACKGROUND_COLOR = 'STRIPE_PAYMENT_REQBGC';
+    const INPUT_TEXT_FOREGROUND_COLOR = 'STRIPE_PAYMENT_REQFGC';
     const PAYMENT_REQUEST_BUTTON_STYLE = 'STRIPE_PRB_STYLE';
-    const STRIPE_API_VERSION = 'STRIPE_API_VERSION';
-
-    /**
-     * @var array Supported languages
-     */
-    public static $stripeLanguages = ['zh', 'nl', 'en', 'fr', 'de', 'it', 'ja', 'es'];
-
-    /**
-     * @var array Supported zero-decimal currencies
-     */
-    public static $zeroDecimalCurrencies = ['bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf', 'krw', 'mga', 'pyg', 'rwf', 'vdn', 'vuv', 'xaf', 'xof', 'xpf'];
 
     /**
      * @var string $baseUrl Module base URL
      */
-    public $baseUrl;
+    private $baseUrl;
 
     /**
      * @var string
      */
-    public $moduleUrl;
+    private $moduleUrl;
+
 
     /**
-     * @var array Hooks
+     * @var int $menu Current menu
      */
-    public $hooks = [
-        'displayHeader',
-        'displayPaymentTop',
-        'displayPayment',
-        'displayPaymentEU',
-        'paymentReturn',
-        'displayAdminOrder',
-        'displayPaymentRequestButton',
-        'actionAdminOrdersListingFieldsModifier',
-    ];
-
-    /** @var int $menu Current menu */
-    public $menu;
+    private $menu;
 
     /**
-     * Minimum amounts array
-     * The keys are the 15 bank account settlement currencies (lowercase) available in Stripe
-     *
-     * @var float[] Minimum amounts
+     * @var PaymentMethodsRepository
      */
-    public static $minimumAmounts = [
-        'aud' => 0.50,
-        'gbp' => 0.30,
-        'cad' => 0.50,
-        'dkk' => 2.50,
-        'eur' => 0.50,
-        'hkd' => 4.00,
-        'jpy' => 50,
-        'mxn' => 10,
-        'nkk' => 3.00,
-        'sgd' => 0.50,
-        'sek' => 3.00,
-        'chf' => 0.50,
-        'usd' => 0.50,
-    ];
+    private $methods;
 
     /**
-     * Currency restrictions per payment method
-     *
-     * @var array
+     * @var StripeApi
      */
-    public static $methodCurrencies = [
-        'credit_card'    => ['afn', 'all', 'dzd', 'aoa', 'ars', 'amd', 'awg', 'aud', 'azn', 'bsd', 'bdt', 'bbd', 'bzd', 'bmd', 'bob', 'bam', 'bwp', 'brl', 'gbp', 'bnd', 'bgn', 'bif', 'bif', 'khr', 'cad', 'cve', 'kyd', 'xaf', 'xpf', 'clp', 'cny', 'cop', 'kmf', 'cdf', 'crc', 'hrk', 'czk', 'dkk', 'djf', 'dop', 'xcd', 'egp', 'etb', 'eur', 'fkp', 'fjd', 'gmd', 'gel', 'gip', 'gtq', 'gnf', 'gyd', 'htg', 'hnl', 'hkd', 'huf', 'isk', 'inr', 'idr', 'ils', 'jmd', 'jpy', 'kzt', 'kes', 'kgs', 'lak', 'lbp', 'lsl', 'lrd', 'mop', 'mkd', 'mga', 'mwk', 'myr', 'mvr', 'mro', 'mur', 'mxn', 'mdl', 'mnt', 'mad', 'mzn', 'mmk', 'nad', 'npr', 'ang', 'twd', 'nzd', 'nio', 'ngn', 'nok', 'pkr', 'pab', 'pgk', 'pyg', 'pen', 'php', 'pln', 'qar', 'ron', 'rub', 'rwf', 'std', 'shp', 'svc', 'wst', 'sar', 'rsd', 'scr', 'sll', 'sgd', 'sbd', 'sos', 'zar', 'krw', 'lkr', 'srd', 'szl', 'sek', 'chf', 'tjs', 'tzs', 'thb', 'top', 'ttd', 'try', 'ugx', 'uah', 'aed', 'usd', 'uyu', 'uzs', 'vuv', 'vnd', 'xof', 'yer', 'zmw'],
-        'three_d_secure' => ['afn', 'all', 'dzd', 'aoa', 'ars', 'amd', 'awg', 'aud', 'azn', 'bsd', 'bdt', 'bbd', 'bzd', 'bmd', 'bob', 'bam', 'bwp', 'brl', 'gbp', 'bnd', 'bgn', 'bif', 'bif', 'khr', 'cad', 'cve', 'kyd', 'xaf', 'xpf', 'clp', 'cny', 'cop', 'kmf', 'cdf', 'crc', 'hrk', 'czk', 'dkk', 'djf', 'dop', 'xcd', 'egp', 'etb', 'eur', 'fkp', 'fjd', 'gmd', 'gel', 'gip', 'gtq', 'gnf', 'gyd', 'htg', 'hnl', 'hkd', 'huf', 'isk', 'inr', 'idr', 'ils', 'jmd', 'jpy', 'kzt', 'kes', 'kgs', 'lak', 'lbp', 'lsl', 'lrd', 'mop', 'mkd', 'mga', 'mwk', 'myr', 'mvr', 'mro', 'mur', 'mxn', 'mdl', 'mnt', 'mad', 'mzn', 'mmk', 'nad', 'npr', 'ang', 'twd', 'nzd', 'nio', 'ngn', 'nok', 'pkr', 'pab', 'pgk', 'pyg', 'pen', 'php', 'pln', 'qar', 'ron', 'rub', 'rwf', 'std', 'shp', 'svc', 'wst', 'sar', 'rsd', 'scr', 'sll', 'sgd', 'sbd', 'sos', 'zar', 'krw', 'lkr', 'srd', 'szl', 'sek', 'chf', 'tjs', 'tzs', 'thb', 'top', 'ttd', 'try', 'ugx', 'uah', 'aed', 'usd', 'uyu', 'uzs', 'vuv', 'vnd', 'xof', 'yer', 'zmw'],
-        'alipay'         => ['aud', 'cad', 'eur', 'gbp', 'hkd', 'jpy', 'nzd', 'sgd', 'usd'],
-        'bancontact'     => ['eur'],
-        'giropay'        => ['eur'],
-        'ideal'          => ['eur'],
-        'p24'            => ['eur', 'pln'],
-        'sofort'         => ['eur'],
-    ];
+    private $api;
 
     /**
      * ThirtyBeesStripe constructor.
      *
-     * @since 1.0.0
      * @throws PrestaShopException
      */
     public function __construct()
@@ -175,9 +131,8 @@ class Stripe extends PaymentModule
 
         $this->controllers = [
             'demoiframe',
-            'eupayment',
             'hook',
-            'sourcevalidation',
+            'payment',
             'validation',
         ];
 
@@ -190,7 +145,16 @@ class Stripe extends PaymentModule
         $this->displayName = $this->l('Stripe');
         $this->description = $this->l('Accept payments with Stripe');
 
-        Stripe\Stripe::setAppInfo('thirty bees', $this->version, 'https://thirtybees.com/');
+        $this->api = new StripeApi($this->version);
+        $this->methods = new PaymentMethodsRepository($this->getStripeApi());
+    }
+
+    /**
+     * @return StripeApi
+     */
+    public function getStripeApi()
+    {
+        return $this->api;
     }
 
     /**
@@ -198,9 +162,7 @@ class Stripe extends PaymentModule
      *
      * @return bool Whether the module has been successfully installed
      *
-     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
-     * @since 1.0.0
      */
     public function install()
     {
@@ -210,9 +172,12 @@ class Stripe extends PaymentModule
             return false;
         }
 
-        foreach ($this->hooks as $hook) {
-            $this->registerHook($hook);
-        }
+        $this->registerHook('displayPaymentTop');
+        $this->registerHook('displayPayment');
+        $this->registerHook('displayPaymentEU');
+        $this->registerHook('paymentReturn');
+        $this->registerHook('displayAdminOrder');
+        $this->registerHook('actionAdminOrdersListingFieldsModifier');
 
         StripeTransaction::createDatabase();
         StripeReview::createDatabase();
@@ -232,16 +197,10 @@ class Stripe extends PaymentModule
      *
      * @return bool Whether the module has been successfully installed
      *
-     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
-     * @since 1.0.0
      */
     public function uninstall()
     {
-        foreach ($this->hooks as $hook) {
-            $this->unregisterHook($hook);
-        }
-
         Configuration::deleteByName(static::SECRET_KEY_TEST);
         Configuration::deleteByName(static::PUBLISHABLE_KEY_TEST);
         Configuration::deleteByName(static::SECRET_KEY_LIVE);
@@ -256,8 +215,11 @@ class Stripe extends PaymentModule
         Configuration::deleteByName(static::STATUS_AUTHORIZED);
         Configuration::deleteByName(static::STATUS_IN_REVIEW);
         Configuration::deleteByName(static::GENERATE_CREDIT_SLIP);
-        Configuration::deleteByName(static::ALIPAY_BLOCK);
         Configuration::deleteByName(static::SHOW_PAYMENT_LOGOS);
+
+        foreach ($this->methods->getAllMethods() as $method) {
+            Configuration::deleteByName($method->getConfigurationKey());
+        }
 
         return parent::uninstall();
     }
@@ -267,11 +229,8 @@ class Stripe extends PaymentModule
      *
      * @return string HTML
      *
-     * @throws Exception
-     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
      * @throws SmartyException
-     * @since 1.0.0
      */
     public function getContent()
     {
@@ -279,52 +238,52 @@ class Stripe extends PaymentModule
 
         $this->initNavigation();
 
-        $this->moduleUrl = Context::getContext()->link->getAdminLink('AdminModules', false).'&token='.Tools::getAdminTokenLite('AdminModules').'&'.http_build_query([
-            'configure' => $this->name,
-        ]);
+        $this->moduleUrl = Context::getContext()->link->getAdminLink('AdminModules', false) . '&token=' . Tools::getAdminTokenLite('AdminModules') . '&' . http_build_query([
+                'configure' => $this->name,
+            ]);
 
-        $this->baseUrl = $this->context->link->getAdminLink('AdminModules', true).'&'.http_build_query([
-            'configure'   => $this->name,
-            'tab_module'  => $this->tab,
-            'module_name' => $this->name,
-        ]);
+        $this->baseUrl = $this->context->link->getAdminLink('AdminModules', true) . '&' . http_build_query([
+                'configure' => $this->name,
+                'tab_module' => $this->tab,
+                'module_name' => $this->name,
+            ]);
 
         $this->postProcess();
 
         $this->context->smarty->assign([
-            'menutabs'           => $this->initNavigation(),
-            'stripe_webhook_url' => $this->context->link->getModuleLink($this->name, 'hook', [], Tools::usingSecureMode()),
+            'menutabs' => $this->initNavigation(),
+            'stripe_webhook_url' => $this->context->link->getModuleLink($this->name, 'hook'),
         ]);
 
         $output .= $this->display(__FILE__, 'views/templates/admin/navbar.tpl');
 
         switch (Tools::getValue('menu')) {
             case static::MENU_TRANSACTIONS:
-                return $output.$this->renderTransactionsPage();
+                return $output . $this->renderTransactionsPage();
             default:
                 $this->context->controller->addJquery();
-                $this->context->controller->addCSS($this->_path.'views/css/fontselect.css', 'all');
-                $this->context->controller->addJS($this->_path.'views/js/fontselect.js');
-                $this->context->controller->addJS($this->_path.'views/js/designer.js');
+                $this->context->controller->addCSS($this->_path . 'views/css/fontselect.css', 'all');
+                $this->context->controller->addJS($this->_path . 'views/js/fontselect.js');
+                $this->context->controller->addJS($this->_path . 'views/js/designer.js');
 
                 Media::addJsDef([
-                    'stripe_input_placeholder_color'          => Configuration::get(Stripe::INPUT_PLACEHOLDER_COLOR),
-                    'stripe_button_background_color'          => Configuration::get(Stripe::BUTTON_BACKGROUND_COLOR),
-                    'stripe_button_foreground_color'          => Configuration::get(Stripe::BUTTON_FOREGROUND_COLOR),
-                    'stripe_highlight_color'                  => Configuration::get(Stripe::HIGHLIGHT_COLOR),
-                    'stripe_error_color'                      => Configuration::get(Stripe::ERROR_COLOR),
-                    'stripe_error_glyph_color'                => Configuration::get(Stripe::ERROR_GLYPH_COLOR),
+                    'stripe_input_placeholder_color' => Configuration::get(Stripe::INPUT_PLACEHOLDER_COLOR),
+                    'stripe_button_background_color' => Configuration::get(Stripe::BUTTON_BACKGROUND_COLOR),
+                    'stripe_button_foreground_color' => Configuration::get(Stripe::BUTTON_FOREGROUND_COLOR),
+                    'stripe_highlight_color' => Configuration::get(Stripe::HIGHLIGHT_COLOR),
+                    'stripe_error_color' => Configuration::get(Stripe::ERROR_COLOR),
+                    'stripe_error_glyph_color' => Configuration::get(Stripe::ERROR_GLYPH_COLOR),
                     'stripe_payment_request_foreground_color' => Configuration::get(Stripe::INPUT_TEXT_FOREGROUND_COLOR),
                     'stripe_payment_request_background_color' => Configuration::get(Stripe::INPUT_TEXT_BACKGROUND_COLOR),
-                    'stripe_input_font_family'                => Configuration::get(Stripe::INPUT_FONT_FAMILY),
-                    'stripe_checkout_font_family'             => Configuration::get(Stripe::CHECKOUT_FONT_FAMILY),
-                    'stripe_checkout_font_size'               => Configuration::get(Stripe::CHECKOUT_FONT_SIZE),
-                    'stripe_color_url'                        => $this->context->link->getAdminLink('AdminModules', true).'&configure=stripe&ajax=1&action=SaveDesign',
+                    'stripe_input_font_family' => Configuration::get(Stripe::INPUT_FONT_FAMILY),
+                    'stripe_checkout_font_family' => Configuration::get(Stripe::CHECKOUT_FONT_FAMILY),
+                    'stripe_checkout_font_size' => Configuration::get(Stripe::CHECKOUT_FONT_SIZE),
+                    'stripe_color_url' => $this->context->link->getAdminLink('AdminModules', true) . '&configure=stripe&ajax=1&action=SaveDesign',
                 ]);
 
                 $this->menu = static::MENU_SETTINGS;
 
-                return $output.$this->renderSettingsPage();
+                return $output . $this->renderSettingsPage();
         }
     }
 
@@ -332,25 +291,23 @@ class Stripe extends PaymentModule
      * Initialize navigation
      *
      * @return array Menu items
-     *
-     * @since 1.0.0
      */
     protected function initNavigation()
     {
         $menu = [
-            static::MENU_SETTINGS     => [
-                'short'  => $this->l('Settings'),
-                'desc'   => $this->l('Module settings'),
-                'href'   => $this->moduleUrl.'&menu='.static::MENU_SETTINGS,
+            static::MENU_SETTINGS => [
+                'short' => $this->l('Settings'),
+                'desc' => $this->l('Module settings'),
+                'href' => $this->moduleUrl . '&menu=' . static::MENU_SETTINGS,
                 'active' => false,
-                'icon'   => 'icon-gears',
+                'icon' => 'icon-gears',
             ],
             static::MENU_TRANSACTIONS => [
-                'short'  => $this->l('Transactions'),
-                'desc'   => $this->l('Stripe transactions'),
-                'href'   => $this->moduleUrl.'&menu='.static::MENU_TRANSACTIONS,
+                'short' => $this->l('Transactions'),
+                'desc' => $this->l('Stripe transactions'),
+                'href' => $this->moduleUrl . '&menu=' . static::MENU_TRANSACTIONS,
                 'active' => false,
-                'icon'   => 'icon-credit-card',
+                'icon' => 'icon-credit-card',
             ],
         ];
 
@@ -371,7 +328,6 @@ class Stripe extends PaymentModule
     /**
      * Save form data.
      *
-     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
      * @throws SmartyException
      */
@@ -393,10 +349,10 @@ class Stripe extends PaymentModule
                 $this->postProcessDesignOptions();
             }
         } elseif ($this->menu == static::MENU_TRANSACTIONS) {
-            if (Tools::isSubmit('submitBulkdelete'.StripeTransaction::$definition['table'])
-                && !empty(Tools::getValue(StripeTransaction::$definition['table'].'Box'))
+            if (Tools::isSubmit('submitBulkdelete' . StripeTransaction::$definition['table'])
+                && !empty(Tools::getValue(StripeTransaction::$definition['table'] . 'Box'))
             ) {
-                if (StripeTransaction::deleteRange(Tools::getValue(StripeTransaction::$definition['table'].'Box'))) {
+                if (StripeTransaction::deleteRange(Tools::getValue(StripeTransaction::$definition['table'] . 'Box'))) {
                     $this->addConfirmation($this->l('Successfully deleted the selected transactions'));
                 } else {
                     $this->addError($this->l('Unable to delete the selected transactions'));
@@ -407,83 +363,65 @@ class Stripe extends PaymentModule
 
     /**
      * @return void
-     * @throws PrestaShopDatabaseException
+     *
      * @throws PrestaShopException
      * @throws SmartyException
      */
     protected function processRefund()
     {
-        $idOrder = (int) Tools::getValue('stripe_refund_order');
+        $idOrder = (int)Tools::getValue('stripe_refund_order');
         $access = Profile::getProfileAccess($this->context->employee->id_profile, Tab::getIdFromClassName('AdminOrders'));
         if (!$access) {
             $this->setErrorMessage($this->l('Unable to determine employee permissions.'));
-            Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&id_order='.$idOrder);
+            Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true) . '&vieworder&id_order=' . $idOrder);
         }
 
         if (!$access['edit']) {
             $this->setErrorMessage($this->l('You do not have permission to refund orders.'));
-            Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&id_order='.$idOrder);
+            Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true) . '&vieworder&id_order=' . $idOrder);
         }
 
-        $amount = (float) static::parseNumber(Tools::getValue('stripe_refund_amount'));
 
         $idCharge = StripeTransaction::getChargeByIdOrder($idOrder);
         $order = new Order($idOrder);
         $currency = new Currency($order->id_currency);
-        $orderTotal = $order->getTotalPaid();
 
-        if (!in_array(mb_strtolower($currency->iso_code), static::$zeroDecimalCurrencies)) {
-            $amount = (int) ($amount * 100);
-            $orderTotal = (int) ($orderTotal * 100);
-        }
+        $orderTotal = Utils::toCurrencyUnit($currency, $order->getTotalPaid());
+        $amount = Utils::toCurrencyUnit($currency, (float)static::parseNumber(Tools::getValue('stripe_refund_amount')));
 
         $amountRefunded = StripeTransaction::getRefundedAmountByOrderId($idOrder);
 
-        $guzzle = new GuzzleClient();
-        ApiRequestor::setHttpClient($guzzle);
         try {
-            \Stripe\Stripe::setApiKey(Configuration::get(static::GO_LIVE)
-                ? Configuration::get(static::SECRET_KEY_LIVE)
-                : Configuration::get(static::SECRET_KEY_TEST)
-            );
-            \Stripe\Refund::create(
-                [
-                    'charge'   => $idCharge,
-                    'amount'   => $amount,
-                    'metadata' => [
-                        'from_back_office' => 'true',
-                    ],
-                ]
-            );
+            $this->api->createRefund($idCharge, $amount);
         } catch (Exception $e) {
             $this->setErrorMessage(sprintf('Invalid Stripe request: %s', $e->getMessage()));
-            Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&id_order='.$idOrder);
+            Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true) . '&vieworder&id_order=' . $idOrder);
         }
 
-        if (Configuration::get(static::USE_STATUS_REFUND) && 0 === (int) ($orderTotal - ($amountRefunded + $amount))) {
+        if (Configuration::get(static::USE_STATUS_REFUND) && 0 === (int)($orderTotal - ($amountRefunded + $amount))) {
             // Full refund
             if (Configuration::get(static::GENERATE_CREDIT_SLIP)) {
                 $fullProductList = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS(
                     (new DbQuery())
                         ->select('od.`id_order_detail`, od.`product_quantity`')
                         ->from('order_detail', 'od')
-                        ->where('od.`id_order` = '.(int) $order->id)
+                        ->where('od.`id_order` = ' . (int)$order->id)
                 );
 
                 if (is_array($fullProductList) && !empty($fullProductList)) {
                     $productList = [];
                     $quantityList = [];
                     foreach ($fullProductList as $dbOrderDetail) {
-                        $idOrderDetail = (int) $dbOrderDetail['id_order_detail'];
-                        $productList[] = (int) $idOrderDetail;
-                        $quantityList[$idOrderDetail] = (int) $dbOrderDetail['product_quantity'];
+                        $idOrderDetail = (int)$dbOrderDetail['id_order_detail'];
+                        $productList[] = (int)$idOrderDetail;
+                        $quantityList[$idOrderDetail] = (int)$dbOrderDetail['product_quantity'];
                     }
                     OrderSlip::createOrderSlip($order, $productList, $quantityList, $order->getShipping());
                 }
             }
 
             $transaction = new StripeTransaction();
-            $transaction->card_last_digits = (int) StripeTransaction::getLastFourDigitsByChargeId($idCharge);
+            $transaction->card_last_digits = (int)StripeTransaction::getLastFourDigitsByChargeId($idCharge);
             $transaction->id_charge = $idCharge;
             $transaction->amount = $amount;
             $transaction->id_order = $order->id;
@@ -493,7 +431,7 @@ class Stripe extends PaymentModule
 
             $orderHistory = new OrderHistory();
             $orderHistory->id_order = $order->id;
-            $orderHistory->changeIdOrderState((int) Configuration::get(Stripe::STATUS_REFUND), $idOrder, !$order->hasInvoice());
+            $orderHistory->changeIdOrderState((int)Configuration::get(Stripe::STATUS_REFUND), $idOrder, !$order->hasInvoice());
             $orderHistory->addWithemail(true);
 
             $review = StripeReview::getByOrderId($idOrder);
@@ -501,7 +439,7 @@ class Stripe extends PaymentModule
             $review->save();
         } else {
             $transaction = new StripeTransaction();
-            $transaction->card_last_digits = (int) StripeTransaction::getLastFourDigitsByChargeId($idCharge);
+            $transaction->card_last_digits = (int)StripeTransaction::getLastFourDigitsByChargeId($idCharge);
             $transaction->id_charge = $idCharge;
             $transaction->amount = $amount;
             $transaction->id_order = $order->id;
@@ -512,52 +450,84 @@ class Stripe extends PaymentModule
             if (Configuration::get(Stripe::USE_STATUS_PARTIAL_REFUND)) {
                 $orderHistory = new OrderHistory();
                 $orderHistory->id_order = $order->id;
-                $orderHistory->changeIdOrderState((int) Configuration::get(Stripe::STATUS_PARTIAL_REFUND), $idOrder, !$order->hasInvoice());
+                $orderHistory->changeIdOrderState((int)Configuration::get(Stripe::STATUS_PARTIAL_REFUND), $idOrder, !$order->hasInvoice());
                 $orderHistory->addWithemail(true);
             }
         }
 
-        Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&stripeRefund=refunded&id_order='.$idOrder);
+        Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true) . '&vieworder&stripeRefund=refunded&id_order=' . $idOrder);
     }
 
     /**
-     * @throws PrestaShopDatabaseException
+     * @param string | array $error
+     *
+     * @throws PrestaShopException
+     */
+    private function setErrorMessage($error)
+    {
+        if (is_array($error)) {
+            $error = implode(', ', $error);
+        }
+        $this->saveToCookie('error', $error);
+    }
+
+    /**
+     * @param string $type
+     * @param string $message
+     *
+     * @return void
+     * @throws PrestaShopException
+     */
+    private function saveToCookie($type, $message)
+    {
+        $cookie = new Cookie('stripe');
+        $cookie->__set($type, $message);
+        $cookie->write();
+    }
+
+    /**
+     * @param string $value
+     *
+     * @return float
+     */
+    private static function parseNumber($value)
+    {
+        if (method_exists('Tools', 'parseNumber')) {
+            return Tools::parseNumber($value);
+        } else {
+            return (float)str_replace(',', '.', (string)$value);
+        }
+    }
+
+    /**
      * @throws PrestaShopException
      */
     protected function processReview()
     {
-        $idOrder = (int) Tools::getValue('stripe_review_order');
+        $idOrder = (int)Tools::getValue('stripe_review_order');
         $order = new Order($idOrder);
         $access = Profile::getProfileAccess($this->context->employee->id_profile, Tab::getIdFromClassName('AdminOrders'));
         if (!$access) {
             $this->setErrorMessage($this->l('Unable to determine employee permissions.'));
-            Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&id_order='.$idOrder);
+            Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true) . '&vieworder&id_order=' . $idOrder);
         }
 
         if (!$access['edit']) {
             $this->setErrorMessage($this->l('You do not have permission to review payments.'));
-            Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&id_order='.$idOrder);
+            Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true) . '&vieworder&id_order=' . $idOrder);
         }
 
         $review = StripeReview::getByOrderId($idOrder);
         if (!Validate::isLoadedObject($review)) {
             $this->setErrorMessage($this->l('An error occurred while processing the request.'));
-            Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&id_order='.$idOrder);
+            Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true) . '&vieworder&id_order=' . $idOrder);
         }
 
         if (Tools::getValue('stripe_action') === 'markAsSafe') {
-            $guzzle = new GuzzleClient();
-            ApiRequestor::setHttpClient($guzzle);
             try {
-                \Stripe\Stripe::setApiKey(Configuration::get(static::GO_LIVE)
-                    ? Configuration::get(static::SECRET_KEY_LIVE)
-                    : Configuration::get(static::SECRET_KEY_TEST)
-                );
-                $charge = \Stripe\Charge::retrieve($review->id_charge);
-                \Stripe\Charge::update(
-                    $charge->id,
+                $charge = $this->api->getCharge($review->id_charge);
+                $this->api->updateCharge($charge,
                     [
-                        'metadata' => [ 'from_back_office' => true ],
                         'fraud_details' => [
                             'user_repor' => 'safe'
                         ]
@@ -572,8 +542,8 @@ class Stripe extends PaymentModule
                 $transaction->id_charge = $charge->id;
                 $transaction->source = StripeTransaction::SOURCE_FRONT_OFFICE;
                 $transaction->type = StripeTransaction::TYPE_AUTHORIZED;
-                $transaction->card_last_digits = (int) StripeTransaction::getLastFourDigitsByChargeId($charge->id);
-                $transaction->amount = (int) $charge->amount;
+                $transaction->card_last_digits = (int)StripeTransaction::getLastFourDigitsByChargeId($charge->id);
+                $transaction->amount = (int)$charge->amount;
                 $transaction->save();
 
                 $this->setConfirmationMessage($this->l('The payment has been approved'));
@@ -581,7 +551,7 @@ class Stripe extends PaymentModule
                 if (Configuration::get(Stripe::USE_STATUS_AUTHORIZED)) {
                     $orderHistory = new OrderHistory();
                     $orderHistory->id_order = $idOrder;
-                    $orderHistory->changeIdOrderState((int) Configuration::get(Stripe::STATUS_AUTHORIZED), $idOrder, !$order->hasInvoice());
+                    $orderHistory->changeIdOrderState((int)Configuration::get(Stripe::STATUS_AUTHORIZED), $idOrder, !$order->hasInvoice());
                     $orderHistory->addWithemail(true);
                 }
             } catch (Exception $e) {
@@ -603,99 +573,47 @@ class Stripe extends PaymentModule
             }
         }
 
-        Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&stripeReview=reviewed&id_order='.$idOrder);
+        Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true) . '&vieworder&stripeReview=reviewed&id_order=' . $idOrder);
     }
 
     /**
-     * @return void
+     * @param string $confirmation
      *
-     * @since 1.6.0
      * @throws PrestaShopException
      */
-    protected function processBulkCapture()
+    private function setConfirmationMessage($confirmation)
     {
-        $guzzle = new \StripeModule\GuzzleClient();
-        \Stripe\ApiRequestor::setHttpClient($guzzle);
-        \Stripe\Stripe::setApiKey(Configuration::get(Stripe::SECRET_KEY_TEST));
-        $idOrders = Tools::getValue('orderBox');
-        if (!is_array($idOrders)) {
-            $this->context->controller->errors[] = $this->l('No orders found');
-
-            return;
-        } elseif (count($idOrders) > 10) {
-            $this->context->controller->errors[] = $this->l('Currently only a maximum of 10 payments can be captured at a time');
-
-            return;
-        }
-
-        try {
-            foreach ($idOrders as $idOrder) {
-                $charge = \Stripe\Charge::retrieve(StripeTransaction::getChargeByIdOrder($idOrder));
-                $charge->metadata = [
-                    'from_back_office' => true,
-                ];
-                $charge->capture();
-                $order = new Order($idOrder);
-
-                $review = StripeReview::getByOrderId($idOrder);
-                $review->status = StripeReview::CAPTURED;
-                $review->save();
-
-                $transaction = new StripeTransaction();
-                $transaction->id_order = $idOrder;
-                $transaction->id_charge = $charge->id;
-                $transaction->source = StripeTransaction::SOURCE_FRONT_OFFICE;
-                $transaction->type = StripeTransaction::TYPE_CAPTURED;
-                $transaction->card_last_digits = (int) StripeTransaction::getLastFourDigitsByChargeId($charge->id);
-                $transaction->amount = (int) $charge->amount;
-                $transaction->save();
-
-                $orderHistory = new OrderHistory();
-                $orderHistory->id_order = $idOrder;
-                $orderHistory->changeIdOrderState((int) Configuration::get('PS_OS_PAYMENT'), $idOrder, !$order->hasInvoice());
-                $orderHistory->addWithemail(true);
-            }
-        } catch (Exception $e) {
-            $this->addError(sprintf($this->l('An error occurred while capturing: %s'), $e->getMessage()));
-
-            return;
-        }
-        /** @var AdminController $controller */
-        $controller = $this->context->controller;
-        $controller->confirmations[] = $this->l('The payments have been successfully captured');
+        $this->saveToCookie('confirmation', $confirmation);
     }
 
     /**
      * Process General Options
      *
      * @return void
-     * @throws PrestaShopDatabaseException
+     *
      * @throws PrestaShopException
      */
     protected function postProcessGeneralOptions()
     {
         $publishableKeyLive = Tools::getValue(static::PUBLISHABLE_KEY_LIVE);
         $secretKeyLive = Tools::getValue(static::SECRET_KEY_LIVE);
-        $goLive = (bool) Tools::getValue(static::GO_LIVE);
+        $goLive = (bool)Tools::getValue(static::GO_LIVE);
 
         $options = [
-            static::SECRET_KEY_TEST          => Tools::getValue(static::SECRET_KEY_TEST),
-            static::PUBLISHABLE_KEY_TEST     => Tools::getValue(static::PUBLISHABLE_KEY_TEST),
-            static::SECRET_KEY_LIVE          => $secretKeyLive,
-            static::PUBLISHABLE_KEY_LIVE     => $publishableKeyLive,
-            static::GO_LIVE                  => $goLive,
-            static::ALIPAY_BLOCK             => (bool) Tools::getValue(static::ALIPAY_BLOCK),
-            static::IDEAL                    => (bool) Tools::getValue(static::IDEAL),
-            static::BANCONTACT               => (bool) Tools::getValue(static::BANCONTACT),
-            static::GIROPAY                  => (bool) Tools::getValue(static::GIROPAY),
-            static::SOFORT                   => (bool) Tools::getValue(static::SOFORT),
-            static::P24                      => (bool) Tools::getValue(static::P24),
-            static::SHOW_PAYMENT_LOGOS       => (bool) Tools::getValue(static::SHOW_PAYMENT_LOGOS),
-            static::COLLECT_BILLING          => (bool) Tools::getValue(static::COLLECT_BILLING),
-            static::STRIPE_CHECKOUT          => (bool) Tools::getValue(static::STRIPE_CHECKOUT),
-            static::STRIPE_CC_FORM           => (bool) Tools::getValue(static::STRIPE_CC_FORM),
-            static::STRIPE_PAYMENT_REQUEST   => (bool) Tools::getValue(static::STRIPE_PAYMENT_REQUEST),
+            static::SECRET_KEY_TEST => Tools::getValue(static::SECRET_KEY_TEST),
+            static::PUBLISHABLE_KEY_TEST => Tools::getValue(static::PUBLISHABLE_KEY_TEST),
+            static::SECRET_KEY_LIVE => $secretKeyLive,
+            static::PUBLISHABLE_KEY_LIVE => $publishableKeyLive,
+            static::GO_LIVE => $goLive,
+            static::SHOW_PAYMENT_LOGOS => (bool)Tools::getValue(static::SHOW_PAYMENT_LOGOS),
+            static::COLLECT_BILLING => (bool)Tools::getValue(static::COLLECT_BILLING),
+            static::STRIPE_PAYMENT_REQUEST => (bool)Tools::getValue(static::STRIPE_PAYMENT_REQUEST),
         ];
+
+        foreach ($this->methods->getAllMethods() as $method) {
+            $configKey = $method->getConfigurationKey();
+            $options[$configKey] = (bool)Tools::getValue($configKey);
+        }
 
         if ($goLive
             && (substr($publishableKeyLive, 0, 7) !== 'pk_live' || substr($secretKeyLive, 0, 7) !== 'sk_live')
@@ -712,66 +630,10 @@ class Stripe extends PaymentModule
     }
 
     /**
-     * Process Order Options
-     *
-     * @return void
-     * @throws PrestaShopDatabaseException
-     * @throws PrestaShopException
-     */
-    protected function postProcessOrderOptions()
-    {
-        $options = [
-            static::STATUS_VALIDATED          => Tools::getValue(static::STATUS_VALIDATED),
-            static::USE_STATUS_REFUND         => Tools::getValue(static::USE_STATUS_REFUND),
-            static::STATUS_REFUND             => Tools::getValue(static::STATUS_REFUND),
-            static::STATUS_SOFORT             => Tools::getValue(static::STATUS_SOFORT),
-            static::USE_STATUS_PARTIAL_REFUND => Tools::getValue(static::USE_STATUS_PARTIAL_REFUND),
-            static::STATUS_PARTIAL_REFUND     => Tools::getValue(static::STATUS_PARTIAL_REFUND),
-            static::USE_STATUS_AUTHORIZED     => Tools::getValue(static::USE_STATUS_AUTHORIZED),
-            static::STATUS_AUTHORIZED         => Tools::getValue(static::STATUS_AUTHORIZED),
-            static::USE_STATUS_IN_REVIEW      => Tools::getValue(static::USE_STATUS_IN_REVIEW),
-            static::STATUS_IN_REVIEW          => Tools::getValue(static::STATUS_IN_REVIEW),
-            static::MANUAL_CAPTURE            => Tools::getValue(static::MANUAL_CAPTURE),
-            static::ACCOUNT_COUNTRY           => Tools::getValue(static::ACCOUNT_COUNTRY),
-            static::GENERATE_CREDIT_SLIP      => (bool) Tools::getValue(static::GENERATE_CREDIT_SLIP),
-        ];
-
-        $this->postProcessOptions($options);
-    }
-
-    /**
-     * Process Advanced Options
-     *
-     * @return void
-     * @throws PrestaShopDatabaseException
-     * @throws PrestaShopException
-     */
-    protected function postProcessDesignOptions()
-    {
-        $options = [
-            static::INPUT_PLACEHOLDER_COLOR      => Tools::getValue(static::INPUT_PLACEHOLDER_COLOR),
-            static::BUTTON_BACKGROUND_COLOR      => Tools::getValue(static::BUTTON_BACKGROUND_COLOR),
-            static::BUTTON_FOREGROUND_COLOR      => Tools::getValue(static::BUTTON_FOREGROUND_COLOR),
-            static::HIGHLIGHT_COLOR              => Tools::getValue(static::HIGHLIGHT_COLOR),
-            static::ERROR_COLOR                  => Tools::getValue(static::ERROR_COLOR),
-            static::ERROR_GLYPH_COLOR            => Tools::getValue(static::ERROR_GLYPH_COLOR),
-            static::INPUT_TEXT_FOREGROUND_COLOR  => Tools::getValue(static::INPUT_TEXT_FOREGROUND_COLOR),
-            static::INPUT_TEXT_BACKGROUND_COLOR  => Tools::getValue(static::INPUT_TEXT_BACKGROUND_COLOR),
-            static::INPUT_FONT_FAMILY            => Tools::getValue(static::INPUT_FONT_FAMILY),
-            static::CHECKOUT_FONT_FAMILY         => Tools::getValue(static::CHECKOUT_FONT_FAMILY),
-            static::CHECKOUT_FONT_SIZE           => Tools::getValue(static::CHECKOUT_FONT_SIZE),
-            static::PAYMENT_REQUEST_BUTTON_STYLE => Tools::getValue(static::PAYMENT_REQUEST_BUTTON_STYLE),
-        ];
-
-        $this->postProcessOptions($options);
-    }
-
-    /**
      * Process options
      *
      * @param array $options
      *
-     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
      */
     protected function postProcessOptions($options)
@@ -782,7 +644,7 @@ class Stripe extends PaymentModule
                     $this->updateAllValue($key, $value);
                 }
             } elseif (is_array(Tools::getValue('multishopOverrideOption'))) {
-                $idShopGroup = (int) Shop::getGroupFromShop($this->getShopId(), true);
+                $idShopGroup = (int)Shop::getGroupFromShop($this->getShopId(), true);
                 $multishopOverride = Tools::getValue('multishopOverrideOption');
                 if (Shop::getContext() == Shop::CONTEXT_GROUP) {
                     $shops = Shop::getShops(false, null, true);
@@ -805,38 +667,11 @@ class Stripe extends PaymentModule
     }
 
     /**
-     * Process temporary colors
-     *
-     * @throws PrestaShopException
-     */
-    public function ajaxProcessSaveDesign()
-    {
-        $colors = json_decode(file_get_contents('php://input'), true);
-
-        Configuration::updateValue(static::INPUT_PLACEHOLDER_COLOR.'_TEMP', $colors['stripe_input_placeholder_color']);
-        Configuration::updateValue(static::BUTTON_BACKGROUND_COLOR.'_TEMP', $colors['stripe_button_background_color']);
-        Configuration::updateValue(static::BUTTON_FOREGROUND_COLOR.'_TEMP', $colors['stripe_button_foreground_color']);
-        Configuration::updateValue(static::HIGHLIGHT_COLOR.'_TEMP', $colors['stripe_highlight_color']);
-        Configuration::updateValue(static::ERROR_COLOR.'_TEMP', $colors['stripe_error_color']);
-        Configuration::updateValue(static::ERROR_GLYPH_COLOR.'_TEMP', $colors['stripe_error_glyph_color']);
-        Configuration::updateValue(static::INPUT_TEXT_FOREGROUND_COLOR.'_TEMP', $colors['stripe_payment_request_foreground_color']);
-        Configuration::updateValue(static::INPUT_TEXT_BACKGROUND_COLOR.'_TEMP', $colors['stripe_payment_request_background_color']);
-        Configuration::updateValue(static::INPUT_FONT_FAMILY.'_TEMP', $colors['stripe_input_font_family']);
-        Configuration::updateValue(static::CHECKOUT_FONT_FAMILY.'_TEMP', $colors['stripe_checkout_font_family']);
-        Configuration::updateValue(static::CHECKOUT_FONT_SIZE.'_TEMP', $colors['stripe_checkout_font_size']);
-        Configuration::updateValue(static::PAYMENT_REQUEST_BUTTON_STYLE.'_TEMP', $colors['stripe_payment_request_style']);
-
-        die(json_encode([
-            'success' => true,
-        ]));
-    }
-
-    /**
      * Update configuration value in ALL contexts
      *
-     * @param string $key    Configuration key
-     * @param mixed  $values Configuration values, can be string or array with id_lang as key
-     * @param bool   $html   Contains HTML
+     * @param string $key Configuration key
+     * @param mixed $values Configuration values, can be string or array with id_lang as key
+     * @param bool $html Contains HTML
      *
      * @throws PrestaShopException
      */
@@ -856,41 +691,123 @@ class Stripe extends PaymentModule
      */
     public function getShopId()
     {
-        return (int) Context::getContext()->shop->id;
+        return (int)Context::getContext()->shop->id;
+    }
+
+    /**
+     * Process Order Options
+     *
+     * @return void
+     *
+     * @throws PrestaShopException
+     */
+    protected function postProcessOrderOptions()
+    {
+        $options = [
+            static::STATUS_VALIDATED => Tools::getValue(static::STATUS_VALIDATED),
+            static::USE_STATUS_REFUND => Tools::getValue(static::USE_STATUS_REFUND),
+            static::STATUS_REFUND => Tools::getValue(static::STATUS_REFUND),
+            static::STATUS_PROCESSING => Tools::getValue(static::STATUS_PROCESSING),
+            static::USE_STATUS_PARTIAL_REFUND => Tools::getValue(static::USE_STATUS_PARTIAL_REFUND),
+            static::STATUS_PARTIAL_REFUND => Tools::getValue(static::STATUS_PARTIAL_REFUND),
+            static::USE_STATUS_AUTHORIZED => Tools::getValue(static::USE_STATUS_AUTHORIZED),
+            static::STATUS_AUTHORIZED => Tools::getValue(static::STATUS_AUTHORIZED),
+            static::USE_STATUS_IN_REVIEW => Tools::getValue(static::USE_STATUS_IN_REVIEW),
+            static::STATUS_IN_REVIEW => Tools::getValue(static::STATUS_IN_REVIEW),
+            static::MANUAL_CAPTURE => Tools::getValue(static::MANUAL_CAPTURE),
+            static::ACCOUNT_COUNTRY => Tools::getValue(static::ACCOUNT_COUNTRY),
+            static::GENERATE_CREDIT_SLIP => (bool)Tools::getValue(static::GENERATE_CREDIT_SLIP),
+        ];
+
+        $this->postProcessOptions($options);
+    }
+
+    /**
+     * Process Advanced Options
+     *
+     * @return void
+     *
+     * @throws PrestaShopException
+     */
+    protected function postProcessDesignOptions()
+    {
+        $options = [
+            static::INPUT_PLACEHOLDER_COLOR => Tools::getValue(static::INPUT_PLACEHOLDER_COLOR),
+            static::BUTTON_BACKGROUND_COLOR => Tools::getValue(static::BUTTON_BACKGROUND_COLOR),
+            static::BUTTON_FOREGROUND_COLOR => Tools::getValue(static::BUTTON_FOREGROUND_COLOR),
+            static::HIGHLIGHT_COLOR => Tools::getValue(static::HIGHLIGHT_COLOR),
+            static::ERROR_COLOR => Tools::getValue(static::ERROR_COLOR),
+            static::ERROR_GLYPH_COLOR => Tools::getValue(static::ERROR_GLYPH_COLOR),
+            static::INPUT_TEXT_FOREGROUND_COLOR => Tools::getValue(static::INPUT_TEXT_FOREGROUND_COLOR),
+            static::INPUT_TEXT_BACKGROUND_COLOR => Tools::getValue(static::INPUT_TEXT_BACKGROUND_COLOR),
+            static::INPUT_FONT_FAMILY => Tools::getValue(static::INPUT_FONT_FAMILY),
+            static::CHECKOUT_FONT_FAMILY => Tools::getValue(static::CHECKOUT_FONT_FAMILY),
+            static::CHECKOUT_FONT_SIZE => Tools::getValue(static::CHECKOUT_FONT_SIZE),
+            static::PAYMENT_REQUEST_BUTTON_STYLE => Tools::getValue(static::PAYMENT_REQUEST_BUTTON_STYLE),
+        ];
+
+        $this->postProcessOptions($options);
+    }
+
+    /**
+     * Add confirmation message
+     *
+     * @param string $message Message
+     * @param bool $private
+     */
+    protected function addConfirmation($message, $private = false)
+    {
+        /** @var AdminController $controller */
+        $controller = $this->context->controller;
+        if (!Tools::isSubmit('configure')) {
+            if (!$private) {
+                $controller->confirmations[] = '<a href="' . $this->baseUrl . '">' . $this->displayName . ': ' . $message . '</a>';
+            }
+        } else {
+            $controller->confirmations[] = $message;
+        }
+    }
+
+    /**
+     * Add error message
+     *
+     * @param string $message Message
+     */
+    protected function addError($message, $private = false)
+    {
+        /** @var AdminController $controller */
+        $controller = $this->context->controller;
+        if (!Tools::isSubmit('configure')) {
+            if (!$private) {
+                $controller->errors[] = '<a href="' . $this->baseUrl . '">' . $this->displayName . ': ' . $message . '</a>';
+            }
+        } else {
+            // Do not add error in this case
+            // It will break execution of AdminController
+            $controller->warnings[] = $message;
+        }
     }
 
     /**
      * Render the transactions page
      *
      * @return string HTML
-     * @throws Exception
      *
-     * @since 1.0.0
+     * @throws PrestaShopException
+     * @throws SmartyException
      */
     protected function renderTransactionsPage()
     {
-        $output = '';
-
-        $this->context->smarty->assign(
-            [
-                'module_url' => $this->moduleUrl.'&menu='.static::MENU_TRANSACTIONS,
-            ]
-        );
-
-        $output .= $this->renderTransactionsList();
-
-        return $output;
+        return $this->renderTransactionsList();
     }
 
     /**
      * Render the transactions list
      *
      * @return string HTML
-     * @throws Exception
-     * @throws PrestaShopDatabaseException
+     *
      * @throws PrestaShopException
      * @throws SmartyException
-     * @since 1.0.0
      */
     protected function renderTransactionsList()
     {
@@ -899,39 +816,39 @@ class Stripe extends PaymentModule
                 'title' => $this->l('ID'),
                 'width' => 'auto',
             ],
-            'type_icon'             => [
-                'type'            => 'text',
-                'title'           => $this->l('Type'),
-                'width'           => 'auto',
-                'color'           => 'color',
-                'text'            => 'type_text',
-                'callback'        => 'displayEventLabel',
+            'type_icon' => [
+                'type' => 'text',
+                'title' => $this->l('Type'),
+                'width' => 'auto',
+                'color' => 'color',
+                'text' => 'type_text',
+                'callback' => 'displayEventLabel',
                 'callback_object' => StripeTransaction::class,
             ],
-            'amount'                => [
-                'type'  => 'price',
+            'amount' => [
+                'type' => 'price',
                 'title' => $this->l('Amount'),
                 'width' => 'auto',
             ],
             'card_last_digits' => [
-                'type'            => 'text',
-                'title'           => $this->l('Credit card (last 4 digits)'),
-                'width'           => 'auto',
-                'callback'        => 'displayCardDigits',
+                'type' => 'text',
+                'title' => $this->l('Credit card (last 4 digits)'),
+                'width' => 'auto',
+                'callback' => 'displayCardDigits',
                 'callback_object' => StripeTransaction::class,
             ],
-            'source_text'           => [
-                'type'  => 'text',
+            'source_text' => [
+                'type' => 'text',
                 'title' => $this->l('Source'),
                 'width' => 'auto',
             ],
-            'source_type'           => [
-                'type'  => 'text',
+            'source_type' => [
+                'type' => 'text',
                 'title' => $this->l('Payment type'),
                 'width' => 'auto',
             ],
-            'date_upd'              => [
-                'type'  => 'datetime',
+            'date_upd' => [
+                'type' => 'datetime',
                 'title' => $this->l('Date & time'), 'width' => 'auto',
             ],
         ];
@@ -939,12 +856,12 @@ class Stripe extends PaymentModule
         if (Tools::isSubmit('submitResetstripe_transaction')) {
             $cookie = $this->context->cookie;
             foreach ($fieldsList as $fieldName => $field) {
-                unset($cookie->{StripeTransaction::$definition['table'].'Filter_'.$fieldName});
-                unset($_POST[StripeTransaction::$definition['table'].'Filter_'.$fieldName]);
-                unset($_GET[StripeTransaction::$definition['table'].'Filter_'.$fieldName]);
+                unset($cookie->{StripeTransaction::$definition['table'] . 'Filter_' . $fieldName});
+                unset($_POST[StripeTransaction::$definition['table'] . 'Filter_' . $fieldName]);
+                unset($_GET[StripeTransaction::$definition['table'] . 'Filter_' . $fieldName]);
             }
-            unset($this->context->cookie->{StripeTransaction::$definition['table'].'Orderby'});
-            unset($this->context->cookie->{StripeTransaction::$definition['table'].'OrderWay'});
+            unset($this->context->cookie->{StripeTransaction::$definition['table'] . 'Orderby'});
+            unset($this->context->cookie->{StripeTransaction::$definition['table'] . 'OrderWay'});
 
             $cookie->write();
         }
@@ -953,10 +870,10 @@ class Stripe extends PaymentModule
         $sql->select('COUNT(*)');
         $sql->from(bqSQL(StripeTransaction::$definition['table']));
 
-        $listTotal = (int) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
+        $listTotal = (int)Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
 
-        $pagination = (int) $this->getSelectedPagination(StripeTransaction::$definition['table']);
-        $currentPage = (int) $this->getSelectedPage(StripeTransaction::$definition['table'], $listTotal);
+        $pagination = (int)$this->getSelectedPagination(StripeTransaction::$definition['table']);
+        $currentPage = (int)$this->getSelectedPage(StripeTransaction::$definition['table'], $listTotal);
 
         $helperList = new HelperList();
         $helperList->shopLinkType = false;
@@ -964,28 +881,28 @@ class Stripe extends PaymentModule
         $helperList->module = $this;
         $helperList->bulk_actions = [
             'delete' => [
-                'text'    => $this->l('Delete selected'),
+                'text' => $this->l('Delete selected'),
                 'confirm' => $this->l('Delete selected items?'),
-                'icon'    => 'icon-trash',
+                'icon' => 'icon-trash',
             ],
         ];
         $helperList->actions = ['view', 'delete'];
         $helperList->page = $currentPage;
         $helperList->_defaultOrderBy = StripeTransaction::$definition['primary'];
-        if (Tools::isSubmit(StripeTransaction::$definition['table'].'Orderby')) {
-            $helperList->orderBy = Tools::getValue(StripeTransaction::$definition['table'].'Orderby');
-            $this->context->cookie->{StripeTransaction::$definition['table'].'Orderby'} = $helperList->orderBy;
-        } elseif (!empty($this->context->cookie->{StripeTransaction::$definition['table'].'Orderby'})) {
-            $helperList->orderBy = $this->context->cookie->{StripeTransaction::$definition['table'].'Orderby'};
+        if (Tools::isSubmit(StripeTransaction::$definition['table'] . 'Orderby')) {
+            $helperList->orderBy = Tools::getValue(StripeTransaction::$definition['table'] . 'Orderby');
+            $this->context->cookie->{StripeTransaction::$definition['table'] . 'Orderby'} = $helperList->orderBy;
+        } elseif (!empty($this->context->cookie->{StripeTransaction::$definition['table'] . 'Orderby'})) {
+            $helperList->orderBy = $this->context->cookie->{StripeTransaction::$definition['table'] . 'Orderby'};
         } else {
             $helperList->orderBy = StripeTransaction::$definition['primary'];
         }
 
-        if (Tools::isSubmit(StripeTransaction::$definition['table'].'Orderway')) {
-            $helperList->orderWay = mb_strtoupper(Tools::getValue(StripeTransaction::$definition['table'].'Orderway'));
-            $this->context->cookie->{StripeTransaction::$definition['table'].'Orderway'} = Tools::getValue(StripeTransaction::$definition['table'].'Orderway');
-        } elseif (!empty($this->context->cookie->{StripeTransaction::$definition['table'].'Orderway'})) {
-            $helperList->orderWay = mb_strtoupper($this->context->cookie->{StripeTransaction::$definition['table'].'Orderway'});
+        if (Tools::isSubmit(StripeTransaction::$definition['table'] . 'Orderway')) {
+            $helperList->orderWay = mb_strtoupper(Tools::getValue(StripeTransaction::$definition['table'] . 'Orderway'));
+            $this->context->cookie->{StripeTransaction::$definition['table'] . 'Orderway'} = Tools::getValue(StripeTransaction::$definition['table'] . 'Orderway');
+        } elseif (!empty($this->context->cookie->{StripeTransaction::$definition['table'] . 'Orderway'})) {
+            $helperList->orderWay = mb_strtoupper($this->context->cookie->{StripeTransaction::$definition['table'] . 'Orderway'});
         } else {
             $helperList->orderWay = 'DESC';
         }
@@ -996,17 +913,20 @@ class Stripe extends PaymentModule
             (new DbQuery())
                 ->select('*')
                 ->from(bqSQL(StripeTransaction::$definition['table']), 'st')
-                ->orderBy('`'.bqSQL($helperList->orderBy).'` '.pSQL($helperList->orderWay))
-                ->where('1 '.$filterSql)
+                ->orderBy('`' . bqSQL($helperList->orderBy) . '` ' . pSQL($helperList->orderWay))
+                ->where('1 ' . $filterSql)
                 ->limit($pagination, ($currentPage - 1) * $pagination)
         );
+
+        $sourceTypes = [];
+        foreach ($this->methods->getAllMethods() as $method) {
+            $sourceTypes[$method->getMethodId()] = $method->getShortName();
+        }
 
         foreach ($results as &$result) {
             // Process results
             $currency = $this->getCurrencyIdByOrderId($result['id_order']);
-            if (!in_array(mb_strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
-                $result['amount'] = (float) ($result['amount'] / 100);
-            }
+            $result['amount'] = Utils::fromCurrencyUnit($currency, $result['amount']);
             $result['card_last_digits'] = str_pad($result['card_last_digits'], 4, '0', STR_PAD_LEFT);
             $result['amount'] = Tools::displayPrice($result['amount'], $currency);
             switch ($result['type']) {
@@ -1065,26 +985,7 @@ class Stripe extends PaymentModule
                     break;
             }
 
-            switch ($result['source_type']) {
-                case 'ideal':
-                    $result['source_type'] = $this->l('iDEAL');
-                    break;
-                case 'sofort':
-                    $result['source_type'] = $this->l('Sofort Banking');
-                    break;
-                case 'bancontact':
-                    $result['source_type'] = $this->l('Bancontact');
-                    break;
-                case 'giropay':
-                    $result['source_type'] = $this->l('Giropay');
-                    break;
-                case 'three_d_secure':
-                    $result['source_type'] = $this->l('3D Secure');
-                    break;
-                default:
-                    $result['source_type'] = $this->l('Credit Card');
-                    break;
-            }
+            $result['source_type'] = $sourceTypes[$result['source_type']] ?? $this->l('Unknown');
         }
 
         $helperList->listTotal = count($results);
@@ -1092,10 +993,10 @@ class Stripe extends PaymentModule
         $helperList->identifier = StripeTransaction::$definition['primary'];
         $helperList->title = $this->l('Transactions & Events');
         $helperList->token = Tools::getAdminTokenLite('AdminModules');
-        $helperList->currentIndex = AdminController::$currentIndex.'&'.http_build_query([
-            'configure' => $this->name,
-            'menu'      => static::MENU_TRANSACTIONS,
-        ]);
+        $helperList->currentIndex = AdminController::$currentIndex . '&' . http_build_query([
+                'configure' => $this->name,
+                'menu' => static::MENU_TRANSACTIONS,
+            ]);
 
         $helperList->table = StripeTransaction::$definition['table'];
         $helperList->tpl_vars['icon'] = 'icon icon-cc-stripe';
@@ -1114,8 +1015,8 @@ class Stripe extends PaymentModule
     protected function getSelectedPagination($idList, $defaultPagination = 50)
     {
         $selectedPagination = Tools::getValue(
-            $idList.'_pagination',
-            isset($this->context->cookie->{$idList.'_pagination'}) ? $this->context->cookie->{$idList.'_pagination'} : $defaultPagination
+            $idList . '_pagination',
+            isset($this->context->cookie->{$idList . '_pagination'}) ? $this->context->cookie->{$idList . '_pagination'} : $defaultPagination
         );
 
         return $selectedPagination;
@@ -1124,7 +1025,7 @@ class Stripe extends PaymentModule
     /**
      * Get selected page
      *
-     * @param int $idList    List ID
+     * @param int $idList List ID
      * @param int $listTotal Total list items
      *
      * @return int|mixed
@@ -1132,7 +1033,7 @@ class Stripe extends PaymentModule
     protected function getSelectedPage($idList, $listTotal)
     {
         /* Determine current page number */
-        $page = (int) Tools::getValue('submitFilter'.$idList);
+        $page = (int)Tools::getValue('submitFilter' . $idList);
 
         if (!$page) {
             $page = 1;
@@ -1151,7 +1052,7 @@ class Stripe extends PaymentModule
      * @param array $fieldsList
      *
      * @return string
-     * @throws PrestaShopDatabaseException
+     *
      * @throws PrestaShopException
      */
     protected function getSQLFilter($helperList, $fieldsList)
@@ -1166,37 +1067,37 @@ class Stripe extends PaymentModule
         if (isset($helperList->list_id)) {
             foreach ($_POST as $key => $value) {
                 if ($value === '') {
-                    unset($helperList->context->cookie->{$prefix.$key});
-                } elseif (stripos($key, $helperList->list_id.'Filter_') === 0) {
-                    $helperList->context->cookie->{$prefix.$key} = !is_array($value) ? $value : serialize($value);
+                    unset($helperList->context->cookie->{$prefix . $key});
+                } elseif (stripos($key, $helperList->list_id . 'Filter_') === 0) {
+                    $helperList->context->cookie->{$prefix . $key} = !is_array($value) ? $value : serialize($value);
                 } elseif (stripos($key, 'submitFilter') === 0) {
                     $helperList->context->cookie->$key = !is_array($value) ? $value : serialize($value);
                 }
             }
 
             foreach ($_GET as $key => $value) {
-                if (stripos($key, $helperList->list_id.'Filter_') === 0) {
-                    $helperList->context->cookie->{$prefix.$key} = !is_array($value) ? $value : serialize($value);
+                if (stripos($key, $helperList->list_id . 'Filter_') === 0) {
+                    $helperList->context->cookie->{$prefix . $key} = !is_array($value) ? $value : serialize($value);
                 } elseif (stripos($key, 'submitFilter') === 0) {
                     $helperList->context->cookie->$key = !is_array($value) ? $value : serialize($value);
                 }
-                if (stripos($key, $helperList->list_id.'Orderby') === 0 && is_string($value) && Validate::isOrderBy($value)) {
+                if (stripos($key, $helperList->list_id . 'Orderby') === 0 && is_string($value) && Validate::isOrderBy($value)) {
                     if ($value === '' || $value == $helperList->_defaultOrderBy) {
-                        unset($helperList->context->cookie->{$prefix.$key});
+                        unset($helperList->context->cookie->{$prefix . $key});
                     } else {
-                        $helperList->context->cookie->{$prefix.$key} = $value;
+                        $helperList->context->cookie->{$prefix . $key} = $value;
                     }
-                } elseif (stripos($key, $helperList->list_id.'Orderway') === 0 && is_string($value) && Validate::isOrderWay($value)) {
+                } elseif (stripos($key, $helperList->list_id . 'Orderway') === 0 && is_string($value) && Validate::isOrderWay($value)) {
                     if ($value === '') {
-                        unset($helperList->context->cookie->{$prefix.$key});
+                        unset($helperList->context->cookie->{$prefix . $key});
                     } else {
-                        $helperList->context->cookie->{$prefix.$key} = $value;
+                        $helperList->context->cookie->{$prefix . $key} = $value;
                     }
                 }
             }
         }
 
-        $filters = $helperList->context->cookie->getFamily($prefix.$helperList->list_id.'Filter_');
+        $filters = $helperList->context->cookie->getFamily($prefix . $helperList->list_id . 'Filter_');
         $definition = false;
         if (isset($helperList->className) && $helperList->className) {
             $definition = ObjectModel::getDefinition($helperList->className);
@@ -1204,8 +1105,8 @@ class Stripe extends PaymentModule
 
         foreach ($filters as $key => $value) {
             /* Extracting filters from $_POST on key filter_ */
-            if ($value != null && !strncmp($key, $prefix.$helperList->list_id.'Filter_', 7 + mb_strlen($prefix.$helperList->list_id))) {
-                $key = mb_substr($key, 7 + mb_strlen($prefix.$helperList->list_id));
+            if ($value != null && !strncmp($key, $prefix . $helperList->list_id . 'Filter_', 7 + mb_strlen($prefix . $helperList->list_id))) {
+                $key = mb_substr($key, 7 + mb_strlen($prefix . $helperList->list_id));
                 /* Table alias could be specified using a ! eg. alias!field */
                 $tmpTab = explode('!', $key);
                 $filter = count($tmpTab) > 1 ? $tmpTab[1] : $tmpTab[0];
@@ -1215,41 +1116,41 @@ class Stripe extends PaymentModule
                     if (($type == 'date' || $type == 'datetime') && is_string($value)) {
                         $value = json_decode($value, true);
                     }
-                    $key = isset($tmpTab[1]) ? $tmpTab[0].'.`'.$tmpTab[1].'`' : '`'.$tmpTab[0].'`';
+                    $key = isset($tmpTab[1]) ? $tmpTab[0] . '.`' . $tmpTab[1] . '`' : '`' . $tmpTab[0] . '`';
 
                     /* Only for date filtering (from, to) */
                     if (is_array($value)) {
-                        if (isset($value[0]) && !empty($value[0])) {
+                        if (!empty($value[0])) {
                             if (!Validate::isDate($value[0])) {
                                 return $this->displayError('The \'From\' date format is invalid (YYYY-MM-DD)');
                             } else {
-                                $sqlFilter .= ' AND '.pSQL($key).' >= \''.pSQL(Tools::dateFrom($value[0])).'\'';
+                                $sqlFilter .= ' AND ' . pSQL($key) . ' >= \'' . pSQL(Tools::dateFrom($value[0])) . '\'';
                             }
                         }
 
-                        if (isset($value[1]) && !empty($value[1])) {
+                        if (!empty($value[1])) {
                             if (!Validate::isDate($value[1])) {
                                 return $this->displayError('The \'To\' date format is invalid (YYYY-MM-DD)');
                             } else {
-                                $sqlFilter .= ' AND '.pSQL($key).' <= \''.pSQL(Tools::dateTo($value[1])).'\'';
+                                $sqlFilter .= ' AND ' . pSQL($key) . ' <= \'' . pSQL(Tools::dateTo($value[1])) . '\'';
                             }
                         }
                     } else {
                         $sqlFilter .= ' AND ';
-                        $checkKey = ($key == $helperList->identifier || $key == '`'.$helperList->identifier.'`');
+                        $checkKey = ($key == $helperList->identifier || $key == '`' . $helperList->identifier . '`');
                         $alias = ($definition && !empty($definition['fields'][$filter]['shop'])) ? 'sa' : 'a';
 
                         if ($type == 'int' || $type == 'bool') {
-                            $sqlFilter .= (($checkKey || $key == '`active`') ? $alias.'.' : '').pSQL($key).' = '.(int) $value.' ';
+                            $sqlFilter .= (($checkKey || $key == '`active`') ? $alias . '.' : '') . pSQL($key) . ' = ' . (int)$value . ' ';
                         } elseif ($type == 'decimal') {
-                            $sqlFilter .= ($checkKey ? $alias.'.' : '').pSQL($key).' = '.(float) $value.' ';
+                            $sqlFilter .= ($checkKey ? $alias . '.' : '') . pSQL($key) . ' = ' . (float)$value . ' ';
                         } elseif ($type == 'select') {
-                            $sqlFilter .= ($checkKey ? $alias.'.' : '').pSQL($key).' = \''.pSQL($value).'\' ';
+                            $sqlFilter .= ($checkKey ? $alias . '.' : '') . pSQL($key) . ' = \'' . pSQL($value) . '\' ';
                         } elseif ($type == 'price') {
-                            $value = (float) str_replace(',', '.', $value);
-                            $sqlFilter .= ($checkKey ? $alias.'.' : '').pSQL($key).' = '.pSQL(trim($value)).' ';
+                            $value = (float)str_replace(',', '.', $value);
+                            $sqlFilter .= ($checkKey ? $alias . '.' : '') . pSQL($key) . ' = ' . pSQL(trim($value)) . ' ';
                         } else {
-                            $sqlFilter .= ($checkKey ? $alias.'.' : '').pSQL($key).' LIKE \'%'.pSQL(trim($value)).'%\' ';
+                            $sqlFilter .= ($checkKey ? $alias . '.' : '') . pSQL($key) . ' LIKE \'%' . pSQL(trim($value)) . '%\' ';
                         }
                     }
                 }
@@ -1292,7 +1193,7 @@ class Stripe extends PaymentModule
         if (Validate::isLoadedObject($order)) {
             $currency = Currency::getCurrencyInstance($order->id_currency);
         } else {
-            $currency = Currency::getCurrencyInstance((int) Configuration::get('PS_CURRENCY_DEFAULT'));
+            $currency = Currency::getCurrencyInstance((int)Configuration::get('PS_CURRENCY_DEFAULT'));
         }
 
         return $currency;
@@ -1302,26 +1203,14 @@ class Stripe extends PaymentModule
      * Render the general settings page
      *
      * @return string HTML
-     * @throws Exception
-     * @throws SmartyException
      *
-     * @since 1.0.0
+     * @throws PrestaShopException
+     * @throws SmartyException
      */
     protected function renderSettingsPage()
     {
-        $output = '';
-
-        $this->context->smarty->assign(
-            [
-                'module_url' => $this->moduleUrl.'&menu='.static::MENU_SETTINGS,
-                'baseUrl'    => $this->baseUrl,
-            ]
-        );
-
-        $output .= $this->display(__FILE__, 'views/templates/admin/configure.tpl');
-
+        $output = $this->display(__FILE__, 'views/templates/admin/configure.tpl');
         $output .= $this->renderGeneralOptions();
-
         return $output;
     }
 
@@ -1330,33 +1219,29 @@ class Stripe extends PaymentModule
      *
      * @return string HTML
      *
-     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
      * @throws SmartyException
-     * @since 1.0.0
      */
     protected function renderGeneralOptions()
     {
         $helper = new HelperOptions();
-        $helper->id = static::OPTIONS_MODULE_SETTINGS;
         $helper->module = $this;
         $helper->token = Tools::getAdminTokenLite('AdminModules');
-        $helper->currentIndex = AdminController::$currentIndex.'&configure='.$this->name;
+        $helper->currentIndex = AdminController::$currentIndex . '&configure=' . $this->name;
         $helper->title = $this->displayName;
         $helper->table = 'configuration';
         $helper->show_toolbar = false;
 
-        return $helper->generateOptions(
-            array_merge(
-                $this->getGeneralOptions(),
-                $this->getStripeCreditCardOptions(),
-                $this->getDesignOptions(),
-                $this->getStripeCheckoutOptions(),
-                $this->getEuropeanPaymentMethodsOptions(),
-                $this->getOtherPaymentOptions(),
-                $this->getOrderOptions()
-            )
+        $options = array_merge(
+            $this->getGeneralOptions(),
+            $this->getPaymentMethodsForm(),
+            $this->getOrderOptions(),
+            $this->getStripeCheckoutOptions(),
+            $this->getStripeCreditCardOptions(),
+            $this->getDesignOptions(),
         );
+
+        return $helper->generateOptions($options);
     }
 
     /**
@@ -1364,242 +1249,79 @@ class Stripe extends PaymentModule
      *
      * @return array General options
      *
-     * @since 1.0.0
      * @throws PrestaShopException
      */
     protected function getGeneralOptions()
     {
         return [
             'api' => [
-                'title'  => $this->l('API Settings'),
-                'icon'   => 'icon-server',
+                'title' => $this->l('API Settings'),
+                'icon' => 'icon-server',
                 'fields' => [
                     static::PUBLISHABLE_KEY_TEST => [
-                        'title'       => $this->l('Publishable key (test)'),
-                        'type'        => 'text',
-                        'name'        => static::PUBLISHABLE_KEY_TEST,
-                        'value'       => Configuration::get(static::PUBLISHABLE_KEY_TEST),
-                        'auto_value'  => false,
-                        'validation'  => 'isString',
-                        'cast'        => 'strval',
+                        'title' => $this->l('Publishable key (test)'),
+                        'type' => 'text',
+                        'name' => static::PUBLISHABLE_KEY_TEST,
+                        'value' => Configuration::get(static::PUBLISHABLE_KEY_TEST),
+                        'auto_value' => false,
+                        'validation' => 'isString',
+                        'cast' => 'strval',
                         'placeholder' => 'pk_test...',
-                        'size'        => 64,
+                        'size' => 64,
                     ],
-                    static::SECRET_KEY_TEST      => [
-                        'title'       => $this->l('Secret key (test)'),
-                        'type'        => 'text',
-                        'name'        => static::SECRET_KEY_TEST,
-                        'value'       => Configuration::get(static::SECRET_KEY_TEST),
-                        'auto_value'  => false,
-                        'validation'  => 'isString',
-                        'cast'        => 'strval',
+                    static::SECRET_KEY_TEST => [
+                        'title' => $this->l('Secret key (test)'),
+                        'type' => 'text',
+                        'name' => static::SECRET_KEY_TEST,
+                        'value' => Configuration::get(static::SECRET_KEY_TEST),
+                        'auto_value' => false,
+                        'validation' => 'isString',
+                        'cast' => 'strval',
                         'placeholder' => 'sk_test...',
-                        'size'        => 64,
+                        'size' => 64,
                     ],
                     static::PUBLISHABLE_KEY_LIVE => [
-                        'title'       => $this->l('Publishable key (live)'),
-                        'type'        => 'text',
-                        'name'        => static::PUBLISHABLE_KEY_LIVE,
-                        'value'       => Configuration::get(static::PUBLISHABLE_KEY_LIVE),
-                        'auto_value'  => false,
-                        'validation'  => 'isString',
-                        'cast'        => 'strval',
+                        'title' => $this->l('Publishable key (live)'),
+                        'type' => 'text',
+                        'name' => static::PUBLISHABLE_KEY_LIVE,
+                        'value' => Configuration::get(static::PUBLISHABLE_KEY_LIVE),
+                        'auto_value' => false,
+                        'validation' => 'isString',
+                        'cast' => 'strval',
                         'placeholder' => 'pk_live...',
-                        'size'        => 64,
+                        'size' => 64,
                     ],
-                    static::SECRET_KEY_LIVE      => [
-                        'title'       => $this->l('Secret key (live)'),
-                        'type'        => 'text',
-                        'name'        => static::SECRET_KEY_LIVE,
-                        'value'       => Configuration::get(static::SECRET_KEY_LIVE),
-                        'auto_value'  => false,
-                        'validation'  => 'isString',
-                        'cast'        => 'strval',
+                    static::SECRET_KEY_LIVE => [
+                        'title' => $this->l('Secret key (live)'),
+                        'type' => 'text',
+                        'name' => static::SECRET_KEY_LIVE,
+                        'value' => Configuration::get(static::SECRET_KEY_LIVE),
+                        'auto_value' => false,
+                        'validation' => 'isString',
+                        'cast' => 'strval',
                         'placeholder' => 'sk_live...',
-                        'size'        => 64,
+                        'size' => 64,
                     ],
                     static::ACCOUNT_COUNTRY => [
-                        'title'       => $this->l('Account country'),
-                        'type'        => 'select',
-                        'label'       => $this->l('Country of your stripe account'),
-                        'name'        => static::ACCOUNT_COUNTRY,
-                        'required'    => true,
-                        'identifier'  => 'code',
-                        'value'       => Utils::getStripeCountry(),
-                        'auto_value'  => false,
-                        'list'        => Utils::getStripeCountries(),
+                        'title' => $this->l('Account country'),
+                        'type' => 'select',
+                        'label' => $this->l('Country of your stripe account'),
+                        'name' => static::ACCOUNT_COUNTRY,
+                        'required' => true,
+                        'identifier' => 'code',
+                        'value' => Utils::getStripeCountry(),
+                        'auto_value' => false,
+                        'list' => Utils::getStripeCountries(),
                     ],
-                    static::GO_LIVE    => [
-                        'title'      => $this->l('Go live'),
-                        'type'       => 'bool',
-                        'desc'       => $this->l('Enable this option to accept live payments, otherwise the test keys are used, which you can use to test your store.'),
-                        'name'       => static::GO_LIVE,
-                        'value'      => Configuration::get(static::GO_LIVE),
+                    static::GO_LIVE => [
+                        'title' => $this->l('Go live'),
+                        'type' => 'bool',
+                        'desc' => $this->l('Enable this option to accept live payments, otherwise the test keys are used, which you can use to test your store.'),
+                        'name' => static::GO_LIVE,
+                        'value' => Configuration::get(static::GO_LIVE),
                         'auto_value' => false,
                         'validation' => 'isBool',
-                        'cast'       => 'intval',
-                    ],
-                ],
-                'submit' => [
-                    'title' => $this->l('Save'),
-                    'class' => 'button',
-                ],
-            ],
-        ];
-    }
-
-    /**
-     * Get available general options
-     *
-     * @return array General options
-     *
-     * @since 1.0.0
-     * @throws PrestaShopException
-     */
-    protected function getStripeCheckoutOptions()
-    {
-        return [
-            'checkout' => [
-                'title'  => $this->l('Stripe Checkout'),
-                'icon'   => 'icon-credit-card',
-                'fields' => [
-                    static::STRIPE_CHECKOUT    => [
-                        'title'      => $this->l('Enable Stripe Checkout'),
-                        'type'       => 'bool',
-                        'name'       => static::STRIPE_CHECKOUT,
-                        'value'      => Configuration::get(static::STRIPE_CHECKOUT),
-                        'auto_value' => false,
-                        'validation' => 'isBool',
-                        'cast'       => 'intval',
-                    ],
-                    static::COLLECT_BILLING    => [
-                        'title'      => $this->l('Collect billing address'),
-                        'type'       => 'bool',
-                        'name'       => static::COLLECT_BILLING,
-                        'value'      => Configuration::get(static::COLLECT_BILLING),
-                        'auto_value' => false,
-                        'validation' => 'isBool',
-                        'cast'       => 'intval',
-                    ],
-                    static::SHOW_PAYMENT_LOGOS => [
-                        'title'      => $this->l('Show payment logos'),
-                        'type'       => 'bool',
-                        'name'       => static::SHOW_PAYMENT_LOGOS,
-                        'value'      => Configuration::get(static::SHOW_PAYMENT_LOGOS),
-                        'auto_value' => false,
-                        'validation' => 'isBool',
-                        'cast'       => 'intval',
-                    ],
-                ],
-                'submit' => [
-                    'title' => $this->l('Save'),
-                    'class' => 'button',
-                ],
-            ],
-        ];
-    }
-
-    /**
-     * Get available general options
-     *
-     * @return array General options
-     *
-     * @since 1.0.0
-     * @throws PrestaShopException
-     */
-    protected function getStripeCreditCardOptions()
-    {
-        return [
-            'creditcard' => [
-                'title'  => $this->l('Stripe credit card form'),
-                'icon'   => 'icon-credit-card',
-                'fields' => [
-                    static::STRIPE_CC_FORM      => [
-                        'title'      => $this->l('Enable Stripe credit card form'),
-                        'type'       => 'bool',
-                        'name'       => static::STRIPE_CC_FORM,
-                        'value'      => Configuration::get(static::STRIPE_CC_FORM),
-                        'auto_value' => false,
-                        'validation' => 'isBool',
-                        'cast'       => 'intval',
-                    ],
-                    static::STRIPE_PAYMENT_REQUEST => [
-                        'title'      => $this->l('Enable the payment request button'),
-                        'desc'       => $this->l('This option adds an Apple Pay or Google Pay button to the form'),
-                        'type'       => 'bool',
-                        'name'       => static::STRIPE_PAYMENT_REQUEST,
-                        'value'      => Configuration::get(static::STRIPE_PAYMENT_REQUEST),
-                        'auto_value' => false,
-                        'validation' => 'isBool',
-                        'cast'       => 'intval',
-                        'size'       => 64,
-                    ],
-                ],
-                'submit' => [
-                    'title' => $this->l('Save'),
-                    'class' => 'button',
-                ],
-            ],
-        ];
-    }
-
-    /**
-     * @return array
-     *
-     * @since 1.2.0
-     * @throws PrestaShopException
-     */
-    protected function getEuropeanPaymentMethodsOptions()
-    {
-        return [
-            'euro' => [
-                'title'  => $this->l('European payment methods'),
-                'icon'   => 'icon-euro',
-                'fields' => [
-                    static::IDEAL      => [
-                        'title'      => $this->l('Accept iDEAL'),
-                        'type'       => 'bool',
-                        'name'       => static::IDEAL,
-                        'value'      => Configuration::get(static::IDEAL),
-                        'auto_value' => false,
-                        'validation' => 'isBool',
-                        'cast'       => 'intval',
-                    ],
-                    static::BANCONTACT => [
-                        'title'      => $this->l('Accept Bancontact'),
-                        'type'       => 'bool',
-                        'name'       => static::BANCONTACT,
-                        'value'      => Configuration::get(static::BANCONTACT),
-                        'auto_value' => false,
-                        'validation' => 'isBool',
-                        'cast'       => 'intval',
-                    ],
-                    static::GIROPAY    => [
-                        'title'      => $this->l('Accept Giropay'),
-                        'type'       => 'bool',
-                        'name'       => static::GIROPAY,
-                        'value'      => Configuration::get(static::GIROPAY),
-                        'auto_value' => false,
-                        'validation' => 'isBool',
-                        'cast'       => 'intval',
-                    ],
-                    static::SOFORT     => [
-                        'title'      => $this->l('Accept Sofort'),
-                        'type'       => 'bool',
-                        'name'       => static::SOFORT,
-                        'value'      => Configuration::get(static::SOFORT),
-                        'auto_value' => false,
-                        'validation' => 'isBool',
-                        'cast'       => 'intval',
-                    ],
-                    static::P24     => [
-                        'title'      => $this->l('Accept P24'),
-                        'type'       => 'bool',
-                        'name'       => static::P24,
-                        'value'      => Configuration::get(static::P24),
-                        'auto_value' => false,
-                        'validation' => 'isBool',
-                        'cast'       => 'intval',
+                        'cast' => 'intval',
                     ],
                 ],
                 'submit' => [
@@ -1615,27 +1337,35 @@ class Stripe extends PaymentModule
      *
      * @return array
      *
-     * @since 1.4.0
      * @throws PrestaShopException
      */
-    protected function getOtherPaymentOptions()
+    protected function getPaymentMethodsForm()
     {
+        $paymentMethods = [];
+        foreach ($this->methods->getAllMethods() as $method) {
+            $configKey = $method->getConfigurationKey();
+            $hint = $method->getDescription();
+            $desc = $method->requiresWebhook() ? $this->l('This payment method uses webhook. Make sure you have it configured properly') : null;
+            $item = [
+                'title' => sprintf($this->l('Enable %s'), $method->getName()),
+                'type' => 'bool',
+                'name' => $configKey,
+                'hint' => $hint,
+                'desc' => $desc,
+                'value' => (bool)Configuration::get($configKey),
+                'auto_value' => false,
+                'validation' => 'isBool',
+                'cast' => 'intval',
+                'size' => 64,
+            ];
+            $paymentMethods[$configKey] = $item;
+        }
+
         return [
-            'apple' => [
-                'title'  => $this->l('Other payment methods'),
-                'icon'   => 'icon-credit-card',
-                'fields' => [
-                    static::ALIPAY_BLOCK           => [
-                        'title'      => $this->l('Enable Alipay'),
-                        'type'       => 'bool',
-                        'name'       => static::ALIPAY_BLOCK,
-                        'value'      => Configuration::get(static::ALIPAY_BLOCK),
-                        'auto_value' => false,
-                        'validation' => 'isBool',
-                        'cast'       => 'intval',
-                        'size'       => 64,
-                    ],
-                ],
+            'payment-methods' => [
+                'title' => $this->l('Payment Methods'),
+                'icon' => 'icon-credit-card',
+                'fields' => $paymentMethods,
                 'submit' => [
                     'title' => $this->l('Save'),
                     'class' => 'button',
@@ -1649,170 +1379,243 @@ class Stripe extends PaymentModule
      *
      * @return array Order options
      *
-     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
-     * @since 1.0.0
      */
     protected function getOrderOptions()
     {
         $orderStatuses = OrderState::getOrderStates($this->context->language->id);
-        $statusValidated = (int) Configuration::get(static::STATUS_VALIDATED);
+        $statusValidated = (int)Configuration::get(static::STATUS_VALIDATED);
         if ($statusValidated < 1) {
-            $statusValidated = (int) Configuration::get('PS_OS_PAYMENT');
+            $statusValidated = (int)Configuration::get('PS_OS_PAYMENT');
         }
-        $statusPartialRefund = (int) Configuration::get(static::STATUS_PARTIAL_REFUND);
+        $statusPartialRefund = (int)Configuration::get(static::STATUS_PARTIAL_REFUND);
         if ($statusPartialRefund < 1) {
-            $statusPartialRefund = (int) Configuration::get('PS_OS_REFUND');
+            $statusPartialRefund = (int)Configuration::get('PS_OS_REFUND');
         }
-        $statusRefund = (int) Configuration::get(static::STATUS_REFUND);
+        $statusRefund = (int)Configuration::get(static::STATUS_REFUND);
         if ($statusRefund < 1) {
-            $statusRefund = (int) Configuration::get('PS_OS_REFUND');
+            $statusRefund = (int)Configuration::get('PS_OS_REFUND');
         }
-        $statusSofort = (int) Configuration::get(static::STATUS_SOFORT);
-        if ($statusSofort < 1) {
-            $statusSofort = (int) Configuration::get('PS_OS_PAYMENT');
+        $statusProcessing = (int)Configuration::get(static::STATUS_PROCESSING);
+        if ($statusProcessing < 1) {
+            $statusProcessing = (int)Configuration::get('PS_OS_PAYMENT');
         }
-        $statusAuthorized = (int) Configuration::get(static::STATUS_AUTHORIZED);
+        $statusAuthorized = (int)Configuration::get(static::STATUS_AUTHORIZED);
         if ($statusAuthorized < 1) {
-            $statusAuthorized = (int) Configuration::get('PS_OS_PAYMENT');
+            $statusAuthorized = (int)Configuration::get('PS_OS_PAYMENT');
         }
-        $statusInReview = (int) Configuration::get(static::STATUS_IN_REVIEW);
+        $statusInReview = (int)Configuration::get(static::STATUS_IN_REVIEW);
         if ($statusInReview < 1) {
-            $statusInReview = (int) Configuration::get('PS_OS_PAYMENT');
+            $statusInReview = (int)Configuration::get('PS_OS_PAYMENT');
         }
 
         return [
             'orders' => [
-                'title'  => $this->l('Order Settings'),
-                'icon'   => 'icon-credit-card',
+                'title' => $this->l('Order Settings'),
+                'icon' => 'icon-credit-card',
                 'fields' => [
-                    static::STATUS_VALIDATED          => [
-                        'title'      => $this->l('Payment accepted status'),
-                        'des'        => $this->l('Order status to use when the payment is accepted'),
-                        'type'       => 'select',
-                        'list'       => $orderStatuses,
+                    static::STATUS_VALIDATED => [
+                        'title' => $this->l('Payment accepted status'),
+                        'des' => $this->l('Order status to use when the payment is accepted'),
+                        'type' => 'select',
+                        'list' => $orderStatuses,
                         'identifier' => 'id_order_state',
-                        'name'       => static::STATUS_VALIDATED,
-                        'value'      => $statusValidated,
+                        'name' => static::STATUS_VALIDATED,
+                        'value' => $statusValidated,
                         'auto_value' => false,
                         'validation' => 'isString',
-                        'cast'       => 'strval',
+                        'cast' => 'strval',
                     ],
                     static::USE_STATUS_PARTIAL_REFUND => [
-                        'title'      => $this->l('Use partial refund status'),
-                        'type'       => 'bool',
-                        'name'       => static::USE_STATUS_PARTIAL_REFUND,
-                        'value'      => Configuration::get(static::USE_STATUS_PARTIAL_REFUND),
+                        'title' => $this->l('Use partial refund status'),
+                        'type' => 'bool',
+                        'name' => static::USE_STATUS_PARTIAL_REFUND,
+                        'value' => Configuration::get(static::USE_STATUS_PARTIAL_REFUND),
                         'auto_value' => false,
                         'validation' => 'isBool',
-                        'cast'       => 'intval',
+                        'cast' => 'intval',
                     ],
-                    static::STATUS_PARTIAL_REFUND     => [
-                        'title'      => $this->l('Partial refund status'),
-                        'desc'       => $this->l('Order status to use when the order is partially refunded'),
-                        'type'       => 'select',
-                        'list'       => $orderStatuses,
+                    static::STATUS_PARTIAL_REFUND => [
+                        'title' => $this->l('Partial refund status'),
+                        'desc' => $this->l('Order status to use when the order is partially refunded'),
+                        'type' => 'select',
+                        'list' => $orderStatuses,
                         'identifier' => 'id_order_state',
-                        'name'       => static::STATUS_PARTIAL_REFUND,
-                        'value'      => $statusPartialRefund,
+                        'name' => static::STATUS_PARTIAL_REFUND,
+                        'value' => $statusPartialRefund,
                         'auto_value' => false,
                         'validation' => 'isString',
-                        'cast'       => 'strval',
+                        'cast' => 'strval',
                     ],
-                    static::USE_STATUS_REFUND         => [
-                        'title'      => $this->l('Use refund status'),
-                        'type'       => 'bool',
-                        'name'       => static::USE_STATUS_REFUND,
-                        'value'      => Configuration::get(static::USE_STATUS_REFUND),
+                    static::USE_STATUS_REFUND => [
+                        'title' => $this->l('Use refund status'),
+                        'type' => 'bool',
+                        'name' => static::USE_STATUS_REFUND,
+                        'value' => Configuration::get(static::USE_STATUS_REFUND),
                         'auto_value' => false,
                         'validation' => 'isBool',
-                        'cast'       => 'intval',
+                        'cast' => 'intval',
                     ],
-                    static::STATUS_REFUND             => [
-                        'title'      => $this->l('Refund status'),
-                        'desc'       => $this->l('Order status to use when the order is refunded'),
-                        'type'       => 'select',
-                        'list'       => $orderStatuses,
+                    static::STATUS_REFUND => [
+                        'title' => $this->l('Refund status'),
+                        'desc' => $this->l('Order status to use when the order is refunded'),
+                        'type' => 'select',
+                        'list' => $orderStatuses,
                         'identifier' => 'id_order_state',
-                        'name'       => static::PUBLISHABLE_KEY_TEST,
-                        'value'      => $statusRefund,
+                        'name' => static::PUBLISHABLE_KEY_TEST,
+                        'value' => $statusRefund,
                         'auto_value' => false,
                         'validation' => 'isString',
-                        'cast'       => 'strval',
+                        'cast' => 'strval',
                     ],
-                    static::GENERATE_CREDIT_SLIP      => [
-                        'title'      => $this->l('Generate credit slip'),
-                        'desc'       => $this->l('Automatically generate a credit slip when the order is fully refunded'),
-                        'type'       => 'bool',
-                        'name'       => static::GENERATE_CREDIT_SLIP,
-                        'value'      => Configuration::get(static::GENERATE_CREDIT_SLIP),
+                    static::GENERATE_CREDIT_SLIP => [
+                        'title' => $this->l('Generate credit slip'),
+                        'desc' => $this->l('Automatically generate a credit slip when the order is fully refunded'),
+                        'type' => 'bool',
+                        'name' => static::GENERATE_CREDIT_SLIP,
+                        'value' => Configuration::get(static::GENERATE_CREDIT_SLIP),
                         'auto_value' => false,
                         'validation' => 'isBool',
-                        'cast'       => 'intval',
+                        'cast' => 'intval',
                     ],
-                    static::USE_STATUS_AUTHORIZED     => [
-                        'title'      => $this->l('Use a status for authorized payments'),
-                        'type'       => 'bool',
-                        'name'       => static::USE_STATUS_AUTHORIZED,
-                        'value'      => Configuration::get(static::USE_STATUS_AUTHORIZED),
+                    static::USE_STATUS_AUTHORIZED => [
+                        'title' => $this->l('Use a status for authorized payments'),
+                        'type' => 'bool',
+                        'name' => static::USE_STATUS_AUTHORIZED,
+                        'value' => Configuration::get(static::USE_STATUS_AUTHORIZED),
                         'auto_value' => false,
                         'validation' => 'isBool',
-                        'cast'       => 'intval',
+                        'cast' => 'intval',
                     ],
-                    static::STATUS_AUTHORIZED         => [
-                        'title'      => $this->l('Status for authorized payments'),
-                        'desc'       => $this->l('Order status to use when the payment has only been authorized'),
-                        'type'       => 'select',
-                        'list'       => $orderStatuses,
+                    static::STATUS_AUTHORIZED => [
+                        'title' => $this->l('Status for authorized payments'),
+                        'desc' => $this->l('Order status to use when the payment has only been authorized'),
+                        'type' => 'select',
+                        'list' => $orderStatuses,
                         'identifier' => 'id_order_state',
-                        'name'       => static::PUBLISHABLE_KEY_TEST,
-                        'value'      => $statusAuthorized,
+                        'name' => static::PUBLISHABLE_KEY_TEST,
+                        'value' => $statusAuthorized,
                         'auto_value' => false,
                         'validation' => 'isString',
-                        'cast'       => 'strval',
+                        'cast' => 'strval',
                     ],
-                    static::USE_STATUS_IN_REVIEW      => [
-                        'title'      => $this->l('Use "in review" status'),
-                        'type'       => 'bool',
-                        'name'       => static::USE_STATUS_IN_REVIEW,
-                        'value'      => Configuration::get(static::USE_STATUS_IN_REVIEW),
+                    static::USE_STATUS_IN_REVIEW => [
+                        'title' => $this->l('Use "in review" status'),
+                        'type' => 'bool',
+                        'name' => static::USE_STATUS_IN_REVIEW,
+                        'value' => Configuration::get(static::USE_STATUS_IN_REVIEW),
                         'auto_value' => false,
                         'validation' => 'isBool',
-                        'cast'       => 'intval',
+                        'cast' => 'intval',
                     ],
-                    static::STATUS_IN_REVIEW          => [
-                        'title'      => $this->l('"In review" status'),
-                        'desc'       => $this->l('Order status to use when the payment is in review'),
-                        'type'       => 'select',
-                        'list'       => $orderStatuses,
+                    static::STATUS_IN_REVIEW => [
+                        'title' => $this->l('"In review" status'),
+                        'desc' => $this->l('Order status to use when the payment is in review'),
+                        'type' => 'select',
+                        'list' => $orderStatuses,
                         'identifier' => 'id_order_state',
-                        'name'       => static::STATUS_IN_REVIEW,
-                        'value'      => $statusInReview,
+                        'name' => static::STATUS_IN_REVIEW,
+                        'value' => $statusInReview,
                         'auto_value' => false,
                         'validation' => 'isString',
-                        'cast'       => 'strval',
+                        'cast' => 'strval',
                     ],
-                    static::MANUAL_CAPTURE            => [
-                        'title'      => $this->l('Manual capture'),
-                        'desc'       => $this->l('Manually capture payments (use authorize only whenever possible)'),
-                        'type'       => 'bool',
-                        'name'       => static::MANUAL_CAPTURE,
-                        'value'      => Configuration::get(static::MANUAL_CAPTURE),
+                    static::MANUAL_CAPTURE => [
+                        'title' => $this->l('Manual capture'),
+                        'desc' => $this->l('Manually capture payments (use authorize only whenever possible)'),
+                        'type' => 'bool',
+                        'name' => static::MANUAL_CAPTURE,
+                        'value' => Configuration::get(static::MANUAL_CAPTURE),
                         'auto_value' => false,
                         'validation' => 'isBool',
-                        'cast'       => 'intval',
+                        'cast' => 'intval',
                     ],
-                    static::STATUS_SOFORT             => [
-                        'title'      => $this->l('Sofort status'),
-                        'desc'       => $this->l('Order status to use when a Sofort Banking payment is pending'),
-                        'type'       => 'select',
-                        'list'       => $orderStatuses,
+                    static::STATUS_PROCESSING => [
+                        'title' => $this->l('Processing status'),
+                        'desc' => $this->l('Order status to use when a deleayed banking payment is pending'),
+                        'type' => 'select',
+                        'list' => $orderStatuses,
                         'identifier' => 'id_order_state',
-                        'name'       => static::STATUS_SOFORT,
-                        'value'      => $statusSofort,
+                        'name' => static::STATUS_PROCESSING,
+                        'value' => $statusProcessing,
                         'auto_value' => false,
                         'validation' => 'isString',
-                        'cast'       => 'strval',
+                        'cast' => 'strval',
+                    ],
+                ],
+                'submit' => [
+                    'title' => $this->l('Save'),
+                    'class' => 'button',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Get available general options
+     *
+     * @return array General options
+     *
+     * @throws PrestaShopException
+     */
+    protected function getStripeCheckoutOptions()
+    {
+        return [
+            'checkout' => [
+                'title' => $this->l('Stripe Checkout'),
+                'icon' => 'icon-credit-card',
+                'fields' => [
+                    static::COLLECT_BILLING => [
+                        'title' => $this->l('Collect billing address'),
+                        'type' => 'bool',
+                        'name' => static::COLLECT_BILLING,
+                        'value' => Configuration::get(static::COLLECT_BILLING),
+                        'auto_value' => false,
+                        'validation' => 'isBool',
+                        'cast' => 'intval',
+                    ],
+                    static::SHOW_PAYMENT_LOGOS => [
+                        'title' => $this->l('Show payment logos'),
+                        'type' => 'bool',
+                        'name' => static::SHOW_PAYMENT_LOGOS,
+                        'value' => Configuration::get(static::SHOW_PAYMENT_LOGOS),
+                        'auto_value' => false,
+                        'validation' => 'isBool',
+                        'cast' => 'intval',
+                    ],
+                ],
+                'submit' => [
+                    'title' => $this->l('Save'),
+                    'class' => 'button',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Get available general options
+     *
+     * @return array General options
+     *
+     * @throws PrestaShopException
+     */
+    protected function getStripeCreditCardOptions()
+    {
+        return [
+            'creditcard' => [
+                'title' => $this->l('Stripe credit card form'),
+                'icon' => 'icon-credit-card',
+                'fields' => [
+                    static::STRIPE_PAYMENT_REQUEST => [
+                        'title' => $this->l('Enable the payment request button'),
+                        'desc' => $this->l('This option adds an Apple Pay or Google Pay button to the form'),
+                        'type' => 'bool',
+                        'name' => static::STRIPE_PAYMENT_REQUEST,
+                        'value' => Configuration::get(static::STRIPE_PAYMENT_REQUEST),
+                        'auto_value' => false,
+                        'validation' => 'isBool',
+                        'cast' => 'intval',
+                        'size' => 64,
                     ],
                 ],
                 'submit' => [
@@ -1828,152 +1631,151 @@ class Stripe extends PaymentModule
      *
      * @return array Advanced options
      *
-     * @since 1.0.0
      * @throws PrestaShopException
      */
     protected function getDesignOptions()
     {
         return [
             'advanced' => [
-                'title'  => $this->l('Credit card form design'),
-                'icon'   => 'icon-paint-brush',
+                'title' => $this->l('Credit card form design'),
+                'icon' => 'icon-paint-brush',
                 'fields' => [
                     static::INPUT_PLACEHOLDER_COLOR => [
-                        'title'      => $this->l('Input placeholder color'),
-                        'type'       => 'color',
-                        'name'       => static::INPUT_PLACEHOLDER_COLOR,
+                        'title' => $this->l('Input placeholder color'),
+                        'type' => 'color',
+                        'name' => static::INPUT_PLACEHOLDER_COLOR,
                         'validation' => 'isString',
-                        'cast'       => 'strval',
-                        'size'       => '1',
-                        'value'      => Configuration::get(static::INPUT_PLACEHOLDER_COLOR) ?: '#000000',
+                        'cast' => 'strval',
+                        'size' => '1',
+                        'value' => Configuration::get(static::INPUT_PLACEHOLDER_COLOR) ?: '#000000',
                         'auto_value' => false,
                     ],
                     static::BUTTON_FOREGROUND_COLOR => [
-                        'title'      => $this->l('Button text color'),
-                        'type'       => 'color',
-                        'name'       => static::BUTTON_FOREGROUND_COLOR,
+                        'title' => $this->l('Button text color'),
+                        'type' => 'color',
+                        'name' => static::BUTTON_FOREGROUND_COLOR,
                         'validation' => 'isString',
-                        'cast'       => 'strval',
-                        'size'       => '1',
-                        'value'      => Configuration::get(static::BUTTON_FOREGROUND_COLOR) ?: '#FFFFFF',
+                        'cast' => 'strval',
+                        'size' => '1',
+                        'value' => Configuration::get(static::BUTTON_FOREGROUND_COLOR) ?: '#FFFFFF',
                         'auto_value' => false,
                     ],
                     static::BUTTON_BACKGROUND_COLOR => [
-                        'title'      => $this->l('Button background color'),
-                        'type'       => 'color',
-                        'name'       => static::BUTTON_BACKGROUND_COLOR,
+                        'title' => $this->l('Button background color'),
+                        'type' => 'color',
+                        'name' => static::BUTTON_BACKGROUND_COLOR,
                         'validation' => 'isString',
-                        'cast'       => 'strval',
-                        'size'       => '1',
-                        'value'      => Configuration::get(static::BUTTON_BACKGROUND_COLOR) ?: '#000000',
+                        'cast' => 'strval',
+                        'size' => '1',
+                        'value' => Configuration::get(static::BUTTON_BACKGROUND_COLOR) ?: '#000000',
                         'auto_value' => false,
                     ],
                     static::HIGHLIGHT_COLOR => [
-                        'title'      => $this->l('Highlight color'),
-                        'type'       => 'color',
-                        'name'       => static::HIGHLIGHT_COLOR,
+                        'title' => $this->l('Highlight color'),
+                        'type' => 'color',
+                        'name' => static::HIGHLIGHT_COLOR,
                         'validation' => 'isString',
-                        'cast'       => 'strval',
-                        'size'       => '1',
-                        'value'      => Configuration::get(static::HIGHLIGHT_COLOR) ?: '#000000',
+                        'cast' => 'strval',
+                        'size' => '1',
+                        'value' => Configuration::get(static::HIGHLIGHT_COLOR) ?: '#000000',
                         'auto_value' => false,
                     ],
                     static::ERROR_COLOR => [
-                        'title'      => $this->l('Error color'),
-                        'type'       => 'color',
-                        'name'       => static::ERROR_COLOR,
+                        'title' => $this->l('Error color'),
+                        'type' => 'color',
+                        'name' => static::ERROR_COLOR,
                         'validation' => 'isString',
-                        'cast'       => 'strval',
-                        'size'       => '1',
-                        'value'      => Configuration::get(static::ERROR_COLOR) ?: '#000000',
+                        'cast' => 'strval',
+                        'size' => '1',
+                        'value' => Configuration::get(static::ERROR_COLOR) ?: '#000000',
                         'auto_value' => false,
                     ],
-                    static::ERROR_GLYPH_COLOR                => [
-                        'title'      => $this->l('Error glyph color'),
-                        'type'       => 'color',
-                        'name'       => static::ERROR_GLYPH_COLOR,
+                    static::ERROR_GLYPH_COLOR => [
+                        'title' => $this->l('Error glyph color'),
+                        'type' => 'color',
+                        'name' => static::ERROR_GLYPH_COLOR,
                         'validation' => 'isString',
-                        'cast'       => 'strval',
-                        'size'       => '1',
-                        'value'      => Configuration::get(static::ERROR_GLYPH_COLOR) ?: '#000000',
+                        'cast' => 'strval',
+                        'size' => '1',
+                        'value' => Configuration::get(static::ERROR_GLYPH_COLOR) ?: '#000000',
                         'auto_value' => false,
                     ],
                     static::INPUT_TEXT_FOREGROUND_COLOR => [
-                        'title'      => $this->l('Input text foreground color'),
-                        'type'       => 'color',
-                        'name'       => static::INPUT_TEXT_FOREGROUND_COLOR,
+                        'title' => $this->l('Input text foreground color'),
+                        'type' => 'color',
+                        'name' => static::INPUT_TEXT_FOREGROUND_COLOR,
                         'validation' => 'isString',
-                        'cast'       => 'strval',
-                        'size'       => '1',
-                        'value'      => Configuration::get(static::INPUT_TEXT_FOREGROUND_COLOR) ?: '#000000',
+                        'cast' => 'strval',
+                        'size' => '1',
+                        'value' => Configuration::get(static::INPUT_TEXT_FOREGROUND_COLOR) ?: '#000000',
                         'auto_value' => false,
                     ],
                     static::INPUT_TEXT_BACKGROUND_COLOR => [
-                        'title'      => $this->l('Input text background color'),
-                        'type'       => 'color',
-                        'name'       => static::INPUT_TEXT_BACKGROUND_COLOR,
+                        'title' => $this->l('Input text background color'),
+                        'type' => 'color',
+                        'name' => static::INPUT_TEXT_BACKGROUND_COLOR,
                         'validation' => 'isString',
-                        'cast'       => 'strval',
-                        'size'       => '1',
-                        'value'      => Configuration::get(static::INPUT_TEXT_BACKGROUND_COLOR) ?: '#000000',
+                        'cast' => 'strval',
+                        'size' => '1',
+                        'value' => Configuration::get(static::INPUT_TEXT_BACKGROUND_COLOR) ?: '#000000',
                         'auto_value' => false,
                     ],
-                    static::INPUT_FONT_FAMILY           => [
-                        'title'      => $this->l('Input font family'),
-                        'type'       => 'fontselect',
-                        'name'       => static::INPUT_FONT_FAMILY,
+                    static::INPUT_FONT_FAMILY => [
+                        'title' => $this->l('Input font family'),
+                        'type' => 'fontselect',
+                        'name' => static::INPUT_FONT_FAMILY,
                         'validation' => 'isString',
-                        'cast'       => 'strval',
-                        'size'       => '1',
-                        'value'      => Configuration::get(static::INPUT_FONT_FAMILY) ?: 'Open Sans',
+                        'cast' => 'strval',
+                        'size' => '1',
+                        'value' => Configuration::get(static::INPUT_FONT_FAMILY) ?: 'Open Sans',
                         'auto_value' => false,
                     ],
                     static::CHECKOUT_FONT_FAMILY => [
-                        'title'      => $this->l('Checkout font family'),
-                        'type'       => 'fontselect',
-                        'name'       => static::CHECKOUT_FONT_FAMILY,
+                        'title' => $this->l('Checkout font family'),
+                        'type' => 'fontselect',
+                        'name' => static::CHECKOUT_FONT_FAMILY,
                         'validation' => 'isString',
-                        'cast'       => 'strval',
-                        'size'       => '1',
-                        'value'      => Configuration::get(static::CHECKOUT_FONT_FAMILY) ?: 'Open Sans',
+                        'cast' => 'strval',
+                        'size' => '1',
+                        'value' => Configuration::get(static::CHECKOUT_FONT_FAMILY) ?: 'Open Sans',
                         'auto_value' => false,
-                        'class'      => 'fixed-width-sm',
+                        'class' => 'fixed-width-sm',
                     ],
                     static::CHECKOUT_FONT_SIZE => [
-                        'title'      => $this->l('Checkout font size'),
-                        'type'       => 'text',
-                        'name'       => static::CHECKOUT_FONT_SIZE ,
+                        'title' => $this->l('Checkout font size'),
+                        'type' => 'text',
+                        'name' => static::CHECKOUT_FONT_SIZE,
                         'validation' => 'isString',
-                        'cast'       => 'strval',
-                        'size'       => '1',
-                        'value'      => Configuration::get(static::CHECKOUT_FONT_SIZE) ?: '15px',
+                        'cast' => 'strval',
+                        'size' => '1',
+                        'value' => Configuration::get(static::CHECKOUT_FONT_SIZE) ?: '15px',
                         'auto_value' => false,
-                        'class'      => 'fixed-width-sm',
+                        'class' => 'fixed-width-sm',
                     ],
                     static::PAYMENT_REQUEST_BUTTON_STYLE => [
-                        'title'      => $this->l('Payment Request Button style'),
-                        'type'       => 'select',
-                        'name'       => static::PAYMENT_REQUEST_BUTTON_STYLE ,
+                        'title' => $this->l('Payment Request Button style'),
+                        'type' => 'select',
+                        'name' => static::PAYMENT_REQUEST_BUTTON_STYLE,
                         'validation' => 'isString',
-                        'cast'       => 'strval',
-                        'list'    => [
-                                ['id' => 'dark',          'name' => 'Dark'],
-                                ['id' => 'light',         'name' => 'Light'],
-                                ['id' => 'light-outline', 'name' => 'Light outline'],
+                        'cast' => 'strval',
+                        'list' => [
+                            ['id' => 'dark', 'name' => 'Dark'],
+                            ['id' => 'light', 'name' => 'Light'],
+                            ['id' => 'light-outline', 'name' => 'Light outline'],
                         ],
                         'identifier' => 'id',
-                        'value'      => Configuration::get(static::PAYMENT_REQUEST_BUTTON_STYLE) ?: '15px',
+                        'value' => Configuration::get(static::PAYMENT_REQUEST_BUTTON_STYLE) ?: '15px',
                         'auto_value' => false,
-                        'class'      => 'fixed-width-sm',
+                        'class' => 'fixed-width-sm',
                     ],
                     'STRIPE_PREVIEW' => [
-                        'title'      => $this->l('Preview'),
-                        'type'       => 'democheckout',
-                        'name'       => 'STRIPE_PREVIEW',
+                        'title' => $this->l('Preview'),
+                        'type' => 'democheckout',
+                        'name' => 'STRIPE_PREVIEW',
                         'validation' => 'isBool',
-                        'cast'       => 'intval',
+                        'cast' => 'intval',
                         'auto_value' => false,
-                        'value'      => false,
+                        'value' => false,
                     ],
                 ],
                 'submit' => [
@@ -1985,78 +1787,55 @@ class Stripe extends PaymentModule
     }
 
     /**
+     * Process temporary colors
+     *
+     * @throws PrestaShopException
+     */
+    public function ajaxProcessSaveDesign()
+    {
+        $colors = json_decode(file_get_contents('php://input'), true);
+
+        Configuration::updateValue(static::INPUT_PLACEHOLDER_COLOR . '_TEMP', $colors['stripe_input_placeholder_color']);
+        Configuration::updateValue(static::BUTTON_BACKGROUND_COLOR . '_TEMP', $colors['stripe_button_background_color']);
+        Configuration::updateValue(static::BUTTON_FOREGROUND_COLOR . '_TEMP', $colors['stripe_button_foreground_color']);
+        Configuration::updateValue(static::HIGHLIGHT_COLOR . '_TEMP', $colors['stripe_highlight_color']);
+        Configuration::updateValue(static::ERROR_COLOR . '_TEMP', $colors['stripe_error_color']);
+        Configuration::updateValue(static::ERROR_GLYPH_COLOR . '_TEMP', $colors['stripe_error_glyph_color']);
+        Configuration::updateValue(static::INPUT_TEXT_FOREGROUND_COLOR . '_TEMP', $colors['stripe_payment_request_foreground_color']);
+        Configuration::updateValue(static::INPUT_TEXT_BACKGROUND_COLOR . '_TEMP', $colors['stripe_payment_request_background_color']);
+        Configuration::updateValue(static::INPUT_FONT_FAMILY . '_TEMP', $colors['stripe_input_font_family']);
+        Configuration::updateValue(static::CHECKOUT_FONT_FAMILY . '_TEMP', $colors['stripe_checkout_font_family']);
+        Configuration::updateValue(static::CHECKOUT_FONT_SIZE . '_TEMP', $colors['stripe_checkout_font_size']);
+        Configuration::updateValue(static::PAYMENT_REQUEST_BUTTON_STYLE . '_TEMP', $colors['stripe_payment_request_style']);
+
+        die(json_encode([
+            'success' => true,
+        ]));
+    }
+
+    /**
      * This method is used to render the payment button,
      * Take care if the button should be displayed or not.
      *
      * @param array $params Hook parameters
      *
-     * @return string|bool
-     * @throws Exception
+     * @return string|false
+     *
      * @throws PrestaShopException
      * @throws SmartyException
      */
     public function hookPayment($params)
     {
-        if (! $this->active) {
-            return false;
+        if ($this->active && Utils::hasValidConfiguration()) {
+            $cart = Context::getContext()->cart;
+
+            $result = "";
+            foreach ($this->methods->getAvailableMethods($cart) as $method) {
+                $result .= $method->renderPaymentMethod($cart);
+            }
+            return $result;
         }
-
-        $cart = $params['cart'];
-
-        $stripeAmount = Utils::getCartTotal($cart);
-        $stripeCurrency = Utils::getCurrencyCode($cart);
-
-        $invoiceAddress = new Address((int) $cart->id_address_invoice);
-
-        $this->context->smarty->assign(
-            [
-                'stripe_name'                   => $invoiceAddress->firstname.' '.$invoiceAddress->lastname,
-                'stripe_currency'               => $stripeCurrency,
-                'stripe_country'                => Utils::getStripeCountry(),
-                'stripe_amount'                 => $stripeAmount,
-                'stripe_amount_string'          => (string) $cart->getOrderTotal(),
-                'stripe_amount_formatted'       => Tools::displayPrice($cart->getOrderTotal(), Currency::getCurrencyInstance($cart->id_currency)),
-                'id_cart'                       => (int) $cart->id,
-                'stripe_secret_key'             => Configuration::get(static::GO_LIVE) ? Configuration::get(static::SECRET_KEY_LIVE) : Configuration::get(static::SECRET_KEY_TEST),
-                'stripe_publishable_key'        => Configuration::get(static::GO_LIVE) ? Configuration::get(static::PUBLISHABLE_KEY_LIVE) : Configuration::get(static::PUBLISHABLE_KEY_TEST),
-                'stripe_locale'                 => static::getStripeLanguage($this->context->language->language_code),
-                'stripe_checkout'               => Configuration::get(static::STRIPE_CHECKOUT),
-                'stripe_cc_form'                => Configuration::get(static::STRIPE_CC_FORM),
-                'stripe_ideal'                  => Configuration::get(static::IDEAL),
-                'stripe_apple_pay'              => Configuration::get(static::STRIPE_PAYMENT_REQUEST),
-                'stripe_bancontact'             => Configuration::get(static::BANCONTACT),
-                'stripe_giropay'                => Configuration::get(static::GIROPAY),
-                'stripe_sofort'                 => Configuration::get(static::SOFORT),
-                'stripe_p24'                    => Configuration::get(static::P24),
-                'stripe_alipay_block'           => (bool) Configuration::get(static::ALIPAY_BLOCK),
-                'stripe_shopname'               => $this->context->shop->name,
-                'showPaymentLogos'              => Configuration::get(static::SHOW_PAYMENT_LOGOS),
-                'stripeShopThumb'               => str_replace('http://', 'https://', $this->context->link->getMediaLink(__PS_BASE_URI__.'modules/stripe/views/img/shop'.$this->getShopId().'.jpg')),
-                'autoplay'                      => true,
-                'local_module_dir'              => _PS_MODULE_DIR_,
-                'params'                        => $params,
-            ]
-        );
-
-        return $this->display(__FILE__, 'allpayments.tpl');
-    }
-
-    /**
-     * Get the Stripe language
-     *
-     * @param string $locale IETF locale
-     *
-     * @return string Stripe language
-     */
-    public static function getStripeLanguage($locale)
-    {
-        $languageIso = mb_strtolower(mb_substr($locale, 0, 2));
-
-        if (in_array($languageIso, static::$stripeLanguages)) {
-            return $languageIso;
-        }
-
-        return 'en';
+        return false;
     }
 
     /**
@@ -2064,81 +1843,27 @@ class Stripe extends PaymentModule
      *
      * @param array $params Hook parameters
      *
-     * @return array|bool Smarty variables, nothing if should not be shown
+     * @return array|false Smarty variables, nothing if should not be shown
      * @throws PrestaShopException
      */
     public function hookDisplayPaymentEU($params)
     {
-        /** @var Cart $cart */
-        if (!$this->active ||
-            (!Configuration::get(static::SECRET_KEY_TEST) && !Configuration::get(static::PUBLISHABLE_KEY_TEST))
-            && (!Configuration::get(static::SECRET_KEY_LIVE) && !Configuration::get(static::PUBLISHABLE_KEY_LIVE))
-        ) {
-            return false;
+        if ($this->active && Utils::hasValidConfiguration()) {
+            $cart = Context::getContext()->cart;
+
+
+            $paymentOptions = [];
+            foreach ($this->methods->getAvailableMethods($cart) as $method) {
+                $paymentOptions[] = [
+                    'cta_text' => $method->getCTA(),
+                    'logo' => $method->getImageLink(),
+                    'action' => $method->getLink()
+                ];
+            }
+            return $paymentOptions;
         }
 
-        $stripeCurrency = strtolower(Context::getContext()->currency->iso_code);
-
-        $paymentOptions = [];
-
-        if (Configuration::get(static::STRIPE_CC_FORM) && in_array($stripeCurrency, static::$methodCurrencies['credit_card'])) {
-            $paymentOptions[] = [
-                'cta_text' => $this->l('Pay by Credit Card'),
-                'logo'     => Media::getMediaPath($this->local_path.'views/img/stripebtnlogo.png'),
-                'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'credit_card'], true),
-            ];
-        }
-        if (Configuration::get(static::STRIPE_CHECKOUT) && in_array($stripeCurrency, static::$methodCurrencies['credit_card'])) {
-            $paymentOptions[] = [
-                'cta_text'        => $this->l('Pay by Credit Card'),
-                'logo'            => Media::getMediaPath($this->local_path.'views/img/stripebtnlogo.png'),
-                'action'          => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'stripe_checkout'], true),
-            ];
-        }
-        if (Configuration::get(static::IDEAL) && in_array($stripeCurrency, static::$methodCurrencies['ideal'])) {
-            $paymentOptions[] = [
-                'cta_text' => $this->l('iDEAL'),
-                'logo'     => Media::getMediaPath($this->local_path.'views/img/ideal.png'),
-                'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'ideal'], true),
-            ];
-        }
-        if (Configuration::get(static::BANCONTACT) && in_array($stripeCurrency, static::$methodCurrencies['bancontact'])) {
-            $paymentOptions[] = [
-                'cta_text' => $this->l('Bancontact'),
-                'logo'     => Media::getMediaPath($this->local_path.'views/img/bancontact.png'),
-                'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'bancontact'], true),
-            ];
-        }
-        if (Configuration::get(static::GIROPAY) && in_array($stripeCurrency, static::$methodCurrencies['giropay'])) {
-            $paymentOptions[] = [
-                'cta_text' => $this->l('Giropay'),
-                'logo'     => Media::getMediaPath($this->local_path.'views/img/giropay.png'),
-                'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'giropay'], true),
-            ];
-        }
-        if (Configuration::get(static::SOFORT) && in_array($stripeCurrency, static::$methodCurrencies['sofort'])) {
-            $paymentOptions[] = [
-                'cta_text' => $this->l('Sofort Banking'),
-                'logo'     => Media::getMediaPath($this->local_path.'views/img/sofort.png'),
-                'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'sofort'], true),
-            ];
-        }
-        if (Configuration::get(static::P24) && in_array($stripeCurrency, static::$methodCurrencies['p24'])) {
-            $paymentOptions[] = [
-                'cta_text' => $this->l('P24'),
-                'logo'     => Media::getMediaPath($this->local_path.'views/img/p24.png'),
-                'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'p24'], true),
-            ];
-        }
-        if (Configuration::get(static::ALIPAY_BLOCK) && in_array($stripeCurrency, static::$methodCurrencies['alipay'])) {
-            $paymentOptions[] = [
-                'cta_text' => $this->l('Alipay'),
-                'logo'     => Media::getMediaPath($this->local_path.'views/img/alipay.png'),
-                'action'   => $this->context->link->getModuleLink($this->name, 'eupayment', ['method' => 'alipay'], true),
-            ];
-        }
-
-        return $paymentOptions;
+        return false;
     }
 
     /**
@@ -2147,7 +1872,7 @@ class Stripe extends PaymentModule
      * @param array $params Hook parameters
      *
      * @return string Hook HTML
-     * @throws Exception
+     *
      * @throws PrestaShopException
      * @throws SmartyException
      */
@@ -2162,7 +1887,7 @@ class Stripe extends PaymentModule
         $currency = new Currency($order->id_currency);
 
         if (isset($order->reference) && $order->reference) {
-            $totalToPay = (float) $order->getTotalPaid($currency);
+            $totalToPay = (float)$order->getTotalPaid($currency);
             $reference = $order->reference;
         } else {
             $totalToPay = $order->total_paid_tax_incl;
@@ -2175,10 +1900,10 @@ class Stripe extends PaymentModule
 
         $this->context->smarty->assign(
             [
-                'id_order'  => $order->id,
+                'id_order' => $order->id,
                 'reference' => $reference,
-                'params'    => $params,
-                'total'     => Tools::displayPrice($totalToPay, $currency, false),
+                'params' => $params,
+                'total' => Tools::displayPrice($totalToPay, $currency, false),
             ]
         );
 
@@ -2189,66 +1914,26 @@ class Stripe extends PaymentModule
      * Hook to the top a payment page
      *
      * @return string Hook HTML
-     * @throws Exception
      * @throws PrestaShopException
-     * @throws SmartyException
      */
     public function hookDisplayPaymentTop()
     {
-        $checkout = (bool)Configuration::get(static::STRIPE_CHECKOUT);
-        if ($checkout) {
-            // resolve stripe session for this cart
-            $sessionId = $this->getCheckoutSession();
-            $this->context->smarty->assign('stripe_session_id', $sessionId);
-        }
+        $cart = $this->context->cart;
+        $controller = Context::getContext()->controller;
 
-        $creditCard = (bool)Configuration::get(static::STRIPE_CC_FORM);
-        if ($creditCard) {
-            try {
-                $this->context->smarty->assign('stripe_client_secret',  $this->getPaymentIntentSecret());
-            } catch (\Stripe\Exception\ApiConnectionException $e) {
-                $this->context->smarty->assign('stripe_error', $e->getMessage());
+        // include front css file
+        $controller->addCSS($this->_path . '/views/css/front.css');
+
+        // include payment method specific javascripts and css files
+        foreach ($this->methods->getAvailableMethods($cart) as $method) {
+            foreach ($method->getJavascriptUris() as $script) {
+                $controller->addJS($script);
+            }
+            foreach ($method->getCssUris() as $css) {
+                $controller->addCss($css);
             }
         }
-
-        $cart = $this->context->cart;
-
-        $this->context->smarty->assign(
-            [
-                'baseDir'                                 => Tools::getHttpHost(true).__PS_BASE_URI__.'modules/stripe/views/',
-                'stripe_checkout'                         => $checkout,
-                'stripe_cc_form'                          => (bool) Configuration::get(static::STRIPE_CC_FORM),
-                'stripe_apple_pay'                        => (bool) Configuration::get(static::STRIPE_PAYMENT_REQUEST),
-                'stripe_ideal'                            => (bool) Configuration::get(static::IDEAL),
-                'stripe_bancontact'                       => (bool) Configuration::get(static::BANCONTACT),
-                'stripe_giropay'                          => (bool) Configuration::get(static::GIROPAY),
-                'stripe_sofort'                           => (bool) Configuration::get(static::SOFORT),
-                'stripe_p24'                              => (bool) Configuration::get(static::P24),
-                'stripe_alipay_block'                     => (bool) Configuration::get(static::ALIPAY_BLOCK),
-                'stripe_currency'                         => Utils::getCurrencyCode($cart),
-                'stripe_country'                          => Utils::getStripeCountry(),
-                'stripe_amount'                           => Utils::getCartTotal($cart),
-                'id_cart'                                 => (int) $cart->id,
-                'stripe_publishable_key'                  => Configuration::get(Stripe::GO_LIVE) ? Configuration::get(Stripe::PUBLISHABLE_KEY_LIVE) : Configuration::get(Stripe::PUBLISHABLE_KEY_TEST),
-                'stripe_payment_request'                  => Configuration::get(Stripe::STRIPE_PAYMENT_REQUEST),
-                'local_module_dir'                        => _PS_MODULE_DIR_,
-                'module_dir'                              => __PS_BASE_URI__.'modules/stripe/',
-                'stripe_input_placeholder_color'          => Configuration::get(Stripe::INPUT_PLACEHOLDER_COLOR),
-                'stripe_button_background_color'          => Configuration::get(Stripe::BUTTON_BACKGROUND_COLOR),
-                'stripe_button_foreground_color'          => Configuration::get(Stripe::BUTTON_FOREGROUND_COLOR),
-                'stripe_highlight_color'                  => Configuration::get(Stripe::HIGHLIGHT_COLOR),
-                'stripe_error_color'                      => Configuration::get(Stripe::ERROR_COLOR),
-                'stripe_error_glyph_color'                => Configuration::get(Stripe::ERROR_GLYPH_COLOR),
-                'stripe_payment_request_foreground_color' => Configuration::get(Stripe::INPUT_TEXT_FOREGROUND_COLOR),
-                'stripe_payment_request_background_color' => Configuration::get(Stripe::INPUT_TEXT_BACKGROUND_COLOR),
-                'stripe_input_font_family'                => Configuration::get(Stripe::INPUT_FONT_FAMILY),
-                'stripe_checkout_font_family'             => Configuration::get(Stripe::CHECKOUT_FONT_FAMILY),
-                'stripe_checkout_font_size'               => Configuration::get(Stripe::CHECKOUT_FONT_SIZE),
-                'stripe_payment_request_style'            => Configuration::get(Stripe::PAYMENT_REQUEST_BUTTON_STYLE),
-            ]
-        );
-
-        return $this->display(__FILE__, 'views/templates/front/assets.tpl');
+        return '';
     }
 
     /**
@@ -2257,8 +1942,9 @@ class Stripe extends PaymentModule
      * @param array $params Hok parameters
      *
      * @return string Hook HTML
-     * @throws Exception
+     *
      * @throws SmartyException
+     * @throws PrestaShopException
      */
     public function hookDisplayAdminOrder($params)
     {
@@ -2282,38 +1968,29 @@ class Stripe extends PaymentModule
         }
 
         if (StripeTransaction::getTransactionsByOrderId($params['id_order'], true)) {
-            $controller->addJS($this->_path.'views/js/sweetalert-2.1.0.min.js');
+            $controller->addJS($this->_path . 'views/js/sweetalert-2.1.0.min.js');
 
             $order = new Order($params['id_order']);
             $orderCurrency = new Currency($order->id_currency);
 
-            $totalRefundLeft = $order->getTotalPaid();
-            if (!in_array(mb_strtolower($orderCurrency->iso_code), Stripe::$zeroDecimalCurrencies)) {
-                $totalRefundLeft = (int) (Tools::ps_round($totalRefundLeft * 100, 0));
-            }
-
-            $amount = (int) StripeTransaction::getRefundedAmountByOrderId($order->id);
-
-            $totalRefundLeft -= $amount;
-
-            if (!in_array(mb_strtolower($orderCurrency->iso_code), Stripe::$zeroDecimalCurrencies)) {
-                $totalRefundLeft = (float) ($totalRefundLeft / 100);
-            }
+            $totalRefundLeft = Utils::toCurrencyUnit($orderCurrency, $order->getTotalPaid());
+            $totalRefundLeft -= (int)StripeTransaction::getRefundedAmountByOrderId($order->id);
+            $totalRefundLeft = Utils::fromCurrencyUnit($orderCurrency, $totalRefundLeft);
 
             $this->context->smarty->assign(
                 [
-                    'stripe_review'               => StripeReview::getByOrderId($order->id),
-                    'stripe_transaction_list'     => $this->renderAdminOrderTransactionList($params['id_order']),
-                    'stripe_currency'             => $orderCurrency,
-                    'stripe_status'               => StripeReview::getByOrderId($params['id_order']),
-                    'stripe_total_amount'         => $totalRefundLeft,
-                    'stripe_module_refund_action' => $this->context->link->getAdminLink('AdminModules', true).
+                    'stripe_review' => StripeReview::getByOrderId($order->id),
+                    'stripe_transaction_list' => $this->renderAdminOrderTransactionList($params['id_order']),
+                    'stripe_currency' => $orderCurrency,
+                    'stripe_status' => StripeReview::getByOrderId($params['id_order']),
+                    'stripe_total_amount' => $totalRefundLeft,
+                    'stripe_module_refund_action' => $this->context->link->getAdminLink('AdminModules', true) .
                         "&configure={$this->name}&tab_module={$this->tab}&module_name={$this->name}&orderstriperefund",
-                    'stripe_module_review_action' => $this->context->link->getAdminLink('AdminModules', true).
+                    'stripe_module_review_action' => $this->context->link->getAdminLink('AdminModules', true) .
                         "&configure={$this->name}&tab_module={$this->tab}&module_name={$this->name}&orderstripereview",
-                    'id_order'                    => (int) $order->id,
-                    'canViewStripeRefunds'        => true,
-                    'canEditStripeRefunds'        => true,
+                    'id_order' => (int)$order->id,
+                    'canViewStripeRefunds' => true,
+                    'canEditStripeRefunds' => true,
                 ]
             );
 
@@ -2324,12 +2001,169 @@ class Stripe extends PaymentModule
     }
 
     /**
+     * Render the admin order transaction list
+     *
+     * @param int $idOrder Order ID
+     *
+     * @return string Transaction list HTML
+     *
+     * @throws PrestaShopException
+     * @throws SmartyException
+     */
+    protected function renderAdminOrderTransactionList($idOrder)
+    {
+        $results = StripeTransaction::getTransactionsByOrderId($idOrder);
+
+        $order = new Order($idOrder);
+        $currency = Currency::getCurrencyInstance($order->id_currency);
+
+        $sourceTypes = [];
+        foreach ($this->methods->getAllMethods() as $method) {
+            $sourceTypes[$method->getMethodId()] = $method->getShortName();
+        }
+
+        foreach ($results as &$result) {
+            // Process results
+            $result['amount'] = Utils::fromCurrencyUnit($currency, $result['amount']);
+            $result['amount'] = Tools::displayPrice($result['amount'], $currency);
+
+            switch ($result['type']) {
+                case StripeTransaction::TYPE_CHARGE:
+                    $result['color'] = '#32CD32';
+                    $result['type_icon'] = 'credit-card';
+                    $result['type_text'] = $this->l('Charged');
+                    break;
+                case StripeTransaction::TYPE_PARTIAL_REFUND:
+                    $result['color'] = '#FF8C00';
+                    $result['type_icon'] = 'undo';
+                    $result['type_text'] = $this->l('Partial refund');
+                    break;
+                case StripeTransaction::TYPE_FULL_REFUND:
+                    $result['color'] = '#ec2e15';
+                    $result['type_icon'] = 'undo';
+                    $result['type_text'] = $this->l('Full refund');
+                    break;
+                case StripeTransaction::TYPE_AUTHORIZED:
+                    $result['color'] = '#FF8C00';
+                    $result['type_icon'] = 'unlock';
+                    $result['type_text'] = $this->l('Authorized');
+                    break;
+                case StripeTransaction::TYPE_IN_REVIEW:
+                    $result['color'] = '#FF8C00';
+                    $result['type_icon'] = 'search';
+                    $result['type_text'] = $this->l('In review');
+                    break;
+                case StripeTransaction::TYPE_CAPTURED:
+                    $result['color'] = '#32CD32';
+                    $result['type_icon'] = 'lock';
+                    $result['type_text'] = $this->l('Captured');
+                    break;
+                case StripeTransaction::TYPE_CHARGE_FAIL:
+                    $result['color'] = '#ec2e15';
+                    $result['type_icon'] = 'close';
+                    $result['type_text'] = $this->l('Charge failed');
+                    break;
+                default:
+                    $result['color'] = '';
+                    break;
+            }
+
+            $result['source_type'] = $sourceTypes[$result['source_type']] ?? $this->l('Unknown');
+
+            switch ($result['source']) {
+                case StripeTransaction::SOURCE_FRONT_OFFICE:
+                    $result['source_text'] = $this->l('Front Office');
+                    break;
+                case StripeTransaction::SOURCE_BACK_OFFICE:
+                    $result['source_text'] = $this->l('Back Office');
+                    break;
+                case StripeTransaction::SOURCE_WEBHOOK:
+                    $result['source_text'] = $this->l('Webhook');
+                    break;
+                default:
+                    $result['source_text'] = $this->l('Unknown');
+                    break;
+            }
+        }
+
+        $helperList = new HelperList();
+        $helperList->list_id = 'stripe_transaction';
+        $helperList->shopLinkType = false;
+        $helperList->no_link = true;
+        $helperList->_defaultOrderBy = 'date_add';
+        $helperList->simple_header = true;
+        $helperList->module = $this;
+        $fieldsList = [
+            'id_stripe_transaction' => [
+                'type' => 'text',
+                'title' => $this->l('ID'),
+                'width' => 'auto',
+            ],
+            'type_icon' => [
+                'type' => 'text',
+                'title' => $this->l('Type'),
+                'width' => 'auto',
+                'color' => 'color',
+                'text' => 'type_text',
+                'callback' => 'displayEventLabel',
+                'callback_object' => '\\StripeModule\\StripeTransaction',
+            ],
+            'amount' => [
+                'type' => 'price',
+                'title' => $this->l('Amount'),
+                'width' => 'auto',
+            ],
+            'card_last_digits' => [
+                'type' => 'text',
+                'title' => $this->l('Credit card (last 4 digits)'),
+                'width' => 'auto',
+                'callback' => 'displayCardDigits',
+                'callback_object' => '\\StripeModule\\StripeTransaction',
+            ],
+            'source_type' => [
+                'type' => 'text',
+                'title' => $this->l('Method'),
+                'width' => 'auto',
+            ],
+            'source_text' => [
+                'type' => 'text',
+                'title' => $this->l('Source'),
+                'width' => 'auto',
+            ],
+            'date_upd' => [
+                'type' => 'datetime',
+                'title' => $this->l('Date & time'),
+                'width' => 'auto',
+            ],
+        ];
+
+        $helperList->identifier = 'id_stripe_transaction';
+        $helperList->token = Tools::getAdminTokenLite('AdminOrders');
+        $helperList->currentIndex = AdminController::$currentIndex . '&' . http_build_query([
+                'id_order' => $idOrder,
+            ]);
+
+        // Hide actions
+        $helperList->tpl_vars['show_filters'] = false;
+        $helperList->actions = [];
+        $helperList->bulk_actions = [];
+
+        $helperList->table = 'stripe_transaction';
+
+        $listHtml = $helperList->generateList($results, $fieldsList);
+
+        $doc = new DOMDocument('1.0', 'UTF-8');
+        $doc->loadHTML('<meta charset="UTF-8">' . $listHtml);
+        $node = $doc->getElementsByTagName('table')->item(0);
+
+        return '<h4>' . $this->l('Transactions & Events') . '</h4>' . $doc->saveXML($node->parentNode);
+    }
+
+    /**
      * @param array $params
      *
      * @return void
      *
-     * @throws PrestaShopException
-     * @since 1.6.0
      * @noinspection PhpArrayWriteIsNotUsedInspection
      * @noinspection PhpArrayUsedOnlyForWriteInspection
      */
@@ -2345,250 +2179,70 @@ class Stripe extends PaymentModule
             }
 
             $this->context->controller->addJquery();
-            $this->context->controller->addJS($this->_path.'views/js/list.js');
+            $this->context->controller->addJS($this->_path . 'views/js/list.js');
             $called = true;
         }
     }
 
     /**
-     * Render the admin order transaction list
-     *
-     * @param int $idOrder Order ID
-     *
-     * @return string Transaction list HTML
-     * @throws Exception
-     * @throws PrestaShopDatabaseException
-     * @throws PrestaShopException
-     * @throws SmartyException
-     */
-    protected function renderAdminOrderTransactionList($idOrder)
-    {
-        $results = StripeTransaction::getTransactionsByOrderId($idOrder);
-
-        $order = new Order($idOrder);
-        $currency = Currency::getCurrencyInstance($order->id_currency);
-
-        if (!in_array(mb_strtolower($currency->iso_code), Stripe::$zeroDecimalCurrencies)) {
-            foreach ($results as &$result) {
-                // Process results
-                $result['amount'] = (float) ($result['amount'] / 100);
-                $result['amount'] = Tools::displayPrice($result['amount'], $currency);
-                switch ($result['type']) {
-                    case StripeTransaction::TYPE_CHARGE:
-                        $result['color'] = '#32CD32';
-                        $result['type_icon'] = 'credit-card';
-                        $result['type_text'] = $this->l('Charged');
-                        break;
-                    case StripeTransaction::TYPE_PARTIAL_REFUND:
-                        $result['color'] = '#FF8C00';
-                        $result['type_icon'] = 'undo';
-                        $result['type_text'] = $this->l('Partial refund');
-                        break;
-                    case StripeTransaction::TYPE_FULL_REFUND:
-                        $result['color'] = '#ec2e15';
-                        $result['type_icon'] = 'undo';
-                        $result['type_text'] = $this->l('Full refund');
-                        break;
-                    case StripeTransaction::TYPE_AUTHORIZED:
-                        $result['color'] = '#FF8C00';
-                        $result['type_icon'] = 'unlock';
-                        $result['type_text'] = $this->l('Authorized');
-                        break;
-                    case StripeTransaction::TYPE_IN_REVIEW:
-                        $result['color'] = '#FF8C00';
-                        $result['type_icon'] = 'search';
-                        $result['type_text'] = $this->l('In review');
-                        break;
-                    case StripeTransaction::TYPE_CAPTURED:
-                        $result['color'] = '#32CD32';
-                        $result['type_icon'] = 'lock';
-                        $result['type_text'] = $this->l('Captured');
-                        break;
-                    case StripeTransaction::TYPE_CHARGE_FAIL:
-                        $result['color'] = '#ec2e15';
-                        $result['type_icon'] = 'close';
-                        $result['type_text'] = $this->l('Charge failed');
-                        break;
-                    default:
-                        $result['color'] = '';
-                        break;
-                }
-
-                switch ($result['source_type']) {
-                    case 'ideal':
-                        $result['source_type'] = $this->l('iDEAL');
-                        break;
-                    case 'sofort':
-                        $result['source_type'] = $this->l('Sofort Banking');
-                        break;
-                    case 'bancontact':
-                        $result['source_type'] = $this->l('Bancontact');
-                        break;
-                    case 'giropay':
-                        $result['source_type'] = $this->l('Giropay');
-                        break;
-                    case 'three_d_secure':
-                        $result['source_type'] = $this->l('3D Secure');
-                        break;
-                    case 'cc':
-                        $result['source_type'] = $this->l('Credit Card');
-                        break;
-                    default:
-                        $result['source_type'] = $this->l('Unknown');
-                        break;
-                }
-
-                switch ($result['source']) {
-                    case StripeTransaction::SOURCE_FRONT_OFFICE:
-                        $result['source_text'] = $this->l('Front Office');
-                        break;
-                    case StripeTransaction::SOURCE_BACK_OFFICE:
-                        $result['source_text'] = $this->l('Back Office');
-                        break;
-                    case StripeTransaction::SOURCE_WEBHOOK:
-                        $result['source_text'] = $this->l('Webhook');
-                        break;
-                    default:
-                        $result['source_text'] = $this->l('Unknown');
-                        break;
-                }
-            }
-        }
-
-        $helperList = new HelperList();
-        $helperList->list_id = 'stripe_transaction';
-        $helperList->shopLinkType = false;
-        $helperList->no_link = true;
-        $helperList->_defaultOrderBy = 'date_add';
-        $helperList->simple_header = true;
-        $helperList->module = $this;
-        $fieldsList = [
-            'id_stripe_transaction' => [
-                'type'  => 'text',
-                'title' => $this->l('ID'),
-                'width' => 'auto',
-            ],
-            'type_icon'             => [
-                'type'            => 'text',
-                'title'           => $this->l('Type'),
-                'width'           => 'auto',
-                'color'           => 'color',
-                'text'            => 'type_text',
-                'callback'        => 'displayEventLabel',
-                'callback_object' => '\\StripeModule\\StripeTransaction',
-            ],
-            'amount'                => [
-                'type'  => 'price',
-                'title' => $this->l('Amount'),
-                'width' => 'auto',
-            ],
-            'card_last_digits'      => [
-                'type'            => 'text',
-                'title'           => $this->l('Credit card (last 4 digits)'),
-                'width'           => 'auto',
-                'callback'        => 'displayCardDigits',
-                'callback_object' => '\\StripeModule\\StripeTransaction',
-            ],
-            'source_type' => [
-               'type' => 'text',
-               'title' => $this->l('Method'),
-               'width' => 'auto',
-            ],
-            'source_text'           => [
-                'type'  => 'text',
-                'title' => $this->l('Source'),
-                'width' => 'auto',
-            ],
-            'date_upd'              => [
-                'type'  => 'datetime',
-                'title' => $this->l('Date & time'),
-                'width' => 'auto',
-            ],
-        ];
-
-        $helperList->identifier = 'id_stripe_transaction';
-        $helperList->token = Tools::getAdminTokenLite('AdminOrders');
-        $helperList->currentIndex = AdminController::$currentIndex.'&'.http_build_query([
-            'id_order' => $idOrder,
-        ]);
-
-        // Hide actions
-        $helperList->tpl_vars['show_filters'] = false;
-        $helperList->actions = [];
-        $helperList->bulk_actions = [];
-
-        $helperList->table = 'stripe_transaction';
-
-        $listHtml = $helperList->generateList($results, $fieldsList);
-
-        $doc = new DOMDocument('1.0', 'UTF-8');
-        $doc->loadHTML('<meta charset="UTF-8">'.$listHtml);
-        $node = $doc->getElementsByTagName('table')->item(0);
-
-        return '<h4>' .$this->l('Transactions & Events').'</h4>'.$doc->saveXML($node->parentNode);
-    }
-
-    /**
-     * Hook after module install
-     *
-     * @param Module $module
-     *
      * @return void
-     * @throws PrestaShopDatabaseException
-     * @throws PrestaShopException
      */
-    public function hookActionModuleInstallAfter($module)
+    protected function processBulkCapture()
     {
-        if (empty($module->name)) {
+        $idOrders = Tools::getValue('orderBox');
+        if (!is_array($idOrders)) {
+            $this->context->controller->errors[] = $this->l('No orders found');
+
+            return;
+        } elseif (count($idOrders) > 10) {
+            $this->context->controller->errors[] = $this->l('Currently only a maximum of 10 payments can be captured at a time');
+
             return;
         }
 
-        $hookHeaderId = (int) Hook::getIdByName('displayHeader');
-        $modulesWithControllers = Dispatcher::getModuleControllers('front');
+        try {
+            foreach ($idOrders as $idOrder) {
+                $charge = $this->api->getCharge(StripeTransaction::getChargeByIdOrder($idOrder));
+                $charge->metadata = [
+                    'from_back_office' => true,
+                ];
+                $charge->capture();
+                $order = new Order($idOrder);
 
-        if (isset($modulesWithControllers[$module->name])) {
-            foreach (Shop::getShops() as $shop) {
-                foreach ($modulesWithControllers[$module->name] as $cont) {
-                    Db::getInstance()->insert(
-                        'hook_module_exceptions',
-                        [
-                            'id_module' => (int) $this->id,
-                            'id_hook'   => (int) $hookHeaderId,
-                            'id_shop'   => (int) $shop['id_shop'],
-                            'file_name' => pSQL($cont),
-                        ],
-                        false,
-                        true,
-                        Db::INSERT_IGNORE
-                    );
-                }
+                $review = StripeReview::getByOrderId($idOrder);
+                $review->status = StripeReview::CAPTURED;
+                $review->save();
+
+                $transaction = new StripeTransaction();
+                $transaction->id_order = $idOrder;
+                $transaction->id_charge = $charge->id;
+                $transaction->source = StripeTransaction::SOURCE_FRONT_OFFICE;
+                $transaction->type = StripeTransaction::TYPE_CAPTURED;
+                $transaction->card_last_digits = (int)StripeTransaction::getLastFourDigitsByChargeId($charge->id);
+                $transaction->amount = (int)$charge->amount;
+                $transaction->save();
+
+                $orderHistory = new OrderHistory();
+                $orderHistory->id_order = $idOrder;
+                $orderHistory->changeIdOrderState((int)Configuration::get('PS_OS_PAYMENT'), $idOrder, !$order->hasInvoice());
+                $orderHistory->addWithemail(true);
             }
+        } catch (Exception $e) {
+            $this->addError(sprintf($this->l('An error occurred while capturing: %s'), $e->getMessage()));
+
+            return;
         }
+        /** @var AdminController $controller */
+        $controller = $this->context->controller;
+        $controller->confirmations[] = $this->l('The payments have been successfully captured');
     }
 
     /**
-     * Detect Back Office settings
-     *
-     * @return array Array with error message strings
-     * @throws PrestaShopException
+     * @return PaymentMethodsRepository
      */
-    protected function detectBOSettingsErrors()
+    public function getPaymentMethodsRepository(): PaymentMethodsRepository
     {
-        $langId = Context::getContext()->language->id;
-        $output = [];
-        if (Configuration::get('PS_DISABLE_NON_NATIVE_MODULE')) {
-            $output[] = $this->l('Non native modules such as this one are disabled. Go to').' "'.
-                $this->getTabName('AdminParentPreferences', $langId).
-                ' > '.
-                $this->getTabName('AdminPerformance', $langId).
-                '" '.$this->l('and make sure that the option').' "'.
-                Translate::getAdminTranslation('Disable non PrestaShop modules', 'AdminPerformance').
-                '" '.$this->l('is set to').' "'.
-                Translate::getAdminTranslation('No', 'AdminPerformance').
-                '"'.$this->l('.').'<br />';
-        }
-
-        return $output;
+        return $this->methods;
     }
 
     /**
@@ -2606,7 +2260,7 @@ class Stripe extends PaymentModule
         }
 
         try {
-            return (string) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue(
+            return (string)Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue(
                 (new DbQuery())
                     ->select('tl.`name`')
                     ->from('tab_lang', 'tl')
@@ -2616,184 +2270,6 @@ class Stripe extends PaymentModule
             );
         } catch (Exception $e) {
             return $this->l('Unknown');
-        }
-    }
-
-    /**
-     * Check currency
-     *
-     * @param Cart $cart Cart object
-     *
-     * @return bool Whether the module should be shown
-     * @throws PrestaShopDatabaseException
-     * @throws PrestaShopException
-     */
-    protected function checkCurrency(Cart $cart)
-    {
-        $currencyOrder = new Currency($cart->id_currency);
-        $currenciesModule = $this->getCurrency($cart->id_currency);
-
-        if (is_array($currenciesModule)) {
-            foreach ($currenciesModule as $currencyModule) {
-                if ($currencyOrder->id == $currencyModule['id_currency']) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Add confirmation message
-     *
-     * @param string $message Message
-     * @param bool   $private
-     */
-    protected function addConfirmation($message, $private = false)
-    {
-        /** @var AdminController $controller */
-        $controller = $this->context->controller;
-        if (!Tools::isSubmit('configure')) {
-            if (!$private) {
-                $controller->confirmations[] = '<a href="'.$this->baseUrl.'">'.$this->displayName.': '.$message.'</a>';
-            }
-        } else {
-            $controller->confirmations[] = $message;
-        }
-    }
-
-    /**
-     * Add error message
-     *
-     * @param string $message Message
-     */
-    protected function addError($message, $private = false)
-    {
-        /** @var AdminController $controller */
-        $controller = $this->context->controller;
-        if (!Tools::isSubmit('configure')) {
-            if (!$private) {
-                $controller->errors[] = '<a href="'.$this->baseUrl.'">'.$this->displayName.': '.$message.'</a>';
-            }
-        } else {
-            // Do not add error in this case
-            // It will break execution of AdminController
-            $controller->warnings[] = $message;
-        }
-    }
-
-    /**
-     * Returns current checkout session id
-     *
-     * This method returns existing session, or creates a new one
-     *
-     * @return string
-     * @throws PrestaShopDatabaseException
-     * @throws PrestaShopException
-     * @throws \Stripe\Exception\ApiErrorException
-     */
-    public function getCheckoutSession()
-    {
-        $cookie = $this->context->cookie;
-        $cart = $this->context->cart;
-        $sessionId = Utils::getSessionFromCookie($cookie, $cart);
-        if (! $sessionId) {
-            $total = Utils::getCartTotal($cart);
-            if ($total) {
-                $sessionId = $this->getStripeApi()->createCheckoutSession($cart);
-                if ($sessionId) {
-                    Utils::saveSessionToCookie($cookie, $cart, $sessionId);
-                }
-            }
-        }
-        return $sessionId;
-    }
-
-    /**
-     * Returns current payment intent associated with cart object
-     *
-     * This method returns existing payment intent, or creates a new one
-     *
-     * @return string
-     * @throws PrestaShopDatabaseException
-     * @throws PrestaShopException
-     * @throws \Stripe\Exception\ApiConnectionException
-     * @throws \Stripe\Exception\ApiErrorException
-     */
-    public function getPaymentIntentSecret()
-    {
-        $cookie = $this->context->cookie;
-        $cart = $this->context->cart;
-        $paymentIntentSecret = Utils::getPaymentIntentClientSecretFromCookie($cookie, $cart);
-        if (! $paymentIntentSecret) {
-            $total = Utils::getCartTotal($cart);
-            if ($total) {
-                $paymentIntent = $this->getStripeApi()->createPaymentIntent($cart);
-                if ($paymentIntent) {
-                    $paymentIntentSecret = $paymentIntent->client_secret;
-                    Utils::savePaymentIntentToCookie($cookie, $cart, $paymentIntent->id, $paymentIntent->client_secret);
-                }
-            }
-        }
-        return $paymentIntentSecret;
-    }
-
-    /**
-     * @return StripeApi
-     */
-    public function getStripeApi()
-    {
-        return new StripeApi();
-    }
-
-    /**
-     * @param string $confirmation
-     * @throws PrestaShopException
-     */
-    private function setConfirmationMessage($confirmation)
-    {
-        $this->saveToCookie('confirmation', $confirmation);
-    }
-
-    /**
-     * @param string | array $error
-     * @throws PrestaShopException
-     */
-    private function setErrorMessage($error)
-    {
-        if (is_array($error)) {
-            $error = implode(', ', $error);
-        }
-        $this->saveToCookie('error', $error);
-    }
-
-    /**
-     * @param string $type
-     * @param string $message
-     *
-     * @return void
-     * @throws PrestaShopException
-     */
-    private function saveToCookie($type, $message)
-    {
-        $cookie = new Cookie('stripe');
-        $cookie->__set($type, $message);
-        $cookie->write();
-    }
-
-
-    /**
-     * @param string $value
-     *
-     * @return float
-     */
-    private static function parseNumber($value)
-    {
-        if (method_exists('Tools', 'parseNumber')) {
-            return Tools::parseNumber($value);
-        } else {
-            return (float)str_replace(',', '.', (string)$value);
         }
     }
 }

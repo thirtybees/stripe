@@ -23,7 +23,6 @@ if (!defined('_TB_VERSION_')) {
 
 /**
  * @return true
- * @throws PrestaShopDatabaseException
  * @throws PrestaShopException
  */
 function upgrade_module_1_4_3()

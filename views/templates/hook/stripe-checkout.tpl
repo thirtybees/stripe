@@ -15,4 +15,19 @@
  *  @copyright 2017-2018 thirty bees
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
-{include file='../hook/ccpayment.tpl'}
+{strip}
+    <div class="row">
+        <div class="col-xs-12 col-md-12">
+            <p class="payment_module" id="stripe_payment_button">
+                <a id="stripe_payment_link" href="{$paymentLink|escape:'htmlall'}" title="{$cta|escape:'htmlall'}">
+                    <img src="{$img}" alt="{$cta|escape:'htmlall'}" width="auto" height="64" />&nbsp;
+                    {$cta|escape:'html'}
+                    {if $paymentLogos}
+                        <img src="{$paymentLogos|escape:'htmlall'}"
+                             alt="{l s='Credit cards' mod='stripe'}"/>
+                    {/if}
+                </a>
+            </p>
+        </div>
+    </div>
+{/strip}

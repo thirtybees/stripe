@@ -20,6 +20,7 @@
 use Stripe\Exception\ApiErrorException;
 use StripeModule\StripeReview;
 use StripeModule\StripeTransaction;
+use StripeModule\Utils;
 
 if (!defined('_TB_VERSION_')) {
     exit;
@@ -57,26 +58,34 @@ class StripeHookModuleFrontController extends ModuleFrontController
     /**
      * Post process
      *
-     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
      * @throws SmartyException
      * @throws ApiErrorException
      */
     public function postProcess()
     {
+        if (!Module::isEnabled('stripe')) {
+            die('module not enabled');
+        }
+
+        if (! Utils::hasValidConfiguration()) {
+            die('invalid stripe configuration');
+        }
+
+        if (! headers_sent()) {
+            header('Content-Type: text/plain');
+        }
+
         $body = file_get_contents('php://input');
 
         if (!empty($body) && $data = json_decode($body, true)) {
-            // Verify with Stripe
-            try {
-                $guzzle = new \StripeModule\GuzzleClient();
-                \Stripe\ApiRequestor::setHttpClient($guzzle);
-                \Stripe\Stripe::setApiKey(Configuration::get(Stripe::SECRET_KEY_TEST));
-                $event = \Stripe\Event::retrieve($data['id']);
-            } catch (\Exception $e) {
-                die('ko');
+
+            if (! isset($data['id'])) {
+                die('Event id not provided');
             }
-            switch ($data['type']) {
+            $event = $this->getEvent((string)$data['id']);
+
+            switch ($event->type) {
                 case 'review.closed':
                     $this->processApproved($event);
 
@@ -99,12 +108,9 @@ class StripeHookModuleFrontController extends ModuleFrontController
 
                     break;
             }
-
             die('ok');
         }
-
-        header('Content-Type: text/plain');
-        die('ko');
+        die('Failed to parse input');
     }
 
     /**
@@ -112,7 +118,6 @@ class StripeHookModuleFrontController extends ModuleFrontController
      *
      * @param \Stripe\Event $event
      *
-     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
      * @throws SmartyException
      */
@@ -121,13 +126,16 @@ class StripeHookModuleFrontController extends ModuleFrontController
         /** @var \Stripe\Charge $charge */
         $charge = $event->data['object'];
 
-        // This is only supported for Sofort Banking at the moment
-        if (!isset($charge->metadata->type) || $charge->metadata->type !== 'sofort') {
-            die('ok');
+
+        $chargeId = $charge->id;
+        $pendingTransaction = StripeTransaction::findPendingChargeTransaction($charge->id);
+        if (! $pendingTransaction) {
+            die('no pending transaction for charge id ' . $chargeId);
         }
 
-        if (!$idOrder = StripeTransaction::getIdOrderByCharge($charge->id)) {
-            die('no id');
+        $idOrder = (int)$pendingTransaction['id_order'];
+        if (! $idOrder) {
+            die('no order found for pending charge id ' . $chargeId);
         }
 
         $order = new Order($idOrder);
@@ -140,7 +148,7 @@ class StripeHookModuleFrontController extends ModuleFrontController
         $transaction->id_order = $order->id;
         $transaction->type = StripeTransaction::TYPE_CHARGE;
         $transaction->source = StripeTransaction::SOURCE_WEBHOOK;
-        $transaction->source_type = 'sofort';
+        $transaction->source_type = $pendingTransaction['source_type'];
         $transaction->add();
 
         $orderHistory = new OrderHistory();
@@ -154,7 +162,6 @@ class StripeHookModuleFrontController extends ModuleFrontController
      *
      * @param \Stripe\Event $event
      *
-     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
      * @throws SmartyException
      */
@@ -163,11 +170,16 @@ class StripeHookModuleFrontController extends ModuleFrontController
         /** @var \Stripe\Charge $charge */
         $charge = $event->data['object'];
 
-        if (!$idOrder = StripeTransaction::getIdOrderByCharge($charge->id)) {
-            die('ok');
+        $chargeId = $charge->id;
+        $pendingTransaction = StripeTransaction::findPendingChargeTransaction($charge->id);
+        if (! $pendingTransaction) {
+            die('no pending transaction for charge id ' . $chargeId);
         }
 
-        StripeTransaction::getChargeByIdOrder($idOrder);
+        $idOrder = (int)$pendingTransaction['id_order'];
+        if (! $idOrder) {
+            die('no order found for pending charge id ' . $chargeId);
+        }
 
         $order = new Order($idOrder);
 
@@ -178,7 +190,7 @@ class StripeHookModuleFrontController extends ModuleFrontController
         $transaction->id_order = $order->id;
         $transaction->type = StripeTransaction::TYPE_CHARGE_FAIL;
         $transaction->source = StripeTransaction::SOURCE_WEBHOOK;
-        $transaction->source_type = 'sofort';
+        $transaction->source_type = $pendingTransaction['source_type'];
         $transaction->add();
 
         $orderHistory = new OrderHistory();
@@ -192,7 +204,6 @@ class StripeHookModuleFrontController extends ModuleFrontController
      *
      * @param \Stripe\Event $event
      *
-     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
      * @throws SmartyException
      * @throws \Stripe\Exception\ApiErrorException
@@ -236,7 +247,6 @@ class StripeHookModuleFrontController extends ModuleFrontController
      *
      * @param \Stripe\Event $event
      *
-     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
      * @throws SmartyException
      */
@@ -278,7 +288,6 @@ class StripeHookModuleFrontController extends ModuleFrontController
      *
      * @param \Stripe\Event $event
      *
-     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
      * @throws SmartyException
      */
@@ -315,11 +324,7 @@ class StripeHookModuleFrontController extends ModuleFrontController
 
         $order = new Order($idOrder);
 
-        $totalAmount = $order->getTotalPaid();
-
-        if (!in_array($charge->currency, Stripe::$zeroDecimalCurrencies)) {
-            $totalAmount = (int) (Tools::ps_round($totalAmount * 100, 0));
-        }
+        $totalAmount = Utils::toCurrencyUnitWithIso((string)$charge->currency, $order->getTotalPaid());
 
         $amountRefunded = (int) $charge->amount_refunded;
 
@@ -375,5 +380,23 @@ class StripeHookModuleFrontController extends ModuleFrontController
                 $orderHistory->addWithemail(true);
             }
         }
+    }
+
+    /**
+     * @param string $eventId
+     *
+     * @return \Stripe\Event
+     */
+    public function getEvent($eventId)
+    {
+        // Verify with Stripe
+        try {
+            $api = $this->module->getStripeApi();
+            $event = $api->getEvent($eventId);
+            if ($event) {
+                return $event;
+            }
+        } catch (\Throwable $e) {}
+        die('Failed to fetch event ' . $eventId);
     }
 }

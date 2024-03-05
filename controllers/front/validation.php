@@ -19,6 +19,8 @@
 
 use Stripe\Exception\ApiConnectionException;
 use Stripe\Exception\ApiErrorException;
+use StripeModule\PaymentMetadata;
+use StripeModule\PaymentMethod;
 use StripeModule\Utils;
 use StripeModule\PaymentProcessor;
 use Stripe\PaymentIntent;
@@ -33,13 +35,6 @@ if (!defined('_TB_VERSION_')) {
 class StripeValidationModuleFrontController extends ModuleFrontController
 {
     /**
-     * Validation types
-     */
-    const CHECKOUT = 'checkout';
-    const CREDIT_CARD = 'cc';
-    const PAYMENT_REQUEST = 'paymentRequest';
-
-    /**
      * @var Stripe $module
      */
     public $module;
@@ -47,58 +42,90 @@ class StripeValidationModuleFrontController extends ModuleFrontController
     /**
      * Main controller method
      *
-     * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
      * @throws ApiConnectionException
      * @throws ApiErrorException
      */
     public function postProcess()
     {
-        $type = Tools::getValue('type');
-        switch ($type) {
-            case static::CHECKOUT:
-                $this->validateCheckout();
-                break;
-            case static::CREDIT_CARD:
-                $this->validateCreditCard();
-                break;
-            default:
+        if (!Module::isEnabled('stripe')) {
+           $this->redirectToCheckout();
+        }
+
+        if (! Utils::hasValidConfiguration()) {
+            $this->redirectToCheckout();
+        }
+
+        $methodId = Tools::getValue('type');
+        if (! $methodId) {
+            return $this->displayError(Tools::displayError('Payment method parameter not provided'));
+        }
+
+        $repository = $this->module->getPaymentMethodsRepository();
+        $method = $repository->getMethod($methodId);
+        if ($method) {
+            $metadata = Utils::getPaymentMetadata($this->context->cookie);
+            if ($metadata) {
+                return $this->validatePaymentMethod($method, $metadata);
+            } else {
+                return $this->displayError(Tools::displayError('Payment metadata not found'));
+            }
+        }  else {
+            return $this->displayError(sprintf(Tools::displayError('Payment method %s is not available'), $methodId));
+        }
+    }
+
+    /**
+     * @param PaymentMethod $method
+     * @param PaymentMetadata $metadata
+     *
+     * @return bool
+     * @throws ApiErrorException
+     * @throws PrestaShopException
+     */
+    public function validatePaymentMethod(PaymentMethod $method, PaymentMetadata $metadata)
+    {
+        $cart = $this->context->cart;
+
+        if (! Validate::isLoadedObject($cart)) {
+            return $this->displayError(Tools::displayError('Cart not found'));
+        }
+
+        // Optional check for provided payment intent
+        $providedPaymentIntentId = Tools::getValue('payment_intent');
+        if ($providedPaymentIntentId) {
+            if ($metadata->getPaymentIntentId() !== $providedPaymentIntentId) {
+                return $this->displayError(Tools::displayError('Invalid parameter payment_intent'));
+            }
+        }
+
+        $errors = $metadata->validate($method, $cart);
+        if ($errors) {
+            return $this->displayErrors($errors);
+        }
+
+        $methodId = $method->getMethodId();
+        $methodName = sprintf(
+            Translate::getModuleTranslation('stripe', 'Stripe: %s', 'validation'),
+            $method->getShortName()
+        );
+
+        $api = $this->module->getStripeApi();
+        $paymentIntent = $api->getPaymentIntent($metadata->getPaymentIntentId());
+        switch ($paymentIntent->status) {
+            case PaymentIntent::STATUS_SUCCEEDED:
+            case PaymentIntent::STATUS_REQUIRES_CAPTURE:
+            case PaymentIntent::STATUS_PROCESSING:
+                $this->processPayment($cart, $paymentIntent, $methodId, $methodName);
+                return true;
+            case PaymentIntent::STATUS_CANCELED:
+                Utils::removeFromCookie($this->context->cookie);
                 $this->redirectToCheckout();
-        }
-    }
-
-    /**
-     * Validate stripe checkout flow
-     *
-     * @throws PrestaShopException
-     * @throws ApiConnectionException
-     * @throws ApiErrorException
-     */
-    public function validateCheckout()
-    {
-        $sessionId = Utils::getSessionFromCookie($this->context->cookie, $this->context->cart);
-        if ($sessionId) {
-            $api = $this->module->getStripeApi();
-            $session = $api->getCheckoutSession($sessionId);
-            $this->processPaymentIntent($session->payment_intent);
-        } else {
-            $this->redirectToCheckout();
-        }
-    }
-
-    /**
-     * Validate stripe checkout flow
-     *
-     * @throws PrestaShopException
-     * @throws ApiErrorException
-     */
-    public function validateCreditCard()
-    {
-        $paymentIntentId = Utils::getPaymentIntentIdFromCookie($this->context->cookie, $this->context->cart);
-        if ($paymentIntentId) {
-            $this->processPaymentIntent($paymentIntentId);
-        } else {
-            $this->redirectToCheckout();
+                return false;
+            default:
+                Utils::removeFromCookie($this->context->cookie);
+                $this->displayError('Payment intent has invalid status: ' . $paymentIntent->status);
+                return false;
         }
     }
 
@@ -114,51 +141,20 @@ class StripeValidationModuleFrontController extends ModuleFrontController
     }
 
     /**
-     * @param string $paymentIntentId
-     *
-     * @throws PrestaShopException
-     * @throws ApiErrorException
-     */
-    private function processPaymentIntent($paymentIntentId)
-    {
-        $api = $this->module->getStripeApi();
-        $paymentIntent = $api->getPaymentIntent($paymentIntentId);
-        switch ($paymentIntent->status) {
-            case PaymentIntent::STATUS_SUCCEEDED:
-            case PaymentIntent::STATUS_REQUIRES_CAPTURE:
-                $this->processPayment($this->context->cart, $paymentIntent);
-                break;
-            case PaymentIntent::STATUS_CANCELED:
-                Utils::removeFromCookie($this->context->cookie);
-                $this->redirectToCheckout();
-                break;
-            default:
-                if ($paymentIntent->last_payment_error) {
-                    Utils::removeFromCookie($this->context->cookie);
-                    if (isset($paymentIntent->last_payment_error->message)) {
-                        $this->displayErrors([ $paymentIntent->last_payment_error->message ]);
-                    } else {
-                        $this->displayErrors(['Unknown error']);
-                    }
-                } else {
-                    $this->redirectToCheckout();
-                }
-        }
-    }
-
-    /**
      * Method called when payment has been successfully completed
      *
      * @param Cart $cart
      * @param PaymentIntent $paymentIntent
+     * @param string $methodId
+     * @param string $paymentMethodName
      *
-     * @throws PrestaShopException
      * @throws ApiErrorException
+     * @throws PrestaShopException
      */
-    private function processPayment(Cart $cart, PaymentIntent $paymentIntent)
+    private function processPayment(Cart $cart, PaymentIntent $paymentIntent, string $methodId, string $paymentMethodName)
     {
         $processor = new PaymentProcessor($this->module);
-        if ($processor->processPayment($cart, $paymentIntent)) {
+        if ($processor->processPayment($cart, $paymentIntent, $methodId, $paymentMethodName)) {
             Utils::removeFromCookie($this->context->cookie);
             $processor->redirectToOrderConfirmation();
         } else {
@@ -167,7 +163,19 @@ class StripeValidationModuleFrontController extends ModuleFrontController
     }
 
     /**
+     * @param string $error
+     *
+     * @return bool
+     * @throws PrestaShopException
+     */
+    private function displayError(string $error)
+    {
+        return $this->displayErrors([ $error ]);
+    }
+
+    /**
      * @param string[] $errors
+     * @return bool
      * @throws PrestaShopException
      */
     private function displayErrors($errors)
@@ -176,5 +184,6 @@ class StripeValidationModuleFrontController extends ModuleFrontController
         $this->context->smarty->assign('orderLink', $this->context->link->getPageLink($orderProcess, true));
         $this->errors = $errors;
         $this->setTemplate('error.tpl');
+        return false;
     }
 }

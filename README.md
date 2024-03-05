@@ -19,7 +19,6 @@ Contributions are more than welcome!
 ### Current features
 - Process the following payment methods with Stripe: 
   - Credit Card
-  - Credit Card (3D Secure)
   - Apple Pay (PaymentRequest button)
   - Google Pay (PaymentRequest button)
   - iDEAL
@@ -55,8 +54,7 @@ The wiki can be found here: https://github.com/thirtybees/stripe/wiki
 
 ## Minimum requirements
 - Thirty Bees `>= 1.0.0`
-- PHP `>= 5.5.0`
-- `TLSv1.2` connectivity (`cURL` or `fsockopen`)
+- PHP `>= 7.4.0`
 
 ### Compatibility
 - Thirty Bees `1.0.x`

@@ -39,9 +39,8 @@
 
 <div class="panel">
   <h3><i class="icon icon-anchor"></i> {l s='Webhooks' mod='stripe'}</h3>
-  <p>{l s='This module supports procesing refunds through webhooks' mod='stripe'}</p>
-  <p>{l s='You can use the following URL:' mod='stripe'}<br/>
-    <a href="{$stripe_webhook_url|escape:'htmlall'}">{$stripe_webhook_url|escape:'htmlall'}</a>
+  <p>{l s='This module supports stripe webhooks to process defered payments and refunds' mod='stripe'}</p>
+  <p>{l s='You go to you stripe dashboard and configure webhook using following URL:' mod='stripe'} <code>{$stripe_webhook_url|escape:'htmlall'}</code>
   </p>
 </div>
 

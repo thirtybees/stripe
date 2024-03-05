@@ -194,6 +194,24 @@ class StripeTransaction extends \ObjectModel
     }
 
     /**
+     * @param int $idCharge
+     *
+     * @return array|false
+     *
+     * @throws \PrestaShopException
+     */
+    public static function findPendingChargeTransaction($idCharge)
+    {
+        return \Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow(
+            (new \DbQuery())
+                ->from(bqSQL(static::$definition['table']), 'st')
+                ->where('st.`id_charge` = \''.pSQL($idCharge).'\'')
+                ->where('st.type = ' . static::TYPE_CHARGE_PENDING)
+        );
+    }
+
+
+    /**
      * Get refunded amount by Charge ID
      *
      * @param int $idCharge Charge ID

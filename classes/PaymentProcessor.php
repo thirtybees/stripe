@@ -116,19 +116,21 @@ class PaymentProcessor
      *
      * @param Cart $cart
      * @param PaymentIntent $paymentIntent
+     * @param string $methodId
+     * @param string $paymentMethodName
      *
      * @return bool
      *
      * @throws ApiErrorException
      * @throws PrestaShopException
      */
-    public function processPayment(Cart $cart, PaymentIntent $paymentIntent)
+    public function processPayment(Cart $cart, PaymentIntent $paymentIntent, string $methodId, string $paymentMethodName)
     {
         $this->reset();
 
         $charge = $this->getCharge($paymentIntent->latest_charge);
         if ($charge) {
-            $this->processCharge($cart, $charge, $paymentIntent);
+            $this->processCharge($cart, $charge, $paymentIntent, $methodId, $paymentMethodName);
             if ($this->orderId) {
                 $this->redirect = Context::getContext()->link->getPageLink(
                     'order-confirmation',
@@ -162,13 +164,22 @@ class PaymentProcessor
      * @param Cart $cart
      * @param Charge $charge
      * @param PaymentIntent $paymentIntent
+     * @param string $methodId
+     * @param string $paymentMethodName
      *
      * @return bool
      * @throws PrestaShopException
      */
-    public function processCharge(Cart $cart, Charge $charge, PaymentIntent $paymentIntent)
+    public function processCharge(Cart $cart, Charge $charge, PaymentIntent $paymentIntent, string $methodId, string $paymentMethodName)
     {
-        $paymentStatus = (int) Configuration::get(Stripe::STATUS_VALIDATED);
+        if ($paymentIntent->status === PaymentIntent::STATUS_PROCESSING) {
+            $paymentStatus = (int) Configuration::get(Stripe::STATUS_PROCESSING);
+            if (!$paymentStatus) {
+                $paymentStatus = (int) Configuration::get('PS_OS_PREPARATION');
+            }
+        } else {
+            $paymentStatus = (int) Configuration::get(Stripe::STATUS_VALIDATED);
+        }
 
         // log information about stripe review
         $this->review = new StripeReview();
@@ -199,19 +210,19 @@ class PaymentProcessor
         $this->transaction->id_order = 0;
         $this->transaction->type = Utils::getTransactionType($paymentIntent->status, $this->review);
         $this->transaction->source = StripeTransaction::SOURCE_FRONT_OFFICE;
-        $this->transaction->source_type = 'cc';
+        $this->transaction->source_type = $methodId;
         if (! $this->transaction->add()) {
             $this->addError($this->l('Failed to create stripe transaction object'), Db::getInstance()->getMsgError());
             return false;
         }
 
-        if ($charge->status === Charge::STATUS_SUCCEEDED) {
+        if ($charge->status === Charge::STATUS_SUCCEEDED || $charge->status === Charge::STATUS_PENDING) {
             try {
                 $this->module->validateOrder(
                     (int)$cart->id,
                     $paymentStatus,
                     $cart->getOrderTotal(),
-                    Utils::getPaymentMethodName($charge->payment_method_details),
+                    $paymentMethodName,
                     null,
                     ['transaction_id' => $paymentIntent->id],
                     null,
