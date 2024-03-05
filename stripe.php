@@ -388,8 +388,8 @@ class Stripe extends PaymentModule
 
         $orderTotal = Utils::toCurrencyUnit($currency, $order->getTotalPaid());
         $amount = Utils::toCurrencyUnit($currency, (float)static::parseNumber(Tools::getValue('stripe_refund_amount')));
-
         $amountRefunded = StripeTransaction::getRefundedAmountByOrderId($idOrder);
+        $newOrderTotal = $orderTotal - ($amountRefunded + $amount);
 
         try {
             $this->api->createRefund($idCharge, $amount);
@@ -398,7 +398,7 @@ class Stripe extends PaymentModule
             Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true) . '&vieworder&id_order=' . $idOrder);
         }
 
-        if (Configuration::get(static::USE_STATUS_REFUND) && 0 === (int)($orderTotal - ($amountRefunded + $amount))) {
+        if ($newOrderTotal === 0) {
             // Full refund
             if (Configuration::get(static::GENERATE_CREDIT_SLIP)) {
                 $fullProductList = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS(
@@ -429,10 +429,12 @@ class Stripe extends PaymentModule
             $transaction->source = StripeTransaction::SOURCE_BACK_OFFICE;
             $transaction->add();
 
-            $orderHistory = new OrderHistory();
-            $orderHistory->id_order = $order->id;
-            $orderHistory->changeIdOrderState((int)Configuration::get(Stripe::STATUS_REFUND), $idOrder, !$order->hasInvoice());
-            $orderHistory->addWithemail(true);
+            if (Configuration::get(Stripe::USE_STATUS_REFUND)) {
+                $orderHistory = new OrderHistory();
+                $orderHistory->id_order = $order->id;
+                $orderHistory->changeIdOrderState((int)Configuration::get(Stripe::STATUS_REFUND), $idOrder, !$order->hasInvoice());
+                $orderHistory->addWithemail(true);
+            }
 
             $review = StripeReview::getByOrderId($idOrder);
             $review->status = StripeReview::RELEASED;
