@@ -119,6 +119,7 @@ class StripeValidationModuleFrontController extends ModuleFrontController
                 $this->processPayment($cart, $paymentIntent, $methodId, $methodName);
                 return true;
             case PaymentIntent::STATUS_CANCELED:
+            case PaymentIntent::STATUS_REQUIRES_PAYMENT_METHOD:
                 Utils::removeFromCookie($this->context->cookie);
                 $this->redirectToCheckout();
                 return false;

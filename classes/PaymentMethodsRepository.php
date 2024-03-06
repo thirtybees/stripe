@@ -34,6 +34,7 @@ class PaymentMethodsRepository
      * @param string $methodId
      *
      * @return PaymentMethod|null
+     * @throws PrestaShopException
      */
     public function getMethod(string $methodId): ?PaymentMethod
     {
@@ -64,6 +65,7 @@ class PaymentMethodsRepository
 
     /**
      * @return PaymentMethod[]
+     * @throws PrestaShopException
      */
     public function getAllMethods()
     {
@@ -77,6 +79,7 @@ class PaymentMethodsRepository
 
     /**
      * @return PaymentMethod[]
+     * @throws PrestaShopException
      */
     private function resolveAvailableMethods()
     {
@@ -87,8 +90,8 @@ class PaymentMethodsRepository
             if ($name === 'index.php') {
                 continue;
             }
-            $code = lcfirst(Utils::camelize(str_replace('.php', '', $name)));
-            $className = '\StripeModule\PaymentMethod\\' . Utils::camelize($code);
+            $code = ucfirst(Utils::camelize(str_replace('.php', '', $name)));
+            $className = '\StripeModule\PaymentMethod\\' . $code;
             if (!class_exists($className)) {
                 throw new RuntimeException("$path does not contain $className");
             }

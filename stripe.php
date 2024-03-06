@@ -1383,6 +1383,7 @@ class Stripe extends PaymentModule
      * @param array $row
      *
      * @return string
+     * @throws PrestaShopException
      */
     public function renderListPaymentMethodLink(string $value, array $row)
     {
