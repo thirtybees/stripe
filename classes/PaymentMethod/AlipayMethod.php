@@ -4,7 +4,9 @@ namespace StripeModule\PaymentMethod;
 
 use Cart;
 use PrestaShopException;
+use Stripe\Exception\ApiErrorException;
 use StripeModule\ExecutionResult;
+use StripeModule\PaymentMetadata;
 use StripeModule\PaymentMethod;
 
 class AlipayMethod extends PaymentMethod
@@ -52,7 +54,18 @@ class AlipayMethod extends PaymentMethod
      */
     public function executeMethod(Cart $cart): ExecutionResult
     {
-        return $this->startRedirectPaymentFlow($cart, \Stripe\PaymentMethod::TYPE_ALIPAY, []);
+        try {
+            $api = $this->getStripeApi();
+            $session = $api->createCheckoutSession(
+                $cart,
+                $this->getMethodId(),
+                [\Stripe\PaymentMethod::TYPE_ALIPAY],
+            );
+            $metadata = PaymentMetadata::createForSession($this->getMethodId(), $cart, $session);
+            return ExecutionResult::redirect($metadata, $session->url);
+        } catch (ApiErrorException $e) {
+            return $this->handleApiException($e);
+        }
     }
 
     /**
