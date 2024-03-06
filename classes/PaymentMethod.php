@@ -404,7 +404,7 @@ abstract class PaymentMethod
      */
     public function getDocLink(): string
     {
-        return "https://docs.stripe.com/payments/" . $this->getMethodId();
+        return "https://docs.stripe.com/payments/" . str_replace('_', '-', $this->getMethodId());
     }
 
     /**
