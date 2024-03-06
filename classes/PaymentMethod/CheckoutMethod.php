@@ -109,7 +109,7 @@ class CheckoutMethod extends PaymentMethod
 
             return ExecutionResult::render($metadata, 'stripe-checkout.tpl', $templateParams, $javascripts);
         } catch (ApiErrorException $e) {
-            return ExecutionResult::error("Stripe responsed with error message");
+            return $this->handleApiException($e);
         }
     }
 
@@ -130,5 +130,12 @@ class CheckoutMethod extends PaymentMethod
         return $this->l('Pay by Credit Card', 'stripe');
     }
 
+    /**
+     * @return string
+     */
+    public function getDocLink(): string
+    {
+        return "https://docs.stripe.com/payments/checkout";
+    }
 
 }

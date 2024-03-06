@@ -4,8 +4,11 @@ namespace StripeModule;
 
 
 use Cart;
+use Configuration;
 use PrestaShopException;
 use RuntimeException;
+use Stripe;
+use StripeModule\PaymentMethod\CheckoutMethod;
 
 class PaymentMethodsRepository
 {
@@ -96,7 +99,61 @@ class PaymentMethodsRepository
             }
             $methods[$instance->getMethodId()] = $instance;
         }
-        return $methods;
+        return $this->sortMethods($methods);
     }
+
+    /**
+     * @param array $methods
+     *
+     * @return array
+     * @throws PrestaShopException
+     */
+    private function sortMethods(array $methods): array
+    {
+        $result = [];
+        foreach ($this->getConfiguredOrder() as $key) {
+            if (isset($methods[$key])) {
+                $result[$key] = $methods[$key];
+                unset($methods[$key]);
+            }
+        }
+
+        $restKeys = array_keys($methods);
+        if ($restKeys) {
+            sort($restKeys);
+            foreach ($restKeys as $key) {
+                $result[$key] = $methods[$key];
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * @return array
+     * @throws PrestaShopException
+     */
+    protected function getConfiguredOrder(): array
+    {
+        $value = (string)Configuration::get(Stripe::ORDER_OF_METHODS);
+        if (! $value) {
+            return [CheckoutMethod::METHOD_ID];
+        }
+        return explode('|', $value);
+    }
+
+    /**
+     * @param array $order
+     *
+     * @return void
+     * @throws PrestaShopException
+     */
+    public function setMethodsOrder(array $order)
+    {
+        $order = array_filter($order, function($methodId) {
+            return (bool)$this->getMethod($methodId);
+        });
+        Configuration::updateValue(Stripe::ORDER_OF_METHODS, implode('|', $order));
+    }
+
 
 }

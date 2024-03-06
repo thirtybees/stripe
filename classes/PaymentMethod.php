@@ -135,14 +135,6 @@ abstract class PaymentMethod
     /**
      * @return string
      */
-    public function getConfigurationKey(): string
-    {
-        return 'STRIPE_' . strtoupper($this->getMethodId());
-    }
-
-    /**
-     * @return string
-     */
     public function getImageFile(): string
     {
         return $this->getMethodId() . '.png';
@@ -235,7 +227,7 @@ abstract class PaymentMethod
                 return ExecutionResult::error("Stripe response does not contain redirect url");
             }
         } catch (ApiErrorException $e) {
-            return ExecutionResult::error("Stripe responsed with error message");
+            return $this->handleApiException($e);
         }
     }
 
@@ -331,6 +323,79 @@ abstract class PaymentMethod
     public function getShortName(): string
     {
         return $this->getName();
+    }
+
+    /**
+     * @return bool
+     * @throws PrestaShopException
+     */
+    public function isEnabled(): bool
+    {
+        return (bool)Configuration::get($this->getConfigurationKey());
+    }
+
+    /**
+     * @param bool $enabled
+     *
+     * @return $this
+     * @throws PrestaShopException
+     */
+    public function setEnabled(bool $enabled)
+    {
+        Configuration::updateValue($this->getConfigurationKey(), (int)$enabled);
+        return $this;
+    }
+
+    /**
+     * @return void
+     * @throws PrestaShopException
+     */
+    public function cleanConfiguration()
+    {
+        foreach ($this->getAllConfigurationKeys() as $key) {
+            Configuration::deleteByName($key);
+        }
+    }
+
+    /**
+     * @return string
+     */
+    protected function getConfigurationKey(): string
+    {
+        return 'STRIPE_' . strtoupper($this->getMethodId());
+    }
+
+    /**
+     * @return string[]
+     */
+    protected function getAllConfigurationKeys()
+    {
+        return [
+            $this->getConfigurationKey()
+        ];
+    }
+
+    /**
+     * @return string
+     */
+    public function getDocLink(): string
+    {
+        return "https://docs.stripe.com/payments/" . $this->getMethodId();
+    }
+
+    /**
+     * @param $e
+     *
+     * @return ExecutionResult
+     */
+    protected function handleApiException($e): ExecutionResult
+    {
+        $error = $e->getError();
+        if ($error && $error->message) {
+            return ExecutionResult::error($error->message);
+        } else {
+            return ExecutionResult::error("Stripe responsed with error message");
+        }
     }
 
 }

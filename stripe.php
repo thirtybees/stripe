@@ -35,8 +35,8 @@ require_once __DIR__.'/vendor/autoload.php';
  */
 class Stripe extends PaymentModule
 {
-    const MENU_SETTINGS = 1;
-    const MENU_TRANSACTIONS = 2;
+    const MENU_SETTINGS = 'settings';
+    const MENU_TRANSACTIONS = 'transactions';
 
     // global settings
     const ACCOUNT_COUNTRY = 'STRIPE_ACCOUNT_COUNTRY';
@@ -45,6 +45,7 @@ class Stripe extends PaymentModule
     const PUBLISHABLE_KEY_TEST = 'STRIPE_PUBLISHABLE_KEY_TEST';
     const SECRET_KEY_LIVE = 'STRIPE_SECRET_KEY_LIVE';
     const SECRET_KEY_TEST = 'STRIPE_SECRET_KEY_TEST';
+    const ORDER_OF_METHODS = 'STRIPE_ORDER_OF_METHODS';
 
     // Order process settings
     const MANUAL_CAPTURE = 'STRIPE_MANUAL_CAPTURE';
@@ -87,17 +88,6 @@ class Stripe extends PaymentModule
     const INPUT_TEXT_BACKGROUND_COLOR = 'STRIPE_PAYMENT_REQBGC';
     const INPUT_TEXT_FOREGROUND_COLOR = 'STRIPE_PAYMENT_REQFGC';
     const PAYMENT_REQUEST_BUTTON_STYLE = 'STRIPE_PRB_STYLE';
-
-    /**
-     * @var string $baseUrl Module base URL
-     */
-    private $baseUrl;
-
-    /**
-     * @var string
-     */
-    private $moduleUrl;
-
 
     /**
      * @var int $menu Current menu
@@ -216,9 +206,10 @@ class Stripe extends PaymentModule
         Configuration::deleteByName(static::STATUS_IN_REVIEW);
         Configuration::deleteByName(static::GENERATE_CREDIT_SLIP);
         Configuration::deleteByName(static::SHOW_PAYMENT_LOGOS);
+        Configuration::deleteByName(static::ORDER_OF_METHODS);
 
         foreach ($this->methods->getAllMethods() as $method) {
-            Configuration::deleteByName($method->getConfigurationKey());
+            $method->cleanConfiguration();
         }
 
         return parent::uninstall();
@@ -238,15 +229,6 @@ class Stripe extends PaymentModule
 
         $this->initNavigation();
 
-        $this->moduleUrl = Context::getContext()->link->getAdminLink('AdminModules', false) . '&token=' . Tools::getAdminTokenLite('AdminModules') . '&' . http_build_query([
-                'configure' => $this->name,
-            ]);
-
-        $this->baseUrl = $this->context->link->getAdminLink('AdminModules', true) . '&' . http_build_query([
-                'configure' => $this->name,
-                'tab_module' => $this->tab,
-                'module_name' => $this->name,
-            ]);
 
         $this->postProcess();
 
@@ -291,6 +273,7 @@ class Stripe extends PaymentModule
      * Initialize navigation
      *
      * @return array Menu items
+     * @throws PrestaShopException
      */
     protected function initNavigation()
     {
@@ -298,14 +281,14 @@ class Stripe extends PaymentModule
             static::MENU_SETTINGS => [
                 'short' => $this->l('Settings'),
                 'desc' => $this->l('Module settings'),
-                'href' => $this->moduleUrl . '&menu=' . static::MENU_SETTINGS,
+                'href' => $this->getModuleUrl(static::MENU_SETTINGS),
                 'active' => false,
                 'icon' => 'icon-gears',
             ],
             static::MENU_TRANSACTIONS => [
                 'short' => $this->l('Transactions'),
                 'desc' => $this->l('Stripe transactions'),
-                'href' => $this->moduleUrl . '&menu=' . static::MENU_TRANSACTIONS,
+                'href' => $this->getModuleUrl(static::MENU_TRANSACTIONS),
                 'active' => false,
                 'icon' => 'icon-credit-card',
             ],
@@ -333,6 +316,12 @@ class Stripe extends PaymentModule
      */
     protected function postProcess()
     {
+        if (Tools::isSubmit('activepayment_methods')) {
+            $this->togglePaymentMethod(Tools::getValue('methodId'));
+        }
+        if (Tools::isSubmit('updatePositions')) {
+            $this->updatePaymentMethodsPositions();
+        }
         if (Tools::isSubmit('orderstriperefund')
             && Tools::isSubmit('stripe_refund_order')
             && Tools::isSubmit('stripe_refund_amount')
@@ -612,11 +601,6 @@ class Stripe extends PaymentModule
             static::STRIPE_PAYMENT_REQUEST => (bool)Tools::getValue(static::STRIPE_PAYMENT_REQUEST),
         ];
 
-        foreach ($this->methods->getAllMethods() as $method) {
-            $configKey = $method->getConfigurationKey();
-            $options[$configKey] = (bool)Tools::getValue($configKey);
-        }
-
         if ($goLive
             && (substr($publishableKeyLive, 0, 7) !== 'pk_live' || substr($secretKeyLive, 0, 7) !== 'sk_live')
         ) {
@@ -761,13 +745,7 @@ class Stripe extends PaymentModule
     {
         /** @var AdminController $controller */
         $controller = $this->context->controller;
-        if (!Tools::isSubmit('configure')) {
-            if (!$private) {
-                $controller->confirmations[] = '<a href="' . $this->baseUrl . '">' . $this->displayName . ': ' . $message . '</a>';
-            }
-        } else {
-            $controller->confirmations[] = $message;
-        }
+        $controller->confirmations[] = $message;
     }
 
     /**
@@ -779,15 +757,7 @@ class Stripe extends PaymentModule
     {
         /** @var AdminController $controller */
         $controller = $this->context->controller;
-        if (!Tools::isSubmit('configure')) {
-            if (!$private) {
-                $controller->errors[] = '<a href="' . $this->baseUrl . '">' . $this->displayName . ': ' . $message . '</a>';
-            }
-        } else {
-            // Do not add error in this case
-            // It will break execution of AdminController
-            $controller->warnings[] = $message;
-        }
+        $controller->warnings[] = $message;
     }
 
     /**
@@ -1137,7 +1107,7 @@ class Stripe extends PaymentModule
                                 $sqlFilter .= ' AND ' . pSQL($key) . ' <= \'' . pSQL(Tools::dateTo($value[1])) . '\'';
                             }
                         }
-                    } else {
+                    } elseif ($value) {
                         $sqlFilter .= ' AND ';
                         $checkKey = ($key == $helperList->identifier || $key == '`' . $helperList->identifier . '`');
                         $alias = ($definition && !empty($definition['fields'][$filter]['shop'])) ? 'sa' : 'a';
@@ -1212,9 +1182,11 @@ class Stripe extends PaymentModule
     protected function renderSettingsPage()
     {
         $output = $this->display(__FILE__, 'views/templates/admin/configure.tpl');
+        $output .= $this->renderPaymentMethodsList();
         $output .= $this->renderGeneralOptions();
         return $output;
     }
+
 
     /**
      * Render the General options form
@@ -1236,7 +1208,6 @@ class Stripe extends PaymentModule
 
         $options = array_merge(
             $this->getGeneralOptions(),
-            $this->getPaymentMethodsForm(),
             $this->getOrderOptions(),
             $this->getStripeCheckoutOptions(),
             $this->getStripeCreditCardOptions(),
@@ -1337,43 +1308,90 @@ class Stripe extends PaymentModule
     /**
      * Get other payment options
      *
-     * @return array
+     * @return string
      *
      * @throws PrestaShopException
+     * @throws SmartyException
      */
-    protected function getPaymentMethodsForm()
+    protected function renderPaymentMethodsList()
     {
         $paymentMethods = [];
+        $position = 0;
         foreach ($this->methods->getAllMethods() as $method) {
-            $configKey = $method->getConfigurationKey();
-            $hint = $method->getDescription();
-            $desc = $method->requiresWebhook() ? $this->l('This payment method uses webhook. Make sure you have it configured properly') : null;
+            $notes = '';
+            if ($method->requiresWebhook()) {
+                $notes=  $this->l('Requires webhook');
+            }
             $item = [
-                'title' => sprintf($this->l('Enable %s'), $method->getName()),
-                'type' => 'bool',
-                'name' => $configKey,
-                'hint' => $hint,
-                'desc' => $desc,
-                'value' => (bool)Configuration::get($configKey),
-                'auto_value' => false,
-                'validation' => 'isBool',
-                'cast' => 'intval',
-                'size' => 64,
+                'position' => $position,
+                'methodId' => $method->getMethodId(),
+                'name' => $method->getName(),
+                'notes' => $notes,
+                'active' => $method->isEnabled()
             ];
-            $paymentMethods[$configKey] = $item;
+            $paymentMethods[] = $item;
+            $position++;
         }
 
-        return [
-            'payment-methods' => [
-                'title' => $this->l('Payment Methods'),
-                'icon' => 'icon-credit-card',
-                'fields' => $paymentMethods,
-                'submit' => [
-                    'title' => $this->l('Save'),
-                    'class' => 'button',
-                ],
+        $fields = [
+            'position' => [
+                'title' => $this->l('Position'),
+                'align' => 'center',
+                'class' => 'fixed-width-sm',
+                'position' => 'position'
             ],
+            'name' => [
+                'title' => $this->l('Payment Method'),
+                'type' => 'text',
+                'callback_object' => $this,
+                'callback' => 'renderListPaymentMethodLink',
+            ],
+            'notes' => [
+                'title' => $this->l('Notes'),
+                'type' => 'text',
+            ],
+            'active' => array(
+                'title' => $this->l('Enabled'),
+                'align' => 'text-center',
+                'active' => 'active',
+                'type' => 'bool',
+                'orderby' => false,
+                'ajax' => true,
+            )
         ];
+
+        $helper = new HelperList();
+        $helper->list_id = 'payment_methods';
+        $helper->table_id = 'module-stripe';
+        $helper->table = 'payment_methods';
+        $helper->simple_header = true;
+        $helper->identifier = 'methodId';
+        $helper->show_toolbar = false;
+        $helper->position_identifier = 'position';
+        $helper->orderBy = 'position';
+        $helper->orderWay = 'ASC';
+        $helper->no_link = true;
+
+        $helper->title = $this->l('Payment Methods');
+        $helper->token = Tools::getAdminTokenLite('AdminModules');
+        $helper->currentIndex = AdminController::$currentIndex.'&configure='.$this->name;
+        return $helper->generateList($paymentMethods, $fields);
+    }
+
+    /**
+     * @param string $value
+     * @param array $row
+     *
+     * @return string
+     */
+    public function renderListPaymentMethodLink(string $value, array $row)
+    {
+        $method = $this->methods->getMethod($row['methodId']);
+        if ($method) {
+            $url = $method->getDocLink();
+            return '<a href="'.$url.'" target="_blank">'.Tools::safeOutput($value).'</a>';
+        }
+        return $value;
     }
 
     /**
@@ -2273,5 +2291,69 @@ class Stripe extends PaymentModule
         } catch (Exception $e) {
             return $this->l('Unknown');
         }
+    }
+
+    /**
+     * @param string $methodId
+     *
+     * @return void
+     *
+     * @throws PrestaShopException
+     */
+    protected function togglePaymentMethod(string $methodId)
+    {
+        $method = $this->methods->getMethod($methodId);
+        if ($method) {
+            $enabled = !$method->isEnabled();
+            $method->setEnabled($enabled);
+
+            die(json_encode([
+                'success' => true,
+                'text' => $enabled ? $this->l("Payment Method enabled") : $this->l('Payment method disabled'),
+            ]));
+        }
+        die(json_encode([
+            'success' => false,
+            'text' => $this->l("Payment method not found"),
+        ]));
+    }
+
+    /**
+     * @return void
+     * @throws PrestaShopException
+     */
+    protected function updatePaymentMethodsPositions()
+    {
+        $data = Tools::getValue('module-stripe');
+        if (is_array($data)) {
+            $methods = [];
+            foreach ($data as $id) {
+                if (preg_match("/^tr_[0-9]+_(.+)_[0-9]+$/", (string)$id, $matches)) {
+                    if (isset($matches[1]) && $matches[1]) {
+                        $methods[] = $matches[1];
+                    }
+                }
+            }
+            $this->methods->setMethodsOrder($methods);
+            die(json_encode(['success' => true]));
+        }
+        die(json_encode(['success' => false]));
+    }
+
+    /**
+     * @param string $menu
+     *
+     * @return string
+     * @throws PrestaShopDatabaseException
+     * @throws PrestaShopException
+     */
+    protected function getModuleUrl(string $menu)
+    {
+        return $this->context->link->getAdminLink('AdminModules', true, [
+            'configure' => $this->name,
+            'tab_module' => $this->tab,
+            'module_name' => $this->name,
+            'menu' => $menu
+        ]);
     }
 }

@@ -182,4 +182,12 @@ class CardFormMethod extends PaymentMethod
         }
         return $metadata->getPaymentIntentClientSecret();
     }
+
+    /**
+     * @return string
+     */
+    public function getDocLink(): string
+    {
+        return "https://docs.stripe.com/payments/payment-card-element-comparison";
+    }
 }
