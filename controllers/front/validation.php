@@ -21,6 +21,7 @@ use Stripe\Exception\ApiConnectionException;
 use Stripe\Exception\ApiErrorException;
 use StripeModule\PaymentMetadata;
 use StripeModule\PaymentMethod;
+use StripeModule\StripeApi;
 use StripeModule\Utils;
 use StripeModule\PaymentProcessor;
 use Stripe\PaymentIntent;
@@ -85,16 +86,23 @@ class StripeValidationModuleFrontController extends ModuleFrontController
      */
     public function validatePaymentMethod(PaymentMethod $method, PaymentMetadata $metadata)
     {
+        $api = $this->module->getStripeApi();
         $cart = $this->context->cart;
 
         if (! Validate::isLoadedObject($cart)) {
             return $this->displayError(Tools::displayError('Cart not found'));
         }
 
+        $paymentIntentId = $this->getPaymentIntentId($api, $metadata);
+        if (! $paymentIntentId) {
+            $this->redirectToCheckout();
+            return false;
+        }
+
         // Optional check for provided payment intent
         $providedPaymentIntentId = Tools::getValue('payment_intent');
         if ($providedPaymentIntentId) {
-            if ($metadata->getPaymentIntentId() !== $providedPaymentIntentId) {
+            if ($paymentIntentId !== $providedPaymentIntentId) {
                 return $this->displayError(Tools::displayError('Invalid parameter payment_intent'));
             }
         }
@@ -110,8 +118,7 @@ class StripeValidationModuleFrontController extends ModuleFrontController
             $method->getShortName()
         );
 
-        $api = $this->module->getStripeApi();
-        $paymentIntent = $api->getPaymentIntent($metadata->getPaymentIntentId());
+        $paymentIntent = $api->getPaymentIntent($paymentIntentId);
         switch ($paymentIntent->status) {
             case PaymentIntent::STATUS_SUCCEEDED:
             case PaymentIntent::STATUS_REQUIRES_CAPTURE:
@@ -186,5 +193,24 @@ class StripeValidationModuleFrontController extends ModuleFrontController
         $this->errors = $errors;
         $this->setTemplate('error.tpl');
         return false;
+    }
+
+    /**
+     * @param StripeApi $api
+     * @param PaymentMetadata $metadata
+     *
+     * @return string|null
+     * @throws ApiErrorException
+     */
+    private function getPaymentIntentId(StripeApi $api, PaymentMetadata $metadata)
+    {
+        switch ($metadata->getType()) {
+            case PaymentMetadata::TYPE_PAYMENT_INTENT:
+                return $metadata->getId();
+            case PaymentMetadata::TYPE_SESSION:
+                $sessionId = $metadata->getId();
+                $session = $api->getCheckoutSession($sessionId);
+                return $session->payment_intent;
+        }
     }
 }

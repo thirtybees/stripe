@@ -4,11 +4,20 @@ namespace StripeModule;
 
 use Cart;
 use PrestaShopException;
+use Stripe\Checkout\Session;
 use Stripe\PaymentIntent;
 use Tools;
 
 class PaymentMetadata
 {
+    const TYPE_PAYMENT_INTENT = 1;
+    const TYPE_SESSION = 2;
+
+    /**
+     * @var int
+     */
+    private int $type;
+
     /**
      * @var string
      */
@@ -34,36 +43,39 @@ class PaymentMetadata
     /**
      * @var string
      */
-    private string $paymentIntentId;
+    private string $id;
 
     /**
      * @var string
      */
-    private string $paymentIntentClientSecret;
+    private string $secret;
 
     /**
+     * @param int $type
      * @param string $methodId
      * @param int $cartId
      * @param int $timestamp
      * @param float $total
-     * @param string $paymentIntentId
-     * @param string $paymentIntentClientSecret
+     * @param string $id
+     * @param string $secret
      */
     public function __construct(
+        int $type,
         string $methodId,
         int $cartId,
         int $timestamp,
         float $total,
-        string $paymentIntentId,
-        string $paymentIntentClientSecret
+        string $id,
+        string $secret = ''
     )
     {
+        $this->type = $type;
         $this->methodId = $methodId;
         $this->cartId = $cartId;
         $this->timestamp = $timestamp;
         $this->total = $total;
-        $this->paymentIntentId = $paymentIntentId;
-        $this->paymentIntentClientSecret = $paymentIntentClientSecret;
+        $this->id = $id;
+        $this->secret = $secret;
     }
 
     /**
@@ -107,9 +119,10 @@ class PaymentMetadata
      * @return PaymentMetadata
      * @throws PrestaShopException
      */
-    public static function create(string $methodId, Cart $cart, PaymentIntent $paymentIntent)
+    public static function createForPaymentIntent(string $methodId, Cart $cart, PaymentIntent $paymentIntent)
     {
         return new static(
+            static::TYPE_PAYMENT_INTENT,
             $methodId,
             (int)$cart->id,
             time(),
@@ -120,17 +133,38 @@ class PaymentMetadata
     }
 
     /**
+     * @param string $methodId
+     * @param Cart $cart
+     * @param Session $session
+     *
+     * @return PaymentMetadata
+     * @throws PrestaShopException
+     */
+    public static function createForSession(string $methodId, Cart $cart, Session $session)
+    {
+        return new static(
+            static::TYPE_SESSION,
+            $methodId,
+            (int)$cart->id,
+            time(),
+            Utils::getCartTotal($cart),
+            $session->id
+        );
+    }
+
+    /**
      * @return string
      */
     public function serialize(): string
     {
         return implode(':', [
-            $this->methodId . ':' .
-            $this->timestamp . ':' .
-            $this->cartId . ':' .
-            $this->total . ':' .
-            $this->paymentIntentId . ':' .
-            $this->paymentIntentClientSecret
+            $this->type,
+            $this->methodId,
+            $this->timestamp,
+            $this->cartId,
+            $this->total,
+            $this->id,
+            $this->secret
         ]);
     }
 
@@ -142,21 +176,23 @@ class PaymentMetadata
     public static function deserialize(string $input): ?PaymentMetadata
     {
         $parts = explode(':', $input);
-        if (count($parts) === 6) {
-            $methodId = (string)$parts[0];
-            $timestamp = (int)$parts[1];
-            $cartId = (int)$parts[2];
-            $total = (int)$parts[3];
-            $paymentIntentId = (string)$parts[4];
-            $paymentIntentClientSecret = (string)$parts[4];
-            if ($methodId && $timestamp && $cartId && $total && $paymentIntentId && $paymentIntentClientSecret) {
+        if (count($parts) === 7) {
+            $type = (int)$parts[0];
+            $methodId = (string)$parts[1];
+            $timestamp = (int)$parts[2];
+            $cartId = (int)$parts[3];
+            $total = (int)$parts[4];
+            $id = (string)$parts[5];
+            $secret = (string)$parts[6];
+            if ($type && $methodId && $timestamp && $cartId && $total && $id) {
                 return new static(
+                    $type,
                     $methodId,
                     $cartId,
                     $timestamp,
                     $total,
-                    $paymentIntentId,
-                    $paymentIntentClientSecret
+                    $id,
+                    $secret
                 );
             }
         }
@@ -166,17 +202,17 @@ class PaymentMetadata
     /**
      * @return string
      */
-    public function getPaymentIntentId(): string
+    public function getId(): string
     {
-        return $this->paymentIntentId;
+        return $this->id;
     }
 
     /**
      * @return string
      */
-    public function getPaymentIntentClientSecret(): string
+    public function getSecret(): string
     {
-        return $this->paymentIntentClientSecret;
+        return $this->secret;
     }
 
     /**
@@ -208,6 +244,14 @@ class PaymentMetadata
         }
 
         return $errors;
+    }
+
+    /**
+     * @return int
+     */
+    public function getType(): int
+    {
+        return $this->type;
     }
 
 }

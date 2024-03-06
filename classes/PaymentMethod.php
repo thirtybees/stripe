@@ -221,7 +221,7 @@ abstract class PaymentMethod
 
             $redirectUrl = Utils::extractRedirectUrl($paymentIntent);
             if ($redirectUrl) {
-                $metadata = PaymentMetadata::create($this->getMethodId(), $cart, $paymentIntent);
+                $metadata = PaymentMetadata::createForPaymentIntent($this->getMethodId(), $cart, $paymentIntent);
                 return ExecutionResult::redirect($metadata, $redirectUrl);
             } else {
                 return ExecutionResult::error("Stripe response does not contain redirect url");

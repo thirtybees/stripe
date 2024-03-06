@@ -97,8 +97,7 @@ class CheckoutMethod extends PaymentMethod
         try {
             $api = $this->getStripeApi();
             $session = $api->createCheckoutSession($cart, $this->getMethodId());
-            $paymentIntent = $api->getPaymentIntent($session->payment_intent);
-            $metadata = PaymentMetadata::create($this->getMethodId(), $cart, $paymentIntent);
+            $metadata = PaymentMetadata::createForSession($this->getMethodId(), $cart, $session);
             return ExecutionResult::redirect($metadata, $session->url);
         } catch (ApiErrorException $e) {
             return $this->handleApiException($e);
