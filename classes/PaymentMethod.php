@@ -94,6 +94,22 @@ abstract class PaymentMethod
             }
         }
 
+        $restrictions = $this->getCurrencyCountryRestrictions();
+        if ($restrictions) {
+            $currency = strtoupper(Utils::getCurrencyCode($cart));
+            if (isset($restrictions[$currency])) {
+                $restrictedCountries = $restrictions[$currency];
+                $accountCountry = Utils::getStripeCountry();
+                if (! in_array($accountCountry, $restrictedCountries)) {
+                    $errors[] = sprintf(
+                        Tools::displayError("%s payment method can't be used with currency %s"),
+                        $this->getName(),
+                        $currency
+                    );
+                }
+            }
+        }
+
         return $errors;
     }
 
@@ -111,6 +127,14 @@ abstract class PaymentMethod
      * @return array
      */
     protected abstract function getAllowedCustomerCountries(): array;
+
+    /**
+     * @return array
+     */
+    protected function getCurrencyCountryRestrictions(): array
+    {
+        return [];
+    }
 
     /**
      * @param Cart $cart

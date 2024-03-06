@@ -452,4 +452,21 @@ class Utils
         ];
     }
 
+
+    /**
+     * @param array $restrictions
+     *
+     * @return string[]
+     */
+    public static function getCountriesFromRestriction(array $restrictions): array
+    {
+        $result = [];
+        foreach ($restrictions as $countryCodes) {
+            $result = array_merge($result, $countryCodes);
+        }
+        $result = array_unique($result);
+        sort($result);
+        return $result;
+    }
+
 }
