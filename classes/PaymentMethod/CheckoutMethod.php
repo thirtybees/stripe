@@ -99,15 +99,7 @@ class CheckoutMethod extends PaymentMethod
             $session = $api->createCheckoutSession($cart, $this->getMethodId());
             $paymentIntent = $api->getPaymentIntent($session->payment_intent);
             $metadata = PaymentMetadata::create($this->getMethodId(), $cart, $paymentIntent);
-            $templateParams = [
-                'sessionId' => $session->id,
-                'stripePublishableKey' => Utils::getStripePublishableKey(),
-            ];
-            $javascripts = [
-                Utils::stripeJavascriptUrl()
-            ];
-
-            return ExecutionResult::render($metadata, 'stripe-checkout.tpl', $templateParams, $javascripts);
+            return ExecutionResult::redirect($metadata, $session->url);
         } catch (ApiErrorException $e) {
             return $this->handleApiException($e);
         }
