@@ -63,20 +63,29 @@ class StripeApi
     /**
      * @param Cart $cart
      * @param string $methodId
+     * @param array $methods
+     * @param array $paymentMethodOptions
      *
      * @return Session
      *
      * @throws ApiErrorException
      * @throws PrestaShopException
      */
-    public function createCheckoutSession(Cart $cart, string $methodId)
-    {
+    public function createCheckoutSession(
+        Cart $cart,
+        string $methodId,
+        array $methods = [],
+        array $paymentMethodOptions = []
+    ) {
         $context = Context::getContext();
         $total = Utils::getCartTotal($cart);
         $validationLink = Utils::getValidationUrl($methodId);
-        $methods = [
-            \Stripe\PaymentMethod::TYPE_CARD
-        ];
+        if (! $methods) {
+            $methods = [
+                \Stripe\PaymentMethod::TYPE_CARD
+            ];
+        }
+
         $sessionData = [
             'payment_method_types' => $methods,
             'line_items' => [
@@ -95,6 +104,10 @@ class StripeApi
             'success_url' => $validationLink,
             'cancel_url' => $validationLink,
         ];
+
+        if ($paymentMethodOptions) {
+            $sessionData['payment_method_options'] = $paymentMethodOptions;
+        }
 
         if (Configuration::get(\Stripe::COLLECT_BILLING)) {
             $sessionData['billing_address_collection'] = 'required';
