@@ -29,6 +29,7 @@ use Stripe;
 use Db;
 use Order;
 use Context;
+use StripeModule\Logger\Logger;
 use Throwable;
 use Tools;
 
@@ -52,11 +53,6 @@ class PaymentProcessor
     private $errors = [];
 
     /**
-     * @var string[]
-     */
-    private $debug = [];
-
-    /**
      * @var int
      */
     private $orderId = 0;
@@ -77,13 +73,20 @@ class PaymentProcessor
     private $transaction = null;
 
     /**
+     * @var Logger
+     */
+    private Logger $logger;
+
+    /**
      * PaymentProcessor constructor.
      *
      * @param Stripe $module
+     * @param Logger $logger
      */
-    public function __construct(Stripe $module)
+    public function __construct(Stripe $module, Logger $logger)
     {
         $this->module = $module;
+        $this->logger = $logger;
     }
 
     /**
@@ -130,8 +133,10 @@ class PaymentProcessor
 
         $charge = $this->getCharge($paymentIntent->latest_charge);
         if ($charge) {
+            $this->logger->log('Processing latest charge: ' . $charge->id);
             $this->processCharge($cart, $charge, $paymentIntent, $methodId, $paymentMethodName);
             if ($this->orderId) {
+                $this->logger->log('Created order: ' . $this->orderId);
                 $this->redirect = Context::getContext()->link->getPageLink(
                     'order-confirmation',
                     null,
@@ -145,7 +150,8 @@ class PaymentProcessor
                 );
             }
         } else {
-            $this->addError($this->l('No charges associated with payment'), print_r($paymentIntent, true));
+            $this->errors[] = $this->l('No charges associated with payment');
+            $this->logger->error('No charges associated with payment:' . print_r($paymentIntent, true));
         }
 
         // if there was any error, mark transaction as failed
@@ -198,7 +204,8 @@ class PaymentProcessor
             $this->review->status = StripeReview::IN_REVIEW;
         }
         if (! $this->review->add()) {
-            $this->addError($this->l('Failed to create stripe review object'), Db::getInstance()->getMsgError());
+            $this->errors[] = $this->l('Failed to create stripe review object');
+            $this->logger->error('Failed to create stripe review object: ' . Db::getInstance()->getMsgError());
             return false;
         }
 
@@ -212,7 +219,8 @@ class PaymentProcessor
         $this->transaction->source = StripeTransaction::SOURCE_FRONT_OFFICE;
         $this->transaction->source_type = $methodId;
         if (! $this->transaction->add()) {
-            $this->addError($this->l('Failed to create stripe transaction object'), Db::getInstance()->getMsgError());
+            $this->errors[] = $this->l('Failed to create stripe transaction object');
+            $this->logger->error('Failed to create stripe transaction object: ' . Db::getInstance()->getMsgError());
             return false;
         }
 
@@ -230,7 +238,9 @@ class PaymentProcessor
                     $cart->secure_key
                 );
             } catch (Throwable $e) {
-                $this->addError($this->l('Failed to validate order'), (string)$e);
+                $this->errors[] = $this->l('Failed to validate order');
+                $this->logger->error('Failed to validate order');
+                $this->logger->exception($e);
                 return false;
             }
 
@@ -243,11 +253,13 @@ class PaymentProcessor
                 $this->review->update();
                 return true;
             } else {
-                $this->addError($this->l('Order not found'));
+                $this->errors[] = $this->l('Order not found');
+                $this->logger->error('Order not found');
                 return false;
             }
         } else {
-            $this->addError($this->l('Charge has invalid status'), print_r($charge, true));
+            $this->errors[] = $this->l('Charge has invalid status');
+            $this->logger->error('Charge has invalid status: ' .  print_r($charge, true));
             return false;
         }
     }
@@ -272,7 +284,8 @@ class PaymentProcessor
                 $this->review->captured = true;
                 $this->review->status = StripeReview::CAPTURED;
                 if (! $this->review->update()) {
-                    $this->addError($this->l('Failed to update review object'), Db::getInstance()->getMsgError());
+                    $this->errors[] = $this->l('Failed to update review object');
+                    $this->logger->error('Failed to update review object: ' . Db::getInstance()->getMsgError());
                 }
                 return true;
             }
@@ -284,7 +297,8 @@ class PaymentProcessor
                 $this->review->captured = true;
                 $this->review->status = StripeReview::CAPTURED;
                 if (!$this->review->update()) {
-                    $this->addError($this->l('Failed to update review object'), Db::getInstance()->getMsgError());
+                    $this->errors[] = $this->l('Failed to update review object');
+                    $this->logger->error('Failed to update review object: ' . Db::getInstance()->getMsgError());
                 }
 
                 // Log information about stripe transaction to db
@@ -299,21 +313,26 @@ class PaymentProcessor
                     $this->transaction->source = StripeTransaction::SOURCE_BACK_OFFICE;
                     $this->transaction->source_type = 'cc';
                     if (!$this->transaction->add()) {
-                        $this->addError($this->l('Failed to create stripe transaction object'), Db::getInstance()->getMsgError());
+                        $this->errors[] = $this->l('Failed to create stripe transaction object');
+                        $this->logger->error('Failed to create stripe transaction object: ' . Db::getInstance()->getMsgError());
                         return false;
                     }
                 } else {
-                    $this->addError($this->l('Failed to create stripe transaction object, charge not found'));
+                    $this->errors[] = $this->l('Failed to create stripe transaction object, charge not found');
+                    $this->logger->error('Failed to create stripe transaction object, charge not found');
                     return false;
                 }
                 return true;
             }
-            $this->addError('Invalid payment intent status: '.$paymentIntent->status, print_r($paymentIntent, true));
+            $this->errors[] = $this->l('Invalid payment intent status: ').$paymentIntent->status;
+            $this->logger->error('Invalid payment intent status: '.$paymentIntent->status . ': ' . print_r($paymentIntent, true));
             return false;
         } catch (ApiErrorException $e) {
-            $this->addError($e->getMessage(), (string)$e);
+            $this->errors[] = $e->getMessage();
+            $this->logger->exception($e);
         } catch (Throwable $e) {
-            $this->addError(sprintf($this->l("Couldn't find payment intent %s"), $paymentIntentId), (string)$e);
+            $this->errors[] = sprintf($this->l("Couldn't find payment intent %s"), $paymentIntentId);
+            $this->logger->exception($e);
         }
         return false;
     }
@@ -339,7 +358,8 @@ class PaymentProcessor
                 $this->review->captured = false;
                 $this->review->status = StripeReview::RELEASED;
                 if (! $this->review->update()) {
-                    $this->addError($this->l('Failed to update review object'), Db::getInstance()->getMsgError());
+                    $this->errors[] = $this->l('Failed to update review object');
+                    $this->logger->error('Failed to update review object: ' . Db::getInstance()->getMsgError());
                 }
                 return true;
             }
@@ -351,7 +371,8 @@ class PaymentProcessor
                 $this->review->captured = false;
                 $this->review->status = StripeReview::RELEASED;
                 if (!$this->review->update()) {
-                    $this->addError($this->l('Failed to update review object'), Db::getInstance()->getMsgError());
+                    $this->errors[] = $this->l('Failed to update review object');
+                    $this->logger->error('Failed to update review object: ' . Db::getInstance()->getMsgError());
                 }
 
                 // Log information about stripe transaction to db
@@ -366,35 +387,28 @@ class PaymentProcessor
                     $this->transaction->source = StripeTransaction::SOURCE_BACK_OFFICE;
                     $this->transaction->source_type = 'cc';
                     if (!$this->transaction->add()) {
-                        $this->addError($this->l('Failed to create stripe transaction object'), Db::getInstance()->getMsgError());
+                        $this->errors[] = $this->l('Failed to create stripe transaction object');
+                        $this->logger->error('Failed to create stripe transaction object: ' . Db::getInstance()->getMsgError());
                         return false;
                     }
                     return true;
                 } else {
-                    $this->addError($this->l('Failed to create stripe transaction object, charge not found'));
+                    $this->errors[] = $this->l('Failed to create stripe transaction object, charge not found');
+                    $this->logger->error('Failed to create stripe transaction object, charge not found');
                     return false;
                 }
             }
-            $this->addError('Invalid payment intent status: '.$paymentIntent->status, print_r($paymentIntent, true));
+            $this->errors[] = $this->l('Invalid payment intent status: ').$paymentIntent->status;
+            $this->logger->error('Invalid payment intent status: '.$paymentIntent->status . ': ' . print_r($paymentIntent, true));
             return false;
         } catch (ApiErrorException $e) {
-            $this->addError($e->getMessage(), (string)$e);
+            $this->errors[] = $e->getMessage();
+            $this->logger->exception($e);
         } catch (Throwable $e) {
-            $this->addError(sprintf($this->l("Couldn't find payment intent %s"), $paymentIntentId), (string)$e);
+            $this->errors[] = sprintf($this->l("Couldn't find payment intent %s"), $paymentIntentId);
+            $this->logger->exception($e);
         }
         return false;
-    }
-
-    /**
-     * Collect error message
-     *
-     * @param string $displayable
-     * @param array|string|null $debug
-     */
-    private function addError($displayable, $debug=null)
-    {
-        $this->errors[] = $displayable;
-        $this->debug[] = $debug;
     }
 
     /**
@@ -403,7 +417,6 @@ class PaymentProcessor
     private function reset()
     {
         $this->errors = [];
-        $this->debug = [];
         $this->review = null;
         $this->orderId = 0;
         $this->transaction = null;
@@ -417,14 +430,6 @@ class PaymentProcessor
     public function getErrors()
     {
         return $this->errors;
-    }
-
-    /**
-     * @return string[]
-     */
-    public function getDebug()
-    {
-        return $this->debug;
     }
 
     /**

@@ -157,15 +157,23 @@ class PaymentMetadata
      */
     public function serialize(): string
     {
-        return implode(':', [
-            $this->type,
-            $this->methodId,
-            $this->timestamp,
-            $this->cartId,
-            $this->total,
-            $this->id,
-            $this->secret
-        ]);
+        return implode(':', array_values($this->getData()));
+    }
+
+    /**
+     * @return array
+     */
+    public function getData(): array
+    {
+        return [
+            'type' => $this->type,
+            'methodId' => $this->methodId,
+            'ts' => $this->timestamp,
+            'cartId' => $this->cartId,
+            'cartTotal' => $this->total,
+            'id' => $this->id,
+            'secret' => $this->secret
+        ];
     }
 
     /**

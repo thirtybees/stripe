@@ -23,6 +23,7 @@ use StripeModule\StripeReview;
 use StripeModule\StripeTransaction;
 use StripeModule\StripeApi;
 use StripeModule\Utils;
+use StripeModule\Logger\FileLogger;
 
 if (!defined('_TB_VERSION_')) {
     return;
@@ -549,14 +550,14 @@ class Stripe extends PaymentModule
                 $this->setErrorMessage(sprintf('Invalid Stripe request: %s', $e->getMessage()));
             }
         } elseif (Tools::getValue('stripe_action') === 'capture') {
-            $processor = new PaymentProcessor($this);
+            $processor = new PaymentProcessor($this, new FileLogger());
             if ($processor->capturePayment($review->id_payment_intent, $review, $idOrder)) {
                 $this->setConfirmationMessage($this->l('The payment has been captured'));
             } else {
                 $this->setErrorMessage($processor->getErrors());
             }
         } elseif (Tools::getValue('stripe_action') === 'release') {
-            $processor = new PaymentProcessor($this);
+            $processor = new PaymentProcessor($this, new FileLogger());
             if ($processor->releasePayment($review->id_payment_intent, $review, $idOrder)) {
                 $this->setConfirmationMessage($this->l('The payment has been released'));
             } else {
