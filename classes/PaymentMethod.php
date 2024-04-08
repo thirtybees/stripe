@@ -13,6 +13,7 @@ use SmartyException;
 use Stripe\Exception\ApiErrorException;
 use Tools;
 use Translate;
+use Validate;
 
 abstract class PaymentMethod
 {
@@ -85,7 +86,7 @@ abstract class PaymentMethod
         if ($allowedCustomerCountries) {
             $invoiceAddress = new Address((int) $cart->id_address_invoice);
             $country = new Country($invoiceAddress->id_country);
-            if ( !in_array(strtoupper($country->iso_code), $allowedCustomerCountries)) {
+            if (!in_array(strtoupper((string)$country->iso_code), $allowedCustomerCountries)) {
                 $errors[] = sprintf(
                     Tools::displayError("%s payment method can only be used by customers from following countries: %s"),
                     $this->getName(),
