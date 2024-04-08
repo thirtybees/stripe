@@ -269,25 +269,61 @@ abstract class PaymentMethod
      */
     public function renderPaymentMethod(Cart $cart): string
     {
-        $smarty = Context::getContext()->smarty;
 
         $template = $this->getPaymentTemplateName();
         $candidates = [
-            _PS_THEME_DIR_.'modules/stripe/views/templates/hook/'.$template,
-            _PS_MODULE_DIR_.'stripe/views/templates/hook/'.$template,
-            _PS_THEME_DIR_.'modules/stripe/views/templates/hook/display-payment-method.tpl',
-            _PS_MODULE_DIR_.'stripe/views/templates/hook/display-payment-method.tpl',
+            'views/templates/hook/'.$template,
+            'views/templates/hook/display-payment-method.tpl',
         ];
 
         foreach ($candidates as $candidate) {
-            if (file_exists($candidate)) {
-                $template = $smarty->createTemplate($candidate);
+            $template = $this->findTemplate($candidate);
+            if ($template) {
                 $template->assign($this->getPaymentTemplateParameters($cart));
                 return $template->fetch();
             }
         }
 
         throw new PrestaShopException("No template found for payment method");
+    }
+
+    /**
+     * @param string $relativePath
+     *
+     * @return \Smarty_Internal_Template|null
+     *
+     * @throws SmartyException
+     */
+    protected function findTemplate(string $relativePath)
+    {
+        $candidates = [
+            _PS_THEME_DIR_.'modules/stripe/'. ltrim($relativePath, '/\\'),
+            _PS_MODULE_DIR_.'stripe/' . ltrim($relativePath, '/\\'),
+        ];
+        foreach ($candidates as $candidate) {
+            if (file_exists($candidate)) {
+                $smarty = Context::getContext()->smarty;
+                return $smarty->createTemplate($candidate);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * @param string $relativePath
+     *
+     * @return \Smarty_Internal_Template
+     *
+     * @throws PrestaShopException
+     * @throws SmartyException
+     */
+    protected function getTemplate(string $relativePath)
+    {
+        $template = $this->findTemplate($relativePath);
+        if (! $template) {
+            throw new PrestaShopException("Template $relativePath not found");
+        }
+        return $template;
     }
 
     /**

@@ -1936,6 +1936,7 @@ class Stripe extends PaymentModule
      *
      * @return string Hook HTML
      * @throws PrestaShopException
+     * @throws SmartyException
      */
     public function hookDisplayPaymentTop()
     {
@@ -1946,13 +1947,22 @@ class Stripe extends PaymentModule
         $controller->addCSS($this->_path . '/views/css/front.css');
 
         // include payment method specific javascripts and css files
+        $scripts = [];
         foreach ($this->methods->getAvailableMethods($cart) as $method) {
             foreach ($method->getJavascriptUris() as $script) {
+                $scripts[$script] = $script;
                 $controller->addJS($script);
             }
             foreach ($method->getCssUris() as $css) {
                 $controller->addCss($css);
             }
+        }
+
+        if ($scripts) {
+            $this->context->smarty->assign([
+                'jsAssets' => $scripts
+            ]);
+            return $this->display(__FILE__, 'views/templates/front/load-assets.tpl');
         }
         return '';
     }
