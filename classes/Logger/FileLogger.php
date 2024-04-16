@@ -18,7 +18,7 @@ class FileLogger implements Logger
      */
     public function __construct()
     {
-        $this->correlationId = Tools::passwdGen(12);
+        $this->correlationId = (string)Tools::passwdGen(12);
     }
 
 
@@ -68,4 +68,13 @@ class FileLogger implements Logger
         }
         return $e->getMessage() . ' in ' . $e->getFile() . ' at line ' . $e->getLine();
     }
+
+    /**
+     * @return string
+     */
+    public function getCorrelationId(): string
+    {
+        return $this->correlationId;
+    }
+
 }

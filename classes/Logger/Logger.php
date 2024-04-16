@@ -26,4 +26,9 @@ interface Logger
      * @return void
      */
     public function exception(Throwable $e);
+
+    /**
+     * @return string
+     */
+    public function getCorrelationId(): string;
 }

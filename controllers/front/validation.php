@@ -47,6 +47,9 @@ class StripeValidationModuleFrontController extends ModuleFrontController
     protected $logger;
 
 
+    /**
+     * @throws PrestaShopException
+     */
     public function __construct()
     {
         parent::__construct();

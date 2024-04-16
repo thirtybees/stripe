@@ -21,6 +21,8 @@ use Stripe\Exception\ApiErrorException;
 use StripeModule\StripeReview;
 use StripeModule\StripeTransaction;
 use StripeModule\Utils;
+use StripeModule\Logger\Logger;
+use StripeModule\Logger\FileLogger;
 
 if (!defined('_TB_VERSION_')) {
     exit;
@@ -31,8 +33,15 @@ if (!defined('_TB_VERSION_')) {
  */
 class StripeHookModuleFrontController extends ModuleFrontController
 {
-    /** @var Stripe $module */
+    /**
+     * @var Stripe $module
+     */
     public $module;
+
+    /**
+     * @var Logger
+     */
+    protected $logger;
 
     /**
      * StripeHookModuleFrontController constructor.
@@ -44,6 +53,7 @@ class StripeHookModuleFrontController extends ModuleFrontController
         parent::__construct();
 
         $this->ssl = Tools::usingSecureMode();
+        $this->logger = new FileLogger();
     }
 
     /**
@@ -58,59 +68,82 @@ class StripeHookModuleFrontController extends ModuleFrontController
     /**
      * Post process
      *
-     * @throws PrestaShopException
-     * @throws SmartyException
-     * @throws ApiErrorException
+     * @throws Throwable
      */
     public function postProcess()
     {
-        if (!Module::isEnabled('stripe')) {
-            die('module not enabled');
-        }
-
-        if (! Utils::hasValidConfiguration()) {
-            die('invalid stripe configuration');
-        }
-
         if (! headers_sent()) {
             header('Content-Type: text/plain');
         }
 
-        $body = file_get_contents('php://input');
-
-        if (!empty($body) && $data = json_decode($body, true)) {
-
-            if (! isset($data['id'])) {
-                die('Event id not provided');
-            }
-            $event = $this->getEvent((string)$data['id']);
-
-            switch ($event->type) {
-                case 'review.closed':
-                    $this->processApproved($event);
-
-                    break;
-                case 'charge.refunded':
-                    $this->processRefund($event);
-
-                    break;
-                case 'charge.succeeded':
-                    $this->processSucceeded($event);
-
-                    break;
-                case 'charge.captured':
-                    Logger::addLog(json_encode($event));
-                    $this->processCaptured($event);
-
-                    break;
-                case 'charge.failed':
-                    $this->processFailed($event);
-
-                    break;
-            }
-            die('ok');
+        $response = '[' . $this->logger->getCorrelationId() . '] ';
+        try {
+            $this->logger->log("Hook event start");
+            $processResponse = $this->processEvent();
+            $response .= $processResponse;
+            $this->logger->log($processResponse);
+        } catch (Throwable $e) {
+            $this->logger->exception($e);
+            $response .= 'error';
+            throw $e;
+        } finally {
+            $this->logger->log("Hook event end");
+            die($response);
         }
-        die('Failed to parse input');
+    }
+
+    /**
+     * @return string
+     * @throws ApiErrorException
+     * @throws PrestaShopException
+     * @throws SmartyException
+     */
+    protected function processEvent()
+    {
+        if (!Module::isEnabled('stripe')) {
+            $this->logger->error("Module is not enabled");
+            return 'Module not enabled';
+        }
+
+        if (! Utils::hasValidConfiguration()) {
+            $this->logger->error("Invalid stripe configuration");
+            return 'Invalid stripe configuration';
+        }
+
+        $body = file_get_contents('php://input');
+        if (empty($body)) {
+            $this->logger->error("Empty payload");
+            return 'Empty payload';
+        }
+
+        $data = json_decode($body, true);
+        if (! $data) {
+            $this->logger->error("Failed to parse input payload: " . $body);
+            return 'Failed to parse input';
+        }
+
+        if (! isset($data['id'])) {
+            $this->logger->log("Payload does not contain event id: " . json_encode($data, JSON_PRETTY_PRINT));
+            return 'Payload does not contain event id';
+        }
+
+        $event = $this->getEvent((string)$data['id']);
+        $this->logger->log("Fetched event: " . json_encode($event, JSON_PRETTY_PRINT));
+
+        switch ($event->type) {
+            case 'review.closed':
+                return $this->processApproved($event);
+            case 'charge.refunded':
+                return $this->processRefund($event);
+            case 'charge.succeeded':
+                return $this->processSucceeded($event);
+            case 'charge.captured':
+                return $this->processCaptured($event);
+            case 'charge.failed':
+                return $this->processFailed($event);
+            default:
+                return 'Ignoring event "'.$event->type.'"';
+        }
     }
 
     /**
@@ -121,7 +154,7 @@ class StripeHookModuleFrontController extends ModuleFrontController
      * @throws PrestaShopException
      * @throws SmartyException
      */
-    protected function processSucceeded($event)
+    protected function processSucceeded($event): string
     {
         /** @var \Stripe\Charge $charge */
         $charge = $event->data['object'];
@@ -130,15 +163,19 @@ class StripeHookModuleFrontController extends ModuleFrontController
         $chargeId = $charge->id;
         $pendingTransaction = StripeTransaction::findPendingChargeTransaction($charge->id);
         if (! $pendingTransaction) {
-            die('no pending transaction for charge id ' . $chargeId);
+            return 'No pending transaction for charge id ' . $chargeId;
         }
 
         $idOrder = (int)$pendingTransaction['id_order'];
         if (! $idOrder) {
-            die('no order found for pending charge id ' . $chargeId);
+            return 'No order found for pending charge id ' . $chargeId;
         }
 
         $order = new Order($idOrder);
+        if (! Validate::isLoadedObject($order)) {
+            $this->logger->error("Order with id $idOrder not found");
+            return "Order with id $idOrder not found";
+        }
         $totalAmount = $order->getTotalPaid();
 
         $transaction = new StripeTransaction();
@@ -151,10 +188,14 @@ class StripeHookModuleFrontController extends ModuleFrontController
         $transaction->source_type = $pendingTransaction['source_type'];
         $transaction->add();
 
+        $status = (int)Configuration::get(Stripe::STATUS_VALIDATED);
         $orderHistory = new OrderHistory();
         $orderHistory->id_order = $order->id;
-        $orderHistory->changeIdOrderState((int) Configuration::get(Stripe::STATUS_VALIDATED), $idOrder);
+        $orderHistory->changeIdOrderState($status, $idOrder);
         $orderHistory->addWithemail(true);
+
+        $this->logger->log("Setting status for order id $idOrder to $status");
+        return 'Order id ' . $idOrder . ' validated';
     }
 
     /**
@@ -165,7 +206,7 @@ class StripeHookModuleFrontController extends ModuleFrontController
      * @throws PrestaShopException
      * @throws SmartyException
      */
-    protected function processFailed($event)
+    protected function processFailed($event): string
     {
         /** @var \Stripe\Charge $charge */
         $charge = $event->data['object'];
@@ -173,12 +214,12 @@ class StripeHookModuleFrontController extends ModuleFrontController
         $chargeId = $charge->id;
         $pendingTransaction = StripeTransaction::findPendingChargeTransaction($charge->id);
         if (! $pendingTransaction) {
-            die('no pending transaction for charge id ' . $chargeId);
+            return 'Po pending transaction for charge id ' . $chargeId;
         }
 
         $idOrder = (int)$pendingTransaction['id_order'];
         if (! $idOrder) {
-            die('no order found for pending charge id ' . $chargeId);
+            return 'No order found for pending charge id ' . $chargeId;
         }
 
         $order = new Order($idOrder);
@@ -193,10 +234,14 @@ class StripeHookModuleFrontController extends ModuleFrontController
         $transaction->source_type = $pendingTransaction['source_type'];
         $transaction->add();
 
+        $status = (int)Configuration::get('PS_OS_CANCELED');
         $orderHistory = new OrderHistory();
         $orderHistory->id_order = $order->id;
-        $orderHistory->changeIdOrderState((int) Configuration::get('PS_OS_CANCELED'), $idOrder);
+        $orderHistory->changeIdOrderState($status, $idOrder);
         $orderHistory->addWithemail(true);
+
+        $this->logger->log("Setting status for order id $idOrder to $status");
+        return 'Order id ' . $idOrder . ' marked as cancelled';
     }
 
     /**
@@ -208,16 +253,16 @@ class StripeHookModuleFrontController extends ModuleFrontController
      * @throws SmartyException
      * @throws \Stripe\Exception\ApiErrorException
      */
-    protected function processApproved($event)
+    protected function processApproved($event): string
     {
         $charge = \Stripe\Charge::retrieve($event->data['object']->charge);
 
         if (!empty($charge['metadata']['from_back_office'])) {
-            die('not processed');
+            return 'Not processed';
         }
 
         if (!$idOrder = StripeTransaction::getIdOrderByCharge($charge->id)) {
-            die('no id');
+            return 'Order not found for charge ' . $charge->id;
         }
         $order = new Order($idOrder);
 
@@ -235,11 +280,16 @@ class StripeHookModuleFrontController extends ModuleFrontController
         $transaction->save();
 
         if (Configuration::get(Stripe::USE_STATUS_AUTHORIZED)) {
+            $status = (int)Configuration::get(Stripe::STATUS_AUTHORIZED);
             $orderHistory = new OrderHistory();
             $orderHistory->id_order = $idOrder;
-            $orderHistory->changeIdOrderState((int) Configuration::get(Stripe::STATUS_AUTHORIZED), $idOrder, !$order->hasInvoice());
+            $orderHistory->changeIdOrderState($status, $idOrder, !$order->hasInvoice());
             $orderHistory->addWithemail(true);
+            $this->logger->log("Setting status for order id $idOrder to $status");
+            return 'Order id ' . $idOrder . ' marked as authorized';
         }
+
+        return 'ok';
     }
 
     /**
@@ -250,17 +300,17 @@ class StripeHookModuleFrontController extends ModuleFrontController
      * @throws PrestaShopException
      * @throws SmartyException
      */
-    protected function processCaptured($event)
+    protected function processCaptured($event): string
     {
         /** @var \Stripe\Charge $charge */
         $charge = $event->data['object'];
 
         if (!empty($charge['metadata']['from_back_office'])) {
-            die('not processed');
+            return 'Not processed';
         }
 
         if (!$idOrder = StripeTransaction::getIdOrderByCharge($charge->id)) {
-            die('no id');
+            return 'Order not found for charge ' . $charge->id;
         }
         $order = new Order($idOrder);
 
@@ -281,6 +331,8 @@ class StripeHookModuleFrontController extends ModuleFrontController
         $orderHistory->id_order = $idOrder;
         $orderHistory->changeIdOrderState((int) Configuration::get('PS_OS_PAYMENT'), $idOrder, !$order->hasInvoice());
         $orderHistory->addWithemail(true);
+
+        return 'Captured payment for order id ' . $idOrder;
     }
 
     /**
@@ -291,7 +343,7 @@ class StripeHookModuleFrontController extends ModuleFrontController
      * @throws PrestaShopException
      * @throws SmartyException
      */
-    protected function processRefund($event)
+    protected function processRefund($event): string
     {
         /** @var \Stripe\Charge $charge */
         $charge = $event->data['object'];
@@ -314,12 +366,12 @@ class StripeHookModuleFrontController extends ModuleFrontController
 
         foreach ($refunds as $refund) {
             if (isset($refund['metadata']['from_back_office']) && $refund['metadata']['from_back_office'] == 'true') {
-                die('not processed');
+                return 'Not processed';
             }
         }
 
         if (!$idOrder = StripeTransaction::getIdOrderByCharge($charge->id)) {
-            die('ok');
+            return 'Order not found for charge ' . $charge->id;
         }
 
         $order = new Order($idOrder);
@@ -380,23 +432,19 @@ class StripeHookModuleFrontController extends ModuleFrontController
                 $orderHistory->addWithemail(true);
             }
         }
+
+        return 'Refuned processed';
     }
 
     /**
      * @param string $eventId
      *
      * @return \Stripe\Event
+     * @throws ApiErrorException
      */
     public function getEvent($eventId)
     {
-        // Verify with Stripe
-        try {
-            $api = $this->module->getStripeApi();
-            $event = $api->getEvent($eventId);
-            if ($event) {
-                return $event;
-            }
-        } catch (\Throwable $e) {}
-        die('Failed to fetch event ' . $eventId);
+        $api = $this->module->getStripeApi();
+        return $api->getEvent($eventId);
     }
 }
