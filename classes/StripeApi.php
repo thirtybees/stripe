@@ -23,6 +23,7 @@ use Configuration;
 use Cart;
 use Context;
 use Customer;
+use Order;
 use PrestaShopException;
 use Stripe\Charge;
 use Stripe\Checkout\Session;
@@ -100,6 +101,10 @@ class StripeApi
                     ]
                 ]
             ],
+            'payment_intent_data' => [
+                'metadata' => $this->getCartMetadata($cart),
+            ],
+            'metadata' => $this->getCartMetadata($cart),
             'mode' => 'payment',
             'success_url' => $validationLink,
             'cancel_url' => $validationLink,
@@ -115,9 +120,7 @@ class StripeApi
 
         // manual capture
         if (Configuration::get(\Stripe::MANUAL_CAPTURE)) {
-            $sessionData['payment_intent_data'] = [
-                'capture_method' => 'manual'
-            ];
+            $sessionData['payment_intent_data']['capture_method'] = 'manual';
         }
 
         // pre-fill customer email
@@ -189,6 +192,7 @@ class StripeApi
             'payment_method_types' => [ $methodType ],
             'amount' => Utils::getCartTotal($cart),
             'currency' => Utils::getCurrencyCode($cart),
+            'metadata' => $this->getCartMetadata($cart),
         ];
         if ($returnUrl) {
             $paymentIntentData['confirm'] = true;
@@ -261,4 +265,45 @@ class StripeApi
         return \Stripe\Charge::update($charge->id, $data);
     }
 
+    /**
+     * @param Cart $cart
+     *
+     * @return array
+     */
+    protected function getCartMetadata(Cart $cart): array
+    {
+        if (\Validate::isLoadedObject($cart)) {
+            return [
+                'cart_id' => (string)$cart->id,
+            ];
+        }  else {
+            return [];
+        }
+    }
+
+    /**
+     * @param PaymentIntent $paymentIntent
+     * @param Order[] $orders
+     *
+     * @return void
+     * @throws ApiErrorException
+     */
+    public function addOrderMetadata(PaymentIntent $paymentIntent, array $orders)
+    {
+        $orderIds = [];
+        $reference = '';
+        foreach ($orders as $order) {
+            $orderIds[] = (int)$order->id;
+            $reference = $order->reference;
+        }
+        if ($orderIds && $reference) {
+            $data = [
+                'metadata' => [
+                    'order_id' => implode(',', $orderIds),
+                    'order_reference' => $reference,
+                ]
+            ];
+            \Stripe\PaymentIntent::update($paymentIntent->id, $data);
+        }
+    }
 }

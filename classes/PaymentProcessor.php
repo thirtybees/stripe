@@ -19,6 +19,7 @@
 
 namespace StripeModule;
 
+use PrestaShopCollection;
 use PrestaShopException;
 use Stripe\Exception\ApiErrorException;
 use Stripe\PaymentIntent;
@@ -251,6 +252,20 @@ class PaymentProcessor
                 $this->transaction->update();
                 $this->review->id_order = $this->orderId;
                 $this->review->update();
+
+                /** @var Order[] $orders */
+                $orders = (new PrestaShopCollection('Order'))
+                    ->where('id_cart', '=', (int)$cart->id)
+                    ->getResults();
+                if ($orders) {
+                    try {
+                        $this->logger->log("Updating payment intent with created order metadata");
+                        $this->module->getStripeApi()->addOrderMetadata($paymentIntent, $orders);
+                    } catch (Throwable $throwable) {
+                        $this->logger->error("Failed to update payment intent metadata");
+                        $this->logger->exception($throwable);
+                    }
+                }
                 return true;
             } else {
                 $this->errors[] = $this->l('Order not found');
