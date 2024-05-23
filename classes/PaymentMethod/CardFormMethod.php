@@ -175,7 +175,7 @@ class CardFormMethod extends PaymentMethod
     {
         $cookie = Context::getContext()->cookie;
         $metadata = Utils::getPaymentMetadata($cookie);
-        if (!$metadata || $metadata->getType() != PaymentMetadata::TYPE_PAYMENT_INTENT || !$metadata->validate($this, $cart)) {
+        if (!$metadata || $metadata->getType() !== PaymentMetadata::TYPE_PAYMENT_INTENT || count($metadata->validate($this, $cart)) > 0 ) {
             $paymentIntent = $this->getStripeApi()->createPaymentIntent($cart);
             $metadata = PaymentMetadata::createForPaymentIntent($this->getMethodId(), $cart, $paymentIntent);
             Utils::savePaymentMetadata($cookie, $metadata);
