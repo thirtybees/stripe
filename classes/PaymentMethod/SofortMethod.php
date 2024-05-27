@@ -74,7 +74,7 @@ class SofortMethod extends PaymentMethod
      */
     public function getName(): string
     {
-        return $this->l('Sofort Banking', 'stripe');
+        return $this->l('Sofort Banking');
     }
 
     /**

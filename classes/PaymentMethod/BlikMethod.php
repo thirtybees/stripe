@@ -75,6 +75,6 @@ class BlikMethod extends PaymentMethod
      */
     public function getName(): string
     {
-        return $this->l('Blik', 'stripe');
+        return $this->l('Blik');
     }
 }

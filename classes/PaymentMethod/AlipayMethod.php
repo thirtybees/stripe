@@ -73,7 +73,7 @@ class AlipayMethod extends PaymentMethod
      */
     public function getName(): string
     {
-        return $this->l('Alipay', 'stripe');
+        return $this->l('Alipay');
     }
 
 

@@ -111,6 +111,6 @@ class WeChatPayMethod extends PaymentMethod
      */
     public function getName(): string
     {
-        return $this->l('WeChat Pay', 'stripe');
+        return $this->l('WeChat Pay');
     }
 }

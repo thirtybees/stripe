@@ -9,6 +9,7 @@ use Configuration;
 use Context;
 use Country;
 use PrestaShopException;
+use ReflectionClass;
 use SmartyException;
 use Stripe\Exception\ApiErrorException;
 use Tools;
@@ -191,12 +192,15 @@ abstract class PaymentMethod
 
     /**
      * @param string $string
-     * @param string $source
+     * @param string|null $source
      *
      * @return string
      */
-    protected function l($string, $source): string
+    protected function l($string, $source = null): string
     {
+        if (is_null($source)) {
+            $source = (new ReflectionClass($this))->getShortName();
+        }
         return Translate::getModuleTranslation('stripe', $string, $source);
     }
 
@@ -349,7 +353,7 @@ abstract class PaymentMethod
      */
     public function getCTA(): string
     {
-        return sprintf($this->l('Pay with %s', 'stripe'), $this->getName());
+        return sprintf($this->l('Pay with %s', 'PaymentMethod'), $this->getName());
     }
 
     /**
@@ -357,7 +361,7 @@ abstract class PaymentMethod
      */
     public function getDescription(): string
     {
-        return sprintf($this->l('Accept payments through %s', 'stripe'), $this->getName());
+        return sprintf($this->l('Accept payments through %s', 'PaymentMethod'), $this->getName());
     }
 
 

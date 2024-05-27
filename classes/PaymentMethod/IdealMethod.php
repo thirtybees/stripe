@@ -66,7 +66,7 @@ class IdealMethod extends PaymentMethod
      */
     public function getName(): string
     {
-        return $this->l('iDEAL', 'stripe');
+        return $this->l('iDEAL');
     }
 
 

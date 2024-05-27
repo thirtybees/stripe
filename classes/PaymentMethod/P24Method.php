@@ -69,7 +69,7 @@ class P24Method extends PaymentMethod
      */
     public function getName(): string
     {
-        return $this->l('P24', 'stripe');
+        return $this->l('P24');
     }
 
 

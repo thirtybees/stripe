@@ -66,7 +66,7 @@ class GiropayMethod extends PaymentMethod
      */
     public function getName(): string
     {
-        return $this->l('Giropay', 'stripe');
+        return $this->l('Giropay');
     }
 
 }

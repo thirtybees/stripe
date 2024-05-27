@@ -73,7 +73,7 @@ class SepaDebitMethod extends PaymentMethod
      */
     public function getName(): string
     {
-        return $this->l('SEPA Direct Debit', 'stripe');
+        return $this->l('SEPA Direct Debit');
     }
 
     /**
@@ -81,7 +81,7 @@ class SepaDebitMethod extends PaymentMethod
      */
     public function getShortName(): string
     {
-        return $this->l('SEPA', 'stripe');
+        return $this->l('SEPA');
     }
 
     /**

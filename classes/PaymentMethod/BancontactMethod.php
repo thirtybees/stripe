@@ -66,7 +66,7 @@ class BancontactMethod extends PaymentMethod
      */
     public function getName(): string
     {
-        return $this->l('Bancontact', 'stripe');
+        return $this->l('Bancontact');
     }
 
 }

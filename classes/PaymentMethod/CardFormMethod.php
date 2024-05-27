@@ -92,7 +92,7 @@ class CardFormMethod extends PaymentMethod
      */
     public function getName(): string
     {
-        return $this->l('Stripe credit card form', 'stripe');
+        return $this->l('Stripe credit card form');
     }
 
     /**
@@ -100,7 +100,7 @@ class CardFormMethod extends PaymentMethod
      */
     public function getShortName(): string
     {
-        return $this->l('Credit Card', 'stripe');
+        return $this->l('Credit Card');
     }
 
     /**
@@ -108,7 +108,7 @@ class CardFormMethod extends PaymentMethod
      */
     public function getCTA(): string
     {
-        return $this->l('Pay by Credit Card', 'stripe');
+        return $this->l('Pay by Credit Card');
     }
 
 
