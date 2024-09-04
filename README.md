@@ -17,15 +17,22 @@ The aim of this module is to make accepting payments with Stripe very easy.
 Contributions are more than welcome!
 
 ### Current features
-- Process the following payment methods with Stripe: 
-  - Credit Card
-  - Apple Pay (PaymentRequest button)
-  - Google Pay (PaymentRequest button)
-  - iDEAL
-  - Bancontact
-  - Giropay
-  - Sofort Banking
-  - P24
+- Process the following payment methods with Stripe:
+    - Alipay
+    - Bancontact
+    - Blik
+    - Credit Card Form
+    - Stripe Checkout / Credit Card
+    - Giropay
+    - iDeal
+    - Klarna
+    - P24
+    - Sepa Debit
+    - Sofort Banking
+    - WeChat
+- Support for payment request buttons:
+    - Apple Pay
+    - Google Pay
 - Process refunds received by webhooks:
     - Partial refund
     - Full refund
