@@ -2321,12 +2321,12 @@ class Stripe extends PaymentModule
 
             die(json_encode([
                 'success' => true,
-                'text' => $enabled ? $this->l("Payment Method enabled") : $this->l('Payment method disabled'),
+                'text' => $enabled ? $this->l('Payment Method enabled') : $this->l('Payment method disabled'),
             ]));
         }
         die(json_encode([
             'success' => false,
-            'text' => $this->l("Payment method not found"),
+            'text' => $this->l('Payment method not found'),
         ]));
     }
 
