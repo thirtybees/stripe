@@ -55,7 +55,7 @@ class CheckoutMethod extends PaymentMethod
      */
     public function getImageFile(): string
     {
-        return 'stripebtnlogo.png';
+        return 'creditcards.png';
     }
 
     /**
