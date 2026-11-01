@@ -28,6 +28,7 @@ use Configuration;
 use Cart;
 use Stripe;
 use Db;
+use DbQuery;
 use Order;
 use Context;
 use StripeModule\Logger\Logger;
@@ -136,36 +137,75 @@ class PaymentProcessor
             return false;
         }
 
-        $charge = $this->getCharge($paymentIntent->latest_charge);
-        if ($charge) {
-            $this->logger->log('Processing latest charge: ' . $charge->id);
-            $this->processCharge($cart, $charge, $paymentIntent, $methodId, $paymentMethodName);
-            if ($this->orderId) {
-                $this->logger->log('Created order: ' . $this->orderId);
-                $this->redirect = Context::getContext()->link->getPageLink(
-                    'order-confirmation',
-                    null,
-                    null,
-                    [
-                        'id_cart' => (int)$cart->id,
-                        'id_module' => (int)$this->module->id,
-                        'id_order' => (int)$this->orderId,
-                        'key' => Tools::safeOutput($cart->secure_key),
-                    ]
-                );
+        // serialize order creation per cart, concurrent validation requests could create two orders
+        $lockName = 'stripe_cart_' . (int)$cart->id;
+        $conn = Db::getInstance();
+        if (! (int)$conn->getValue("SELECT GET_LOCK('" . pSQL($lockName) . "', 10)")) {
+            $this->errors[] = $this->l('Payment is already being processed, please try again');
+            $this->logger->error('Failed to acquire lock ' . $lockName);
+            return false;
+        }
+
+        try {
+            // read from master connection, an order may have been created a moment ago
+            $existingOrderId = (int)$conn->getValue(
+                (new DbQuery())
+                    ->select('`id_order`')
+                    ->from('orders')
+                    ->where('`id_cart` = ' . (int)$cart->id)
+                    ->orderBy('`id_order`')
+            );
+            if ($existingOrderId) {
+                $this->logger->log('Order ' . $existingOrderId . ' already exists for cart ' . (int)$cart->id);
+                $this->orderId = $existingOrderId;
+                $this->setOrderConfirmationRedirect($cart);
+                return $this->isValid();
             }
-        } else {
-            $this->errors[] = $this->l('No charges associated with payment');
-            $this->logger->error('No charges associated with payment:' . print_r($paymentIntent, true));
-        }
 
-        // if there was any error, mark transaction as failed
-        if ($this->errors && $this->transaction && $this->transaction->type !== StripeTransaction::TYPE_CHARGE_FAIL) {
-            $this->transaction->type = StripeTransaction::TYPE_CHARGE_FAIL;
-            $this->transaction->save();
-        }
+            $charge = $this->getCharge($paymentIntent->latest_charge);
+            if ($charge) {
+                $this->logger->log('Processing latest charge: ' . $charge->id);
+                $this->processCharge($cart, $charge, $paymentIntent, $methodId, $paymentMethodName);
+                if ($this->orderId) {
+                    $this->logger->log('Created order: ' . $this->orderId);
+                    $this->setOrderConfirmationRedirect($cart);
+                }
+            } else {
+                $this->errors[] = $this->l('No charges associated with payment');
+                $this->logger->error('No charges associated with payment:' . print_r($paymentIntent, true));
+            }
 
-        return $this->isValid();
+            // if there was any error, mark transaction as failed
+            if ($this->errors && $this->transaction && $this->transaction->type !== StripeTransaction::TYPE_CHARGE_FAIL) {
+                $this->transaction->type = StripeTransaction::TYPE_CHARGE_FAIL;
+                $this->transaction->save();
+            }
+
+            return $this->isValid();
+        } finally {
+            $conn->getValue("SELECT RELEASE_LOCK('" . pSQL($lockName) . "')");
+        }
+    }
+
+    /**
+     * @param Cart $cart
+     *
+     * @return void
+     * @throws PrestaShopException
+     */
+    protected function setOrderConfirmationRedirect(Cart $cart)
+    {
+        $this->redirect = Context::getContext()->link->getPageLink(
+            'order-confirmation',
+            null,
+            null,
+            [
+                'id_cart' => (int)$cart->id,
+                'id_module' => (int)$this->module->id,
+                'id_order' => (int)$this->orderId,
+                'key' => Tools::safeOutput($cart->secure_key),
+            ]
+        );
     }
 
     /**
