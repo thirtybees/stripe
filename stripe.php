@@ -117,6 +117,7 @@ class Stripe extends PaymentModule
         $this->version = '1.9.4';
         $this->author = 'thirty bees';
         $this->need_instance = 0;
+        $this->tb_min_version = '1.5.0';
 
         $this->bootstrap = true;
 

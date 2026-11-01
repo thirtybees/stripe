@@ -19,6 +19,10 @@
 
 namespace StripeModule;
 
+use Db;
+use DbQuery;
+use PrestaShopException;
+
 if (!defined('_TB_VERSION_')) {
     return;
 }
@@ -137,12 +141,12 @@ class StripeTransaction extends \ObjectModel
      * @return int Cart ID
      *
      * @since 1.0.0
-     * @throws \PrestaShopException
+     * @throws PrestaShopException
      */
     public static function getIdCustomerByCharge($idCharge)
     {
-        return (int) \Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue(
-            (new \DbQuery())
+        return (int) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue(
+            (new DbQuery())
                 ->select('c.`id_customer`')
                 ->from(bqSQL(static::$definition['table']), 'st')
                 ->innerJoin('orders', 'o', 'st.`id_order` = o.`id_order`')
@@ -159,12 +163,12 @@ class StripeTransaction extends \ObjectModel
      * @return int Cart ID
      *
      * @since 1.0.0
-     * @throws \PrestaShopException
+     * @throws PrestaShopException
      */
     public static function getIdCartByCharge($idCharge)
     {
-        return (int) \Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue(
-            (new \DbQuery())
+        return (int) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue(
+            (new DbQuery())
                 ->select('c.`id_cart`')
                 ->from(bqSQL(static::$definition['table']), 'st')
                 ->innerJoin('orders', 'o', 'st.`id_order` = o.`id_order`')
@@ -181,12 +185,12 @@ class StripeTransaction extends \ObjectModel
      * @return int Order ID
      *
      * @since 1.0.0
-     * @throws \PrestaShopException
+     * @throws PrestaShopException
      */
     public static function getIdOrderByCharge($idCharge)
     {
-        return (int) \Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue(
-            (new \DbQuery())
+        return (int) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue(
+            (new DbQuery())
                 ->select('st.`id_order`')
                 ->from(bqSQL(static::$definition['table']), 'st')
                 ->where('st.`id_charge` = \''.pSQL($idCharge).'\'')
@@ -198,12 +202,12 @@ class StripeTransaction extends \ObjectModel
      *
      * @return array|false
      *
-     * @throws \PrestaShopException
+     * @throws PrestaShopException
      */
     public static function findPendingChargeTransaction($idCharge)
     {
-        return \Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow(
-            (new \DbQuery())
+        return Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow(
+            (new DbQuery())
                 ->from(bqSQL(static::$definition['table']), 'st')
                 ->where('st.`id_charge` = \''.pSQL($idCharge).'\'')
                 ->where('st.type = ' . static::TYPE_CHARGE_PENDING)
@@ -212,29 +216,52 @@ class StripeTransaction extends \ObjectModel
 
 
     /**
+     * Returns true if transaction of given type was already recorded for the charge
+     *
+     * Reads from master connection, used to skip webhook events that were already processed
+     *
+     * @param string $idCharge
+     * @param int $type
+     *
+     * @return bool
+     *
+     * @throws PrestaShopException
+     */
+    public static function hasTransaction($idCharge, $type)
+    {
+        return (bool)Db::readOnly()->getValue(
+            (new DbQuery())
+                ->select('st.`' . bqSQL(static::$definition['primary']) . '`')
+                ->from(bqSQL(static::$definition['table']), 'st')
+                ->where('st.`id_charge` = \''.pSQL($idCharge).'\'')
+                ->where('st.`type` = '.(int)$type)
+        );
+    }
+
+    /**
      * Get refunded amount by Charge ID
      *
      * @param int $idCharge Charge ID
      *
      * @return int $amount
      *
-     * @throws \PrestaShopDatabaseException
-     * @throws \PrestaShopException
+     * @throws PrestaShopException
      * @since 1.0.0
      */
     public static function getRefundedAmount($idCharge)
     {
         $amount = 0;
 
-        $dbAmounts = \Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS(
-            (new \DbQuery())
+        // master connection, the result decides whether a refund webhook was already processed
+        $dbAmounts = Db::getInstance()->getArray(
+            (new DbQuery())
                 ->select('st.`amount`')
                 ->from(bqSQL(static::$definition['table']), 'st')
                 ->where('st.`id_charge` = \''.pSQL($idCharge).'\'')
                 ->where('st.`type` = '.static::TYPE_PARTIAL_REFUND.' OR st.`type` = '.static::TYPE_FULL_REFUND)
         );
 
-        if (!is_array($dbAmounts) || empty($dbAmounts)) {
+        if (! $dbAmounts) {
             return $amount;
         }
 
@@ -255,11 +282,11 @@ class StripeTransaction extends \ObjectModel
      * @throws \PrestaShopDatabaseException
      *
      * @since 1.0.0
-     * @throws \PrestaShopException
+     * @throws PrestaShopException
      */
     public static function getTransactionsByOrderId($idOrder, $count = false)
     {
-        $sql = new \DbQuery();
+        $sql = new DbQuery();
         if ($count) {
             $sql->select('count(*)');
         } else {
@@ -271,10 +298,10 @@ class StripeTransaction extends \ObjectModel
         $sql->where('st.`id_order` = '.(int) $idOrder);
 
         if ($count) {
-            return \Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
+            return Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
         }
 
-        return \Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
+        return Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
     }
 
     /**
@@ -285,15 +312,15 @@ class StripeTransaction extends \ObjectModel
      * @return int $amount
      *
      * @throws \PrestaShopDatabaseException
-     * @throws \PrestaShopException
+     * @throws PrestaShopException
      * @since 1.0.0
      */
     public static function getRefundedAmountByOrderId($idOrder)
     {
         $amount = 0;
 
-        $dbAmounts = \Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS(
-            (new \DbQuery())
+        $dbAmounts = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS(
+            (new DbQuery())
                 ->select('st.`amount`')
                 ->from(bqSQL(static::$definition['table']), 'st')
                 ->where('st.`id_order` = \''.pSQL($idOrder).'\'')
@@ -319,13 +346,13 @@ class StripeTransaction extends \ObjectModel
      * @return StripeTransaction|false
      *
      * @throws \PrestaShopDatabaseException
-     * @throws \PrestaShopException
+     * @throws PrestaShopException
      * @since 1.1.0
      */
     public static function getByChargeId($id)
     {
-        $result = \Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow(
-            (new \DbQuery())
+        $result = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow(
+            (new DbQuery())
                 ->select('st.*')
                 ->from(bqSQL(static::$definition['table']), 'st')
                 ->where('st.`id_charge` = \''.pSQL($id).'\'')
@@ -348,12 +375,12 @@ class StripeTransaction extends \ObjectModel
      * @return bool|string Charge ID or false if not found
      *
      * @since 1.0.0
-     * @throws \PrestaShopException
+     * @throws PrestaShopException
      */
     public static function getChargeByIdOrder($idOrder)
     {
-        return \Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue(
-            (new \DbQuery())
+        return Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue(
+            (new DbQuery())
                 ->select('DISTINCT st.`id_charge`')
                 ->from(bqSQL(static::$definition['table']), 'st')
                 ->where('st.`id_order` = '.(int) $idOrder)
@@ -368,12 +395,12 @@ class StripeTransaction extends \ObjectModel
      * @return false|string Last 4 digits of CC
      *
      * @since 1.0.0
-     * @throws \PrestaShopException
+     * @throws PrestaShopException
      */
     public static function getLastFourDigitsByChargeId($idCharge)
     {
-        return \Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue(
-            (new \DbQuery())
+        return Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue(
+            (new DbQuery())
                 ->select('DISTINCT st.`card_last_digits`')
                 ->from(bqSQL(static::$definition['table']), 'st')
                 ->where('st.`id_charge` = \''.pSQL($idCharge).'\'')
@@ -387,7 +414,7 @@ class StripeTransaction extends \ObjectModel
      *
      * @return bool
      * @throws \PrestaShopDatabaseException
-     * @throws \PrestaShopException
+     * @throws PrestaShopException
      *
      * @since 1.0.0
      */
@@ -397,7 +424,7 @@ class StripeTransaction extends \ObjectModel
             return false;
         }
 
-        return \Db::getInstance()->delete(
+        return Db::getInstance()->delete(
             bqSQL(static::$definition['table']),
             '`'.bqSQL(static::$definition['primary']).'` IN ('.implode(',', array_map('intval', $range)).')'
         );
@@ -410,7 +437,7 @@ class StripeTransaction extends \ObjectModel
      * @return string
      * @throws \Exception
      * @throws \PrestaShopDatabaseException
-     * @throws \PrestaShopException
+     * @throws PrestaShopException
      * @throws \ReflectionException
      * @throws \SmartyException
      *

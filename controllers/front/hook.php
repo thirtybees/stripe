@@ -131,19 +131,31 @@ class StripeHookModuleFrontController extends ModuleFrontController
         $event = $this->getEvent((string)$data['id']);
         $this->logger->log("Fetched event: " . $event->id . ", type " . $event->type);
 
-        switch ($event->type) {
-            case 'review.closed':
-                return $this->processApproved($event);
-            case 'charge.refunded':
-                return $this->processRefund($event);
-            case 'charge.succeeded':
-                return $this->processSucceeded($event);
-            case 'charge.captured':
-                return $this->processCaptured($event);
-            case 'charge.failed':
-                return $this->processFailed($event);
-            default:
-                return 'Ignoring event "'.$event->type.'"';
+        $handlers = [
+            'review.closed' => 'processApproved',
+            'charge.refunded' => 'processRefund',
+            'charge.succeeded' => 'processSucceeded',
+            'charge.captured' => 'processCaptured',
+            'charge.failed' => 'processFailed',
+        ];
+        if (! isset($handlers[$event->type])) {
+            return 'Ignoring event "'.$event->type.'"';
+        }
+
+        // Stripe can deliver the same event more than once, possibly in parallel.
+        // Handlers check whether the change was already applied, the lock makes that check reliable
+        $object = $event->data['object'];
+        $chargeId = $event->type === 'review.closed' ? (string)$object->charge : (string)$object->id;
+        $lockName = 'stripe_charge_' . $chargeId;
+        $conn = Db::getInstance();
+        if (! (int)$conn->getValue("SELECT GET_LOCK('" . pSQL($lockName) . "', 10)")) {
+            throw new PrestaShopException('Failed to acquire lock ' . $lockName);
+        }
+        try {
+            $method = $handlers[$event->type];
+            return $this->$method($event);
+        } finally {
+            $conn->getValue("SELECT RELEASE_LOCK('" . pSQL($lockName) . "')");
         }
     }
 
@@ -177,6 +189,11 @@ class StripeHookModuleFrontController extends ModuleFrontController
             $this->logger->error("Order with id $idOrder not found");
             return "Order with id $idOrder not found";
         }
+
+        if (StripeTransaction::hasTransaction($chargeId, StripeTransaction::TYPE_CHARGE)) {
+            return 'Charge ' . $chargeId . ' already processed for order id ' . $idOrder;
+        }
+
         $totalAmount = $order->getTotalPaid();
 
         $transaction = new StripeTransaction();
@@ -224,6 +241,10 @@ class StripeHookModuleFrontController extends ModuleFrontController
         }
 
         $order = new Order($idOrder);
+
+        if (StripeTransaction::hasTransaction($chargeId, StripeTransaction::TYPE_CHARGE_FAIL)) {
+            return 'Failed charge ' . $chargeId . ' already processed for order id ' . $idOrder;
+        }
 
         $transaction = new StripeTransaction();
         $transaction->card_last_digits = 0;
@@ -274,6 +295,9 @@ class StripeHookModuleFrontController extends ModuleFrontController
         $order = new Order($idOrder);
 
         $review = StripeReview::getByOrderId($idOrder);
+        if (Validate::isLoadedObject($review) && (int)$review->status !== StripeReview::IN_REVIEW) {
+            return 'Review for order id ' . $idOrder . ' already processed';
+        }
         $review->status = StripeReview::AUTHORIZED;
         $review->save();
 
@@ -320,6 +344,10 @@ class StripeHookModuleFrontController extends ModuleFrontController
             return 'Order not found for charge ' . $charge->id;
         }
         $order = new Order($idOrder);
+
+        if (StripeTransaction::hasTransaction($charge->id, StripeTransaction::TYPE_CAPTURED)) {
+            return 'Capture of charge ' . $charge->id . ' already processed for order id ' . $idOrder;
+        }
 
         $review = StripeReview::getByOrderId($idOrder);
         $review->status = StripeReview::CAPTURED;
@@ -387,17 +415,22 @@ class StripeHookModuleFrontController extends ModuleFrontController
 
         $amountRefunded = (int) $charge->amount_refunded;
 
+        // replayed or out of order event, this refund amount is already recorded
+        if ($amountRefunded <= (int) StripeTransaction::getRefundedAmount($charge->id)) {
+            return 'Refund for charge ' . $charge->id . ' already processed';
+        }
+
         if (Configuration::get(Stripe::USE_STATUS_REFUND) && (int) ($amountRefunded - $totalAmount) === 0) {
             // Full refund
             if (Configuration::get(Stripe::GENERATE_CREDIT_SLIP)) {
-                   $fullProductList = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS(
+                   $fullProductList = Db::readOnly()->getArray(
                     (new DbQuery())
                         ->select('od.`id_order_detail`, od.`product_quantity`')
                         ->from('order_detail', 'od')
                         ->where('od.`id_order` = '.(int) $order->id)
                 );
 
-                if (is_array($fullProductList) && !empty($fullProductList)) {
+                if ($fullProductList) {
                     $productList = [];
                     $quantityList = [];
                     foreach ($fullProductList as $dbOrderDetail) {
