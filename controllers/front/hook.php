@@ -174,6 +174,12 @@ class StripeHookModuleFrontController extends ModuleFrontController
 
 
         $chargeId = $charge->id;
+
+        // with manual capture the charge succeeds when it is only authorized, capture is handled by charge.captured
+        if (empty($charge->captured)) {
+            return 'Charge ' . $chargeId . ' is not captured yet';
+        }
+
         $pendingTransaction = StripeTransaction::findPendingChargeTransaction($charge->id);
         if (! $pendingTransaction) {
             return 'No pending transaction for charge id ' . $chargeId;

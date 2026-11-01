@@ -30,10 +30,12 @@ use Stripe;
 use Db;
 use DbQuery;
 use Order;
+use OrderHistory;
 use Context;
 use StripeModule\Logger\Logger;
 use Throwable;
 use Tools;
+use Validate;
 
 if (!defined('_TB_VERSION_')) {
     return;
@@ -252,7 +254,13 @@ class PaymentProcessor
      */
     public function processCharge(Cart $cart, Charge $charge, PaymentIntent $paymentIntent, string $methodId, string $paymentMethodName)
     {
-        if ($paymentIntent->status === PaymentIntent::STATUS_PROCESSING) {
+        $authorizedStatus = Configuration::get(Stripe::USE_STATUS_AUTHORIZED)
+            ? (int) Configuration::get(Stripe::STATUS_AUTHORIZED)
+            : 0;
+        if ($paymentIntent->status === PaymentIntent::STATUS_REQUIRES_CAPTURE && $authorizedStatus) {
+            // money is only reserved, capture moves the order to the payment accepted status
+            $paymentStatus = $authorizedStatus;
+        } elseif ($paymentIntent->status === PaymentIntent::STATUS_PROCESSING || $paymentIntent->status === PaymentIntent::STATUS_REQUIRES_CAPTURE) {
             $paymentStatus = (int) Configuration::get(Stripe::STATUS_PROCESSING);
             if (!$paymentStatus) {
                 $paymentStatus = (int) Configuration::get('PS_OS_PREPARATION');
@@ -375,6 +383,7 @@ class PaymentProcessor
                     $this->errors[] = $this->l('Failed to update review object');
                     $this->logger->error('Failed to update review object: ' . Db::getInstance()->getMsgError());
                 }
+                $this->setCapturedOrderStatus($orderId);
                 return true;
             }
 
@@ -405,6 +414,7 @@ class PaymentProcessor
                         $this->logger->error('Failed to create stripe transaction object: ' . Db::getInstance()->getMsgError());
                         return false;
                     }
+                    $this->setCapturedOrderStatus($orderId);
                 } else {
                     $this->errors[] = $this->l('Failed to create stripe transaction object, charge not found');
                     $this->logger->error('Failed to create stripe transaction object, charge not found');
@@ -425,6 +435,45 @@ class PaymentProcessor
         return false;
     }
 
+
+    /**
+     * Moves order from the authorized (or processing) status to the payment accepted status after capture.
+     * Orders that already moved on, for example to shipped, are left alone.
+     *
+     * @param int $orderId
+     *
+     * @return void
+     * @throws PrestaShopException
+     */
+    protected function setCapturedOrderStatus($orderId)
+    {
+        $order = new Order((int)$orderId);
+        if (! Validate::isLoadedObject($order)) {
+            return;
+        }
+
+        $processingStatus = (int)Configuration::get(Stripe::STATUS_PROCESSING);
+        if (! $processingStatus) {
+            $processingStatus = (int)Configuration::get('PS_OS_PREPARATION');
+        }
+        $authorizedStatuses = array_filter([
+            (int)Configuration::get(Stripe::STATUS_AUTHORIZED),
+            $processingStatus,
+        ]);
+        $paidStatus = (int)Configuration::get(Stripe::STATUS_VALIDATED);
+        if (! $paidStatus) {
+            $paidStatus = (int)Configuration::get('PS_OS_PAYMENT');
+        }
+
+        $currentStatus = (int)$order->getCurrentState();
+        if ($currentStatus !== $paidStatus && in_array($currentStatus, $authorizedStatuses, true)) {
+            $orderHistory = new OrderHistory();
+            $orderHistory->id_order = (int)$order->id;
+            $orderHistory->changeIdOrderState($paidStatus, (int)$order->id, !$order->hasInvoice());
+            $orderHistory->addWithemail(true);
+            $this->logger->log('Captured payment, setting status for order id ' . (int)$order->id . ' to ' . $paidStatus);
+        }
+    }
 
     /**
      * Releases uncaptured payment
