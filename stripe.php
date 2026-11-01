@@ -2222,9 +2222,24 @@ class Stripe extends PaymentModule
 
     /**
      * @return void
+     * @throws PrestaShopException
+     * @throws SmartyException
      */
     protected function processBulkCapture()
     {
+        $access = Profile::getProfileAccess($this->context->employee->id_profile, Tab::getIdFromClassName('AdminOrders'));
+        if (!$access) {
+            $this->setErrorMessage($this->l('Unable to determine employee permissions.'));
+            Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true));
+            return;
+        }
+
+        if (!$access['edit']) {
+            $this->setErrorMessage($this->l('You do not have permission to capture orders.'));
+            Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true));
+            return;
+        }
+
         $idOrders = Tools::getValue('orderBox');
         if (!is_array($idOrders)) {
             $this->context->controller->errors[] = $this->l('No orders found');
