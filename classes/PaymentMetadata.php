@@ -51,6 +51,13 @@ class PaymentMetadata
     private string $secret;
 
     /**
+     * Lowercase ISO code of the cart currency
+     *
+     * @var string
+     */
+    private string $currency;
+
+    /**
      * @param int $type
      * @param string $methodId
      * @param int $cartId
@@ -58,6 +65,7 @@ class PaymentMetadata
      * @param float $total
      * @param string $id
      * @param string $secret
+     * @param string $currency
      */
     public function __construct(
         int $type,
@@ -66,7 +74,8 @@ class PaymentMetadata
         int $timestamp,
         float $total,
         string $id,
-        string $secret = ''
+        string $secret = '',
+        string $currency = ''
     )
     {
         $this->type = $type;
@@ -76,6 +85,7 @@ class PaymentMetadata
         $this->total = $total;
         $this->id = $id;
         $this->secret = $secret;
+        $this->currency = mb_strtolower($currency);
     }
 
     /**
@@ -128,7 +138,8 @@ class PaymentMetadata
             time(),
             Utils::getCartTotal($cart),
             $paymentIntent->id,
-            $paymentIntent->client_secret
+            $paymentIntent->client_secret,
+            Utils::getCurrencyCode($cart)
         );
     }
 
@@ -148,7 +159,9 @@ class PaymentMetadata
             (int)$cart->id,
             time(),
             Utils::getCartTotal($cart),
-            $session->id
+            $session->id,
+            '',
+            Utils::getCurrencyCode($cart)
         );
     }
 
@@ -172,7 +185,8 @@ class PaymentMetadata
             'cartId' => $this->cartId,
             'cartTotal' => $this->total,
             'id' => $this->id,
-            'secret' => $this->secret
+            'secret' => $this->secret,
+            'currency' => $this->currency,
         ];
     }
 
@@ -184,7 +198,8 @@ class PaymentMetadata
     public static function deserialize(string $input): ?PaymentMetadata
     {
         $parts = explode(':', $input);
-        if (count($parts) === 7) {
+        // 7 parts: metadata stored before the currency was added
+        if (count($parts) === 7 || count($parts) === 8) {
             $type = (int)$parts[0];
             $methodId = (string)$parts[1];
             $timestamp = (int)$parts[2];
@@ -192,6 +207,7 @@ class PaymentMetadata
             $total = (int)$parts[4];
             $id = (string)$parts[5];
             $secret = (string)$parts[6];
+            $currency = isset($parts[7]) ? (string)$parts[7] : '';
             if ($type && $methodId && $timestamp && $cartId && $total && $id) {
                 return new static(
                     $type,
@@ -200,7 +216,8 @@ class PaymentMetadata
                     $timestamp,
                     $total,
                     $id,
-                    $secret
+                    $secret,
+                    $currency
                 );
             }
         }
@@ -221,6 +238,14 @@ class PaymentMetadata
     public function getSecret(): string
     {
         return $this->secret;
+    }
+
+    /**
+     * @return string
+     */
+    public function getCurrency(): string
+    {
+        return $this->currency;
     }
 
     /**
@@ -249,6 +274,10 @@ class PaymentMetadata
         $total = Utils::getCartTotal($cart);
         if ($this->total != $total) {
             $errors[] = Tools::displayError("Cart amount has changed");
+        }
+
+        if ($this->currency !== '' && $this->currency !== Utils::getCurrencyCode($cart)) {
+            $errors[] = Tools::displayError("Cart currency has changed");
         }
 
         return $errors;

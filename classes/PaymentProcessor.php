@@ -132,6 +132,10 @@ class PaymentProcessor
     {
         $this->reset();
 
+        if (! $this->checkPaymentIntentMatchesCart($cart, $paymentIntent)) {
+            return false;
+        }
+
         $charge = $this->getCharge($paymentIntent->latest_charge);
         if ($charge) {
             $this->logger->log('Processing latest charge: ' . $charge->id);
@@ -164,6 +168,35 @@ class PaymentProcessor
         return $this->isValid();
     }
 
+    /**
+     * Verifies that payment intent currency and amount match the cart
+     *
+     * @param Cart $cart
+     * @param PaymentIntent $paymentIntent
+     *
+     * @return bool
+     * @throws PrestaShopException
+     */
+    protected function checkPaymentIntentMatchesCart(Cart $cart, PaymentIntent $paymentIntent)
+    {
+        $cartCurrency = Utils::getCurrencyCode($cart);
+        $cartTotal = Utils::getCartTotal($cart);
+        $intentCurrency = mb_strtolower((string)$paymentIntent->currency);
+        $intentAmount = $paymentIntent->status === PaymentIntent::STATUS_SUCCEEDED
+            ? (int)$paymentIntent->amount_received
+            : (int)$paymentIntent->amount;
+
+        if ($intentCurrency !== $cartCurrency || $intentAmount !== (int)$cartTotal) {
+            $this->errors[] = $this->l('Payment does not match the cart amount or currency');
+            $this->logger->error(
+                'Payment intent ' . $paymentIntent->id . ' does not match cart ' . (int)$cart->id
+                . ': intent ' . $intentAmount . ' ' . $intentCurrency
+                . ', cart ' . (int)$cartTotal . ' ' . $cartCurrency
+            );
+            return false;
+        }
+        return true;
+    }
 
     /**
      * Process charge associated with payment intent
