@@ -90,7 +90,9 @@ class StripeValidationModuleFrontController extends ModuleFrontController
                 $this->logger->log("Payment method: " . $method->getShortName());
                 $metadata = Utils::getPaymentMetadata($this->context->cookie);
                 if ($metadata) {
-                    $this->logger->log("Stored payment metadata: " . json_encode($metadata->getData()));
+                    $metadataLog = $metadata->getData();
+                    unset($metadataLog['secret']);
+                    $this->logger->log("Stored payment metadata: " . json_encode($metadataLog));
                     return $this->validatePaymentMethod($method, $metadata);
                 } else {
                     return $this->displayError(
@@ -189,7 +191,7 @@ class StripeValidationModuleFrontController extends ModuleFrontController
                 Utils::removeFromCookie($this->context->cookie);
                 return $this->displayError(
                     sprintf(Tools::displayError('Payment intent has invalid status: %s'), $paymentIntent->status),
-                    'Payment intent has invalid status: ' . $paymentIntent
+                    'Payment intent ' . $paymentIntent->id . ' has invalid status: ' . $paymentIntent->status
                 );
         }
     }

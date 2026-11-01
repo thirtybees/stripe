@@ -118,17 +118,17 @@ class StripeHookModuleFrontController extends ModuleFrontController
 
         $data = json_decode($body, true);
         if (! $data) {
-            $this->logger->error("Failed to parse input payload: " . $body);
+            $this->logger->error("Failed to parse input payload: " . $this->describePayload($body));
             return 'Failed to parse input';
         }
 
         if (! isset($data['id'])) {
-            $this->logger->log("Payload does not contain event id: " . json_encode($data, JSON_PRETTY_PRINT));
+            $this->logger->log("Payload does not contain event id: " . $this->describePayload($body));
             return 'Payload does not contain event id';
         }
 
         $event = $this->getEvent((string)$data['id']);
-        $this->logger->log("Fetched event: " . json_encode($event, JSON_PRETTY_PRINT));
+        $this->logger->log("Fetched event: " . $event->id . ", type " . $event->type);
 
         switch ($event->type) {
             case 'review.closed':
@@ -434,6 +434,19 @@ class StripeHookModuleFrontController extends ModuleFrontController
         }
 
         return 'Refuned processed';
+    }
+
+    /**
+     * Returns length and a short printable prefix of a payload, never the whole body
+     *
+     * @param string $body
+     *
+     * @return string
+     */
+    protected function describePayload($body)
+    {
+        $prefix = preg_replace('/[^\x20-\x7E]/', '?', substr((string)$body, 0, 32));
+        return 'length ' . strlen((string)$body) . ', prefix "' . $prefix . '"';
     }
 
     /**

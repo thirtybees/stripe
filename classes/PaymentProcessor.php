@@ -172,7 +172,7 @@ class PaymentProcessor
                 }
             } else {
                 $this->errors[] = $this->l('No charges associated with payment');
-                $this->logger->error('No charges associated with payment:' . print_r($paymentIntent, true));
+                $this->logger->error('No charges associated with payment intent ' . $paymentIntent->id . ', status ' . $paymentIntent->status);
             }
 
             // if there was any error, mark transaction as failed
@@ -347,7 +347,7 @@ class PaymentProcessor
             }
         } else {
             $this->errors[] = $this->l('Charge has invalid status');
-            $this->logger->error('Charge has invalid status: ' .  print_r($charge, true));
+            $this->logger->error('Charge ' . $charge->id . ' has invalid status: ' . $charge->status . ', amount ' . (int)$charge->amount . ' ' . $charge->currency);
             return false;
         }
     }
@@ -413,7 +413,7 @@ class PaymentProcessor
                 return true;
             }
             $this->errors[] = $this->l('Invalid payment intent status: ').$paymentIntent->status;
-            $this->logger->error('Invalid payment intent status: '.$paymentIntent->status . ': ' . print_r($paymentIntent, true));
+            $this->logger->error('Invalid payment intent status: '.$paymentIntent->status . ' for payment intent ' . $paymentIntent->id);
             return false;
         } catch (ApiErrorException $e) {
             $this->errors[] = $e->getMessage();
@@ -487,7 +487,7 @@ class PaymentProcessor
                 }
             }
             $this->errors[] = $this->l('Invalid payment intent status: ').$paymentIntent->status;
-            $this->logger->error('Invalid payment intent status: '.$paymentIntent->status . ': ' . print_r($paymentIntent, true));
+            $this->logger->error('Invalid payment intent status: '.$paymentIntent->status . ' for payment intent ' . $paymentIntent->id);
             return false;
         } catch (ApiErrorException $e) {
             $this->errors[] = $e->getMessage();
