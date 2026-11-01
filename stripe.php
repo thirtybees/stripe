@@ -834,7 +834,7 @@ class Stripe extends PaymentModule
                 unset($_GET[StripeTransaction::$definition['table'] . 'Filter_' . $fieldName]);
             }
             unset($this->context->cookie->{StripeTransaction::$definition['table'] . 'Orderby'});
-            unset($this->context->cookie->{StripeTransaction::$definition['table'] . 'OrderWay'});
+            unset($this->context->cookie->{StripeTransaction::$definition['table'] . 'Orderway'});
 
             $cookie->write();
         }
@@ -880,13 +880,17 @@ class Stripe extends PaymentModule
             $helperList->orderWay = 'DESC';
         }
 
+        if (!Validate::isOrderWay($helperList->orderWay)) {
+            $helperList->orderWay = 'DESC';
+        }
+
         $filterSql = $this->getSQLFilter($helperList, $fieldsList);
 
         $results = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS(
             (new DbQuery())
                 ->select('*')
                 ->from(bqSQL(StripeTransaction::$definition['table']), 'st')
-                ->orderBy('`' . bqSQL($helperList->orderBy) . '` ' . pSQL($helperList->orderWay))
+                ->orderBy('`' . bqSQL($helperList->orderBy) . '` ' . $helperList->orderWay)
                 ->where('1 ' . $filterSql)
                 ->limit($pagination, ($currentPage - 1) * $pagination)
         );
