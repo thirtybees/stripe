@@ -17,6 +17,7 @@
  *  @license   https://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
 
+use Stripe\Charge;
 use Stripe\Exception\ApiErrorException;
 use StripeModule\StripeReview;
 use StripeModule\StripeTransaction;
@@ -156,7 +157,7 @@ class StripeHookModuleFrontController extends ModuleFrontController
      */
     protected function processSucceeded($event): string
     {
-        /** @var \Stripe\Charge $charge */
+        /** @var Charge $charge */
         $charge = $event->data['object'];
 
 
@@ -208,7 +209,7 @@ class StripeHookModuleFrontController extends ModuleFrontController
      */
     protected function processFailed($event): string
     {
-        /** @var \Stripe\Charge $charge */
+        /** @var Charge $charge */
         $charge = $event->data['object'];
 
         $chargeId = $charge->id;
@@ -251,11 +252,17 @@ class StripeHookModuleFrontController extends ModuleFrontController
      *
      * @throws PrestaShopException
      * @throws SmartyException
-     * @throws \Stripe\Exception\ApiErrorException
+     * @throws ApiErrorException
      */
     protected function processApproved($event): string
     {
-        $charge = \Stripe\Charge::retrieve($event->data['object']->charge);
+        // a review can also be closed as refunded, refunded_as_fraud, disputed, ...
+        $reason = (string)$event->data['object']->reason;
+        if ($reason !== 'approved') {
+            return 'Review closed with reason "' . $reason . '", status not changed';
+        }
+
+        $charge = Charge::retrieve($event->data['object']->charge);
 
         if (!empty($charge['metadata']['from_back_office'])) {
             return 'Not processed';
@@ -302,7 +309,7 @@ class StripeHookModuleFrontController extends ModuleFrontController
      */
     protected function processCaptured($event): string
     {
-        /** @var \Stripe\Charge $charge */
+        /** @var Charge $charge */
         $charge = $event->data['object'];
 
         if (!empty($charge['metadata']['from_back_office'])) {
@@ -345,7 +352,7 @@ class StripeHookModuleFrontController extends ModuleFrontController
      */
     protected function processRefund($event): string
     {
-        /** @var \Stripe\Charge $charge */
+        /** @var Charge $charge */
         $charge = $event->data['object'];
 
         $refunds = [];
