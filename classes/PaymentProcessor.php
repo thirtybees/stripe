@@ -21,6 +21,7 @@ namespace StripeModule;
 
 use PrestaShopCollection;
 use PrestaShopException;
+use SmartyException;
 use Stripe\Exception\ApiErrorException;
 use Stripe\PaymentIntent;
 use Stripe\Charge;
@@ -444,6 +445,7 @@ class PaymentProcessor
      *
      * @return void
      * @throws PrestaShopException
+     * @throws SmartyException
      */
     protected function setCapturedOrderStatus($orderId)
     {

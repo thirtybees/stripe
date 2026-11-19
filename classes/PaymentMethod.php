@@ -10,11 +10,11 @@ use Context;
 use Country;
 use PrestaShopException;
 use ReflectionClass;
+use Smarty_Internal_Template;
 use SmartyException;
 use Stripe\Exception\ApiErrorException;
 use Tools;
 use Translate;
-use Validate;
 
 abstract class PaymentMethod
 {
@@ -295,7 +295,7 @@ abstract class PaymentMethod
     /**
      * @param string $relativePath
      *
-     * @return \Smarty_Internal_Template|null
+     * @return Smarty_Internal_Template|null
      *
      * @throws SmartyException
      */
@@ -317,7 +317,7 @@ abstract class PaymentMethod
     /**
      * @param string $relativePath
      *
-     * @return \Smarty_Internal_Template
+     * @return Smarty_Internal_Template
      *
      * @throws PrestaShopException
      * @throws SmartyException

@@ -25,13 +25,16 @@ use Context;
 use Customer;
 use Order;
 use PrestaShopException;
+use Stripe\ApiRequestor;
 use Stripe\Charge;
 use Stripe\Checkout\Session;
 use Stripe\Event;
 use Stripe\Exception\ApiErrorException;
 use Stripe\PaymentIntent;
 use Stripe\Refund;
+use Stripe\Stripe;
 use Translate;
+use Validate;
 
 if (!defined('_TB_VERSION_')) {
     return;
@@ -53,9 +56,9 @@ class StripeApi
      */
     public function __construct($moduleVersion)
     {
-        \Stripe\Stripe::setAppInfo('thirty bees', $moduleVersion, 'https://thirtybees.com/');
-        \Stripe\ApiRequestor::setHttpClient(new GuzzleClient());
-        \Stripe\Stripe::setApiKey(Configuration::get(\Stripe::GO_LIVE)
+        Stripe::setAppInfo('thirty bees', $moduleVersion, 'https://thirtybees.com/');
+        ApiRequestor::setHttpClient(new GuzzleClient());
+        Stripe::setApiKey(Configuration::get(\Stripe::GO_LIVE)
             ? Configuration::get(\Stripe::SECRET_KEY_LIVE)
             : Configuration::get(\Stripe::SECRET_KEY_TEST)
         );
@@ -129,7 +132,7 @@ class StripeApi
             $sessionData['customer_email'] = $customer->email;
         }
 
-        return \Stripe\Checkout\Session::create($sessionData);
+        return Session::create($sessionData);
     }
 
     /**
@@ -137,36 +140,36 @@ class StripeApi
      *
      * @param string $id
      *
-     * @throws ApiErrorException
-     * @return \Stripe\Checkout\Session
+     * @return Session
+     *@throws ApiErrorException
      */
     public function getCheckoutSession($id)
     {
-        return \Stripe\Checkout\Session::retrieve($id);
+        return Session::retrieve($id);
     }
 
     /**
      * @param string $id
      *
-     * @return \Stripe\PaymentIntent
+     * @return PaymentIntent
      *
      * @throws ApiErrorException
      */
     public function getPaymentIntent($id)
     {
-        return \Stripe\PaymentIntent::retrieve($id);
+        return PaymentIntent::retrieve($id);
     }
 
     /**
      * @param array|string $chargeId
      *
-     * @return \Stripe\Charge
+     * @return Charge
      *
      * @throws ApiErrorException
      */
     public function getCharge($chargeId)
     {
-        return \Stripe\Charge::retrieve($chargeId);
+        return Charge::retrieve($chargeId);
     }
 
     /**
@@ -205,7 +208,7 @@ class StripeApi
         if ($methodType === \Stripe\PaymentMethod::TYPE_CARD && Configuration::get(\Stripe::MANUAL_CAPTURE)) {
             $paymentIntentData['capture_method'] = 'manual';
         }
-        return \Stripe\PaymentIntent::create($paymentIntentData);
+        return PaymentIntent::create($paymentIntentData);
     }
 
 
@@ -217,7 +220,7 @@ class StripeApi
      */
     public function getEvent($eventId)
     {
-        return \Stripe\Event::retrieve($eventId);
+        return Event::retrieve($eventId);
     }
 
     /**
@@ -239,7 +242,7 @@ class StripeApi
      */
     public function createRefund(string $idCharge, int $amount)
     {
-        return \Stripe\Refund::create([
+        return Refund::create([
             'charge' => $idCharge,
             'amount' => $amount,
             'metadata' => [
@@ -255,14 +258,14 @@ class StripeApi
      * @return Charge
      * @throws ApiErrorException
      */
-    public function updateCharge(\Stripe\Charge $charge, array $data = [])
+    public function updateCharge(Charge $charge, array $data = [])
     {
         if (! isset($data['metadata'])) {
             $data['metadata'] = [];
         }
         $data['metadata']['from_back_office'] = 'true';
 
-        return \Stripe\Charge::update($charge->id, $data);
+        return Charge::update($charge->id, $data);
     }
 
     /**
@@ -272,7 +275,7 @@ class StripeApi
      */
     protected function getCartMetadata(Cart $cart): array
     {
-        if (\Validate::isLoadedObject($cart)) {
+        if (Validate::isLoadedObject($cart)) {
             return [
                 'cart_id' => (string)$cart->id,
             ];
@@ -303,7 +306,7 @@ class StripeApi
                     'order_reference' => $reference,
                 ]
             ];
-            \Stripe\PaymentIntent::update($paymentIntent->id, $data);
+            PaymentIntent::update($paymentIntent->id, $data);
         }
     }
 }

@@ -78,7 +78,7 @@ class StripePaymentModuleFrontController extends ModuleFrontController implement
         $repository = $this->module->getPaymentMethodsRepository();
         $paymentMethod = $repository->getMethod($methodId);
         if ($paymentMethod) {
-            $this->initPaymentMethod($paymentMethod, $cart, $customer);
+            $this->initPaymentMethod($paymentMethod, $cart);
         } else {
             $this->processError(sprintf(Tools::displayError('Payment method %s is not available'), $methodId));
         }
@@ -92,7 +92,7 @@ class StripePaymentModuleFrontController extends ModuleFrontController implement
      * @return void
      * @throws PrestaShopException
      */
-    protected function initPaymentMethod(PaymentMethod $method, Cart $cart, Customer $customer)
+    protected function initPaymentMethod(PaymentMethod $method, Cart $cart)
     {
         $errors = $method->validateMethod($cart);
         if ($errors) {

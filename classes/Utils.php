@@ -369,7 +369,7 @@ class Utils
      */
     public static function extractRedirectUrl($paymentIntent)
     {
-        if ($paymentIntent && $paymentIntent->status === \Stripe\PaymentIntent::STATUS_REQUIRES_ACTION) {
+        if ($paymentIntent && $paymentIntent->status === PaymentIntent::STATUS_REQUIRES_ACTION) {
             $nextAction = $paymentIntent->next_action;
             if (isset($nextAction->redirect_to_url->url)) {
                 return $nextAction->redirect_to_url->url;

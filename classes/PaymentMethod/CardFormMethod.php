@@ -12,6 +12,7 @@ use StripeModule\ExecutionResult;
 use StripeModule\PaymentMetadata;
 use StripeModule\PaymentMethod;
 use StripeModule\Utils;
+use Throwable;
 use Tools;
 
 class CardFormMethod extends PaymentMethod
@@ -153,7 +154,7 @@ class CardFormMethod extends PaymentMethod
         ];
         try {
             $data['stripe_client_secret'] = $this->getPaymentIntentSecret($cart);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $data['stripe_error'] = Tools::displayError("Failed to initialize stripe credit card form");
         }
         return array_merge($data, parent::getPaymentTemplateParameters($cart));

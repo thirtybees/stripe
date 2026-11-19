@@ -3,10 +3,7 @@
 namespace StripeModule\PaymentMethod;
 
 use Cart;
-use Configuration;
-use Context;
 use PrestaShopException;
-use Stripe;
 use Stripe\Exception\ApiErrorException;
 use StripeModule\ExecutionResult;
 use StripeModule\PaymentMetadata;

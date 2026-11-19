@@ -2,6 +2,9 @@
 
 namespace StripeModule;
 
+use RuntimeException;
+use Throwable;
+
 class ExecutionResult
 {
     const RESULT_TYPE_REDIRECT = 'redirect';
@@ -106,9 +109,9 @@ class ExecutionResult
                     // no-op-, errors will be handled laer
                     break;
                 default:
-                    throw new \RuntimeException("Invariant exception");
+                    throw new RuntimeException("Invariant exception");
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             if ($this->resultType !== static::RESULT_TYPE_ERROR) {
                 $this->resultType = static::RESULT_TYPE_ERROR;
                 $this->data = [ "Error during processing result" ];

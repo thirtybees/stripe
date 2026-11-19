@@ -19,6 +19,15 @@
 
 namespace StripeModule;
 
+use Context;
+use Db;
+use DbQuery;
+use Module;
+use ObjectModel;
+use PrestaShopException;
+use ReflectionClass;
+use Throwable;
+
 if (!defined('_TB_VERSION_')) {
     return;
 }
@@ -30,7 +39,7 @@ require_once __DIR__.'/../stripe.php';
  *
  * @since 1.6.0
  */
-class StripeReview extends \ObjectModel
+class StripeReview extends ObjectModel
 {
     const AUTHORIZED = 1;
     const IN_REVIEW = 2;
@@ -106,15 +115,14 @@ class StripeReview extends \ObjectModel
      * @param int $idOrder
      *
      * @return static
-     * @throws \PrestaShopDatabaseException
-     * @throws \PrestaShopException
+     * @throws PrestaShopException
      *
      * @since 1.6.0
      */
     public static function getByOrderId($idOrder)
     {
-        $row = \Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow(
-            (new \DbQuery())
+        $row = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow(
+            (new DbQuery())
                 ->select('*')
                 ->from(bqSQL(static::$definition['table']))
                 ->where('`id_order` = '.(int) $idOrder)
@@ -126,8 +134,8 @@ class StripeReview extends \ObjectModel
         }
         if (!$review->status) {
             // Figure out what happened via the transactions
-            $rows = \Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS(
-                (new \DbQuery())
+            $rows = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS(
+                (new DbQuery())
                     ->select('`source_type`')
                     ->from(bqSQL(StripeTransaction::$definition['table']))
                     ->where('`id_order` = '.(int) $idOrder)
@@ -154,14 +162,14 @@ class StripeReview extends \ObjectModel
      * @param int $idOrder
      *
      * @return int
-     * @throws \PrestaShopException
+     * @throws PrestaShopException
      *
      * @since 1.6.0
      */
     public static function getStatusByOrderId($idOrder)
     {
-        return (int) \Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue(
-            (new \DbQuery())
+        return (int) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue(
+            (new DbQuery())
                 ->select('`status`')
                 ->from(bqSQL(static::$definition['table']))
                 ->where('`id_order` = '.(int) $idOrder)
@@ -173,14 +181,14 @@ class StripeReview extends \ObjectModel
      *
      * @return string
      *
-     * @throws \PrestaShopException
+     * @throws PrestaShopException
      *
      * @since 1.6.0
      */
     public static function getReviewIdByOrderId($idOrder)
     {
-        return (string) \Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue(
-            (new \DbQuery())
+        return (string) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue(
+            (new DbQuery())
                 ->select('`id_review`')
                 ->from(bqSQL(static::$definition['table']))
                 ->where('`id_order` = '.(int) $idOrder)
@@ -189,29 +197,29 @@ class StripeReview extends \ObjectModel
 
     /**
      * @param string $paymentText
-     * @param array  $tr
+     * @param array $tr
      *
      * @return string
-     * @throws \Exception
-     * @throws \PrestaShopDatabaseException
-     * @throws \PrestaShopException
-     * @throws \ReflectionException
-     * @throws \SmartyException
+     * @throws PrestaShopException
      */
     public static function displayPaymentText($paymentText, $tr)
     {
         $review = StripeReview::getByOrderId($tr['id_order']);
         if ($review->status) {
-            $module = \Module::getInstanceByName('stripe');
-            $reflection = new \ReflectionClass($module);
+            try {
+                $module = Module::getInstanceByName('stripe');
+                $reflection = new ReflectionClass($module);
 
-            \Context::getContext()->smarty->assign([
-                'paymentText' => $paymentText,
-                'tr'          => $tr,
-                'status'      => $review->status,
-            ]);
+                Context::getContext()->smarty->assign([
+                    'paymentText' => $paymentText,
+                    'tr' => $tr,
+                    'status' => $review->status,
+                ]);
 
-            return $module->display($reflection->getFileName(), 'views/templates/admin/payment-list-item.tpl');
+                return $module->display($reflection->getFileName(), 'views/templates/admin/payment-list-item.tpl');
+            } catch (Throwable $e) {
+                return $paymentText;
+            }
         }
 
         return $paymentText;

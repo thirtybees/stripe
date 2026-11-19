@@ -19,9 +19,16 @@
 
 namespace StripeModule;
 
+use Context;
+use Currency;
 use Db;
 use DbQuery;
+use Module;
+use ObjectModel;
+use Order;
 use PrestaShopException;
+use ReflectionClass;
+use Throwable;
 
 if (!defined('_TB_VERSION_')) {
     return;
@@ -32,7 +39,7 @@ require_once __DIR__.'/../stripe.php';
 /**
  * Class StripeTransaction
  */
-class StripeTransaction extends \ObjectModel
+class StripeTransaction extends ObjectModel
 {
     const TYPE_CHARGE = 1;
     const TYPE_PARTIAL_REFUND = 2;
@@ -278,8 +285,7 @@ class StripeTransaction extends \ObjectModel
      * @param int  $idOrder Order ID
      * @param bool $count   Return amount of transactions
      *
-     * @return array|false|\mysqli_result|null|\PDOStatement|resource
-     * @throws \PrestaShopDatabaseException
+     * @return array
      *
      * @since 1.0.0
      * @throws PrestaShopException
@@ -293,15 +299,15 @@ class StripeTransaction extends \ObjectModel
             $sql->select('*');
         }
         $sql->from(bqSQL(static::$definition['table']), 'st');
-        $sql->innerJoin(bqSQL(\Order::$definition['table']), 'o', 'o.`id_order` = st.`id_order`');
-        $sql->innerJoin(bqSQL(\Currency::$definition['table']), 'c', 'c.`id_currency` = o.`id_currency`');
+        $sql->innerJoin(bqSQL(Order::$definition['table']), 'o', 'o.`id_order` = st.`id_order`');
+        $sql->innerJoin(bqSQL(Currency::$definition['table']), 'c', 'c.`id_currency` = o.`id_currency`');
         $sql->where('st.`id_order` = '.(int) $idOrder);
 
         if ($count) {
             return Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
         }
 
-        return Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
+        return Db::getInstance(_PS_USE_SQL_SLAVE_)->getArray($sql);
     }
 
     /**
@@ -311,7 +317,6 @@ class StripeTransaction extends \ObjectModel
      *
      * @return int $amount
      *
-     * @throws \PrestaShopDatabaseException
      * @throws PrestaShopException
      * @since 1.0.0
      */
@@ -345,7 +350,6 @@ class StripeTransaction extends \ObjectModel
      *
      * @return StripeTransaction|false
      *
-     * @throws \PrestaShopDatabaseException
      * @throws PrestaShopException
      * @since 1.1.0
      */
@@ -413,7 +417,6 @@ class StripeTransaction extends \ObjectModel
      * @param int[] $range
      *
      * @return bool
-     * @throws \PrestaShopDatabaseException
      * @throws PrestaShopException
      *
      * @since 1.0.0
@@ -435,25 +438,23 @@ class StripeTransaction extends \ObjectModel
      * @param array $tr
      *
      * @return string
-     * @throws \Exception
-     * @throws \PrestaShopDatabaseException
      * @throws PrestaShopException
-     * @throws \ReflectionException
-     * @throws \SmartyException
-     *
-     * @since 1.6.0
      */
     public static function displayEventLabel($id, $tr)
     {
-        $module = \Module::getInstanceByName('stripe');
-        $reflection = new \ReflectionClass($module);
+        try {
+            $module = Module::getInstanceByName('stripe');
+            $reflection = new ReflectionClass($module);
 
-        \Context::getContext()->smarty->assign([
-            'id' => $id,
-            'tr' => $tr,
-        ]);
+            Context::getContext()->smarty->assign([
+                'id' => $id,
+                'tr' => $tr,
+            ]);
 
-        return $module->display($reflection->getFileName(), 'views/templates/admin/event-label.tpl');
+            return $module->display($reflection->getFileName(), 'views/templates/admin/event-label.tpl');
+        } catch (Throwable $e) {
+            throw new PrestaShopException('Failed to display event label: '.$e->getMessage());
+        }
     }
 
     /**

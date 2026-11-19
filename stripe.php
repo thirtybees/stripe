@@ -494,6 +494,7 @@ class Stripe extends PaymentModule
 
     /**
      * @throws PrestaShopException
+     * @throws SmartyException
      */
     protected function processReview()
     {
@@ -741,9 +742,8 @@ class Stripe extends PaymentModule
      * Add confirmation message
      *
      * @param string $message Message
-     * @param bool $private
      */
-    protected function addConfirmation($message, $private = false)
+    protected function addConfirmation($message)
     {
         /** @var AdminController $controller */
         $controller = $this->context->controller;
@@ -755,7 +755,7 @@ class Stripe extends PaymentModule
      *
      * @param string $message Message
      */
-    protected function addError($message, $private = false)
+    protected function addError($message)
     {
         /** @var AdminController $controller */
         $controller = $this->context->controller;
@@ -1850,6 +1850,7 @@ class Stripe extends PaymentModule
      *
      * @throws PrestaShopException
      * @throws SmartyException
+     * @noinspection PhpUnusedParameterInspection
      */
     public function hookPayment($params)
     {
@@ -1872,6 +1873,7 @@ class Stripe extends PaymentModule
      *
      * @return array|false Smarty variables, nothing if should not be shown
      * @throws PrestaShopException
+     * @noinspection PhpUnusedParameterInspection
      */
     public function hookDisplayPaymentEU($params)
     {
@@ -2022,9 +2024,9 @@ class Stripe extends PaymentModule
                     'stripe_status' => StripeReview::getByOrderId($params['id_order']),
                     'stripe_total_amount' => $totalRefundLeft,
                     'stripe_module_refund_action' => $this->context->link->getAdminLink('AdminModules', true) .
-                        "&configure={$this->name}&tab_module={$this->tab}&module_name={$this->name}&orderstriperefund",
+                        "&configure=$this->name&tab_module=$this->tab&module_name=$this->name&orderstriperefund",
                     'stripe_module_review_action' => $this->context->link->getAdminLink('AdminModules', true) .
-                        "&configure={$this->name}&tab_module={$this->tab}&module_name={$this->name}&orderstripereview",
+                        "&configure=$this->name&tab_module=$this->tab&module_name=$this->name&orderstripereview",
                     'id_order' => (int)$order->id,
                     'canViewStripeRefunds' => true,
                     'canEditStripeRefunds' => true,
@@ -2200,6 +2202,9 @@ class Stripe extends PaymentModule
      * @param array $params
      *
      * @return void
+     *
+     * @throws PrestaShopException
+     * @throws SmartyException
      *
      * @noinspection PhpArrayWriteIsNotUsedInspection
      * @noinspection PhpArrayUsedOnlyForWriteInspection
